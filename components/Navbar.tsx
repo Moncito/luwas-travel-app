@@ -42,7 +42,7 @@ const Navbar = () => {
     const navItems = [
         { href: "/about", text: "ABOUT" },
         { href: "/services", text: "SERVICES" },
-        { href: "/team", text: "TEAM" },
+        { href: "/destination", text: "DESTINATIONS" },
         { href: "/plan", text: "PLAN" },
         { href: "/explorateur", text: "EXPLORATEUR" },
         { href: "/careers", text: "CAREERS" },
