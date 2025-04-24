@@ -8,22 +8,22 @@ import { Compass, Calendar, Plane, Smartphone } from 'lucide-react';
 const steps = [
   {
     title: "Explore",
-    icon: <Compass className="w-8 h-8 text-white" />,
+    icon: <Compass className="w-8 h-10 text-white" />,
     description: "Find curated or trending destinations across the Philippines.",
   },
   {
     title: "Plan",
-    icon: <Calendar className="w-8 h-8 text-white" />,
+    icon: <Calendar className="w-8 h-10 text-white" />,
     description: "Customize your itinerary with our smart planning tools.",
   },
   {
     title: "Travel",
-    icon: <Plane className="w-8 h-8 text-white" />,
+    icon: <Plane className="w-8 h-10 text-white" />,
     description: "Get real-time alerts and tips while you are on the go.",
   },
   {
     title: "Use the App",
-    icon: <Smartphone className="w-8 h-8 text-white" />,
+    icon: <Smartphone className="w-8 h-10 text-white" />,
     description: "Access your plans on mobile anytime, even offline. Coming soon to iOS & Android!",
   },
 ];
@@ -31,9 +31,10 @@ const steps = [
 export default function HowItWorks() {
   return (
     <section
-      className="relative w-full min-h-screen bg-cover bg-center flex flex-col items-center justify-center px-4 py-16 text-white"
-      style={{ backgroundImage: "url('images/beach1.jpeg')" }}
+    className="relative w-full min-h-screen bg-cover bg-center flex flex-col items-center justify-center px-16 py-16 text-white"
+    style={{ backgroundImage: "url('images/beach1.jpeg')" }}
     >
+
       <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-black/40 z-0" />
 
       <motion.h2

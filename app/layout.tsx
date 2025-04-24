@@ -2,6 +2,8 @@
 import { Montserrat } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'sonner';
+import Footer from '@/components/Footer';
+import Navbar from '@/components/Navbar';
 // import Navbar from "@/components/Navbar"
 
 const montserrat = Montserrat({
@@ -19,8 +21,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className="light">
       <body className={`${montserrat.className} antialiased pattern`}>
-        {/* <Navbar/> */}
+        <Navbar/>
         {children}
+        <Footer/>
         <Toaster />
       </body>
     </html>

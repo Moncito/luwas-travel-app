@@ -97,7 +97,7 @@ const Show = () => {
       </motion.h2>
 
       <motion.div
-        className="grid gap-7 sm:grid-cols-2 md:grid-cols-3"
+        className="grid gap-10 sm:grid-cols-2 md:grid-cols-3"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true }}
