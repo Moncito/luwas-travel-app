@@ -33,7 +33,7 @@ const Show = () => {
   const [refStats, inViewStats] = useInView({ triggerOnce: true, threshold: 0.2 });
 
   return (
-    <div className="my-16 px-6 text-center max-w-4xl mx-auto">
+    <div className="my-16 px-6 text-center max-w-5xl mx-auto">
 
       {/* Hero Title */}
       <motion.h2
@@ -60,7 +60,7 @@ const Show = () => {
         destinations, and stay up-to-date with real-time travel info across the Philippines.
       </motion.p>
 
-      {/* Descriptive Analytics */}
+      {/* Stats */}
       <motion.div
         ref={refStats}
         variants={fadeUp}
@@ -69,34 +69,55 @@ const Show = () => {
         transition={{ duration: 0.6, delay: 0.2 }}
         className="grid grid-cols-1 md:grid-cols-3 gap-6 text-gray-700 mb-10"
       >
-        <div>
-          <h3 className="text-2xl font-bold text-user-primary">+50</h3>
-          <p>Curated Destinations</p>
-        </div>
-        <div>
-          <h3 className="text-2xl font-bold text-user-primary">100%</h3>
-          <p>Personalized Itinerary</p>
-        </div>
-        <div>
-          <h3 className="text-2xl font-bold text-user-primary">24/7</h3>
-          <p>Real-Time Travel Updates</p>
-        </div>
+        {[
+          { label: "+50", desc: "Curated Destinations" },
+          { label: "100%", desc: "Personalized Itinerary" },
+          { label: "24/7", desc: "Real-Time Travel Updates" },
+        ].map((item, index) => (
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: index * 0.2 }}
+          >
+            <h3 className="text-2xl font-bold text-user-primary">{item.label}</h3>
+            <p>{item.desc}</p>
+          </motion.div>
+        ))}
       </motion.div>
 
- {/* Trending Destinations */}
- <h2 className="text-2xl font-bold mb-6">🌟 Trending Destinations</h2>
-      <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
+      {/* Trending Destinations */}
+      <motion.h2
+        className="text-2xl font-bold mb-6"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        🌟 Trending Destinations
+      </motion.h2>
+
+      <motion.div
+        className="grid gap-7 sm:grid-cols-2 md:grid-cols-3"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        variants={{
+          visible: { transition: { staggerChildren: 0.2 } },
+        }}
+      >
         {trendingDestinations.map((dest, index) => (
-          <div
+          <motion.div
             key={index}
-            className="rounded-2xl shadow-lg overflow-hidden bg-white transition-transform hover:scale-[1.03]"
+            className="rounded-2xl shadow-lg overflow-hidden bg-white transition-transform"
+            variants={fadeUp}
+            whileHover={{ scale: 1.05, boxShadow: "0px 8px 20px rgba(0, 0, 0, 0.2)" }}
           >
             <Image
               src={dest.image}
               alt={dest.name}
               width={500}
               height={300}
-              className="w-full h-70 object-cover"
+              className="w-full h-80 object-cover"
             />
             <div className="p-4">
               <h3 className="text-lg font-semibold">{dest.name}</h3>
@@ -105,9 +126,9 @@ const Show = () => {
                 Explore →
               </button>
             </div>
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
     </div>
   );
 };
