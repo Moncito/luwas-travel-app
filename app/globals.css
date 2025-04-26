@@ -27,6 +27,13 @@
   --bg-pattern: url("/pattern.jpg");
 }
 
+@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
+
+.font-great-vibes {
+  font-family: 'Great Vibes', cursive;
+}
+
+
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);

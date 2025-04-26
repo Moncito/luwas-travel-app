@@ -51,7 +51,7 @@ const Navbar = () => {
 
     return (
         <nav className="absolute top-0 left-0 w-full z-50 bg-transparent backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-6 py-6">
             {/* Desktop Layout */}
             <div className="hidden lg:flex items-center justify-between">
             {/* Left */}
@@ -60,11 +60,11 @@ const Navbar = () => {
                 <div key={item.href} className="flex items-center">
                     <Link
                     href={item.href}
-                    className="text-black hover:text-gray-400 px-3 py-1 text-sm xl:text-base xl:px-4"
+                    className="text-white font-black hover:text-black px-3 py-1 text-sm xl:text-base xl:px-4"
                     >
                     {item.text}
                     </Link>
-                    {index < 3 && <span className="text-black text-xs">|</span>}
+                    {index < 3 && <span className="text-white text-xs">|</span>}
                 </div>
                 ))}
             </div>
@@ -72,7 +72,7 @@ const Navbar = () => {
             {/* Center */}
             <Link
                 href="/"
-                className="text-black text-2xl md:text-3xl lg:text-4xl font-semibold"
+                className="text-white font-black text-2xl md:text-3xl lg:text-4xl font-semibold"
             >
                 LUWAS
             </Link>
@@ -83,11 +83,11 @@ const Navbar = () => {
                 <div key={item.href} className="flex items-center">
                     <Link
                     href={item.href}
-                    className="text-black hover:text-gray-400 px-3 py-1 text-sm xl:text-base xl:px-4"
+                    className="text-white font-black hover:text-black px-3 py-1 text-sm xl:text-base xl:px-4"
                     >
                     {item.text}
                     </Link>
-                    {index < 2 && <span className="text-black text-xs">|</span>}
+                    {index < 2 && <span className="text-white text-xs">|</span>}
                 </div>
                 ))}
 
@@ -97,7 +97,7 @@ const Navbar = () => {
                     <button
                     onClick={handleLogout}
                     disabled={loading}
-                    className="text-black hover:text-gray-400 px-3 py-1 text-sm xl:text-base xl:px-4"
+                    className="text-white font-black hover:text-gray-400 px-3 py-1 text-sm xl:text-base xl:px-4"
                     >
                     {loading ? "Logging out..." : "LOGOUT"}
                     </button>
@@ -116,14 +116,14 @@ const Navbar = () => {
             {/* Mobile Layout */}
             <div className="lg:hidden flex justify-between items-center">
             {/* Logo */}
-            <Link href="/" className="text-black text-2xl font-semibold">
+            <Link href="/" className="text-white text-2xl font-semibold">
                 LUWAS
             </Link>
 
             {/* Burger Icon */}
             <button
                 onClick={toggleMobileMenu}
-                className="text-black focus:outline-none"
+                className="text-white focus:outline-none"
             >
                 <svg
                 className="w-6 h-6"
