@@ -2,6 +2,8 @@
 import { Montserrat } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'sonner';
+import ScrollToTop from './components/ScrollToTop';
+import PageLoader from './components/PageLoader';
 // import Navbar from "@/components/Navbar"
 
 const montserrat = Montserrat({
@@ -19,6 +21,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className="light">
       <body className={`${montserrat.className} antialiased pattern`}>
+        <ScrollToTop />  
+        <PageLoader/>
         {/* <Navbar/> */}
         {children}
         {/* <Footer/> */}
@@ -27,3 +31,4 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
+

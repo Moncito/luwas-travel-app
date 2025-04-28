@@ -10,17 +10,14 @@ const Navbar = () => {
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
-    const toggleMobileMenu = () => {
-        setIsMobileMenuOpen((prev) => !prev);
-    };
+    const toggleMobileMenu = () => setIsMobileMenuOpen(prev => !prev);
 
     const checkAuth = async () => {
         try {
         const res = await fetch("/api/auth/user");
         const data = await res.json();
         setIsAuthenticated(!!data.user);
-        } catch (err) {
-        console.error("Failed to fetch auth state");
+        } catch {
         setIsAuthenticated(false);
         }
     };
@@ -31,154 +28,110 @@ const Navbar = () => {
 
     const handleLogout = async () => {
         setLoading(true);
-        await fetch("/api/auth/logout", {
-        method: "POST",
-        });
-        await checkAuth(); // Re-check the auth state
+        await fetch("/api/auth/logout", { method: "POST" });
+        await checkAuth();
         setLoading(false);
-        router.push("/sign-in"); // Optional: Navigate to login page
+        router.push("/sign-in");
     };
 
     const navItems = [
         { href: "/about", text: "ABOUT" },
         { href: "/services", text: "SERVICES" },
-        { href: "/destination", text: "DESTINATIONS" },
-        { href: "/plan", text: "PLAN" },
-        { href: "/explorateur", text: "EXPLORATEUR" },
-        { href: "/careers", text: "CAREERS" },
-        { href: "/blog", text: "BLOG" },
+        { href: "/destinations", text: "DESTINATIONS" },
+        { href: "/plan", text: "PLAN / BOOK" },
     ];
 
     return (
-        <nav className="absolute top-0 left-0 w-full z-50 bg-transparent backdrop-blur-sm">
-        <div className="container mx-auto px-6 py-6">
-            {/* Desktop Layout */}
-            <div className="hidden lg:flex items-center justify-between">
-            {/* Left */}
-            <div className="flex items-center space-x-1">
-                {navItems.slice(0, 4).map((item, index) => (
-                <div key={item.href} className="flex items-center">
-                    <Link
-                    href={item.href}
-                    className="text-white font-black hover:text-black px-3 py-1 text-sm xl:text-base xl:px-4"
-                    >
-                    {item.text}
-                    </Link>
-                    {index < 3 && <span className="text-white text-xs">|</span>}
-                </div>
-                ))}
-            </div>
-
-            {/* Center */}
-            <Link
-                href="/"
-                className="text-white font-black text-2xl md:text-3xl lg:text-4xl font-semibold"
-            >
+        <nav className="absolute top-0 left-0 w-full z-50 bg-transparent backdrop-blur-md">
+        <div className="container mx-auto px-6 py-6 flex items-center justify-between">
+            
+            {/* Left - LUWAS */}
+            <div className="flex-shrink-0">
+            <Link href="/" className="text-white text-2xl md:text-3xl font-bold tracking-wide animate-fade-in">
                 LUWAS
             </Link>
-
-            {/* Right */}
-            <div className="flex items-center space-x-1">
-                {navItems.slice(4).map((item, index) => (
-                <div key={item.href} className="flex items-center">
-                    <Link
-                    href={item.href}
-                    className="text-white font-black hover:text-black px-3 py-1 text-sm xl:text-base xl:px-4"
-                    >
-                    {item.text}
-                    </Link>
-                    {index < 2 && <span className="text-white text-xs">|</span>}
-                </div>
-                ))}
-
-                {/* Auth Button */}
-                <div>
-                {isAuthenticated ? (
-                    <button
-                    onClick={handleLogout}
-                    disabled={loading}
-                    className="text-white font-black hover:text-gray-400 px-3 py-1 text-sm xl:text-base xl:px-4"
-                    >
-                    {loading ? "Logging out..." : "LOGOUT"}
-                    </button>
-                ) : (
-                    <button
-                    onClick={() => router.push("/sign-in")}
-                    className="text-black hover:text-gray-400 px-3 py-1 text-sm xl:text-base xl:px-4"
-                    >
-                    LOGIN
-                    </button>
-                )}
-                </div>
-            </div>
             </div>
 
-            {/* Mobile Layout */}
-            <div className="lg:hidden flex justify-between items-center">
-            {/* Logo */}
-            <Link href="/" className="text-white text-2xl font-semibold">
-                LUWAS
-            </Link>
-
-            {/* Burger Icon */}
-            <button
-                onClick={toggleMobileMenu}
-                className="text-white focus:outline-none"
-            >
-                <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
+            {/* Center - Nav Menu */}
+            <div className="hidden lg:flex space-x-8">
+            {navItems.map(item => (
+                <Link 
+                key={item.href} 
+                href={item.href} 
+                className="text-white font-semibold hover:underline underline-offset-8 transition duration-300 ease-in-out text-sm xl:text-base"
                 >
-                <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                />
+                {item.text}
+                </Link>
+            ))}
+            </div>
+
+            {/* Right - Login/Logout */}
+            <div className="hidden lg:flex space-x-4">
+            {isAuthenticated ? (
+                <button
+                onClick={handleLogout}
+                disabled={loading}
+                className="text-white font-semibold hover:underline underline-offset-8 transition duration-300 ease-in-out text-sm xl:text-base"
+                >
+                {loading ? "Logging out..." : "LOGOUT"}
+                </button>
+            ) : (
+                <button
+                onClick={() => router.push("/sign-in")}
+                className="bg-white text-black font-semibold px-4 py-2 rounded-full hover:bg-gray-200 transition duration-300 ease-in-out text-sm xl:text-base"
+                >
+                LOGIN
+                </button>
+            )}
+            </div>
+
+            {/* Mobile Hamburger */}
+            <div className="lg:hidden flex items-center">
+            <button onClick={toggleMobileMenu} className="text-white focus:outline-none">
+                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
             </button>
             </div>
 
-            {/* Mobile Dropdown Menu */}
-            {isMobileMenuOpen && (
-            <div className="lg:hidden mt-4 bg-white rounded-lg shadow-lg p-4 space-y-3 animate-fadeIn">
-                {navItems.map((item) => (
+        </div>
+
+        {/* Mobile Dropdown */}
+        {isMobileMenuOpen && (
+            <div className="mt-4 bg-white rounded-lg shadow-lg p-4 space-y-4 animate-fade-in lg:hidden">
+            {navItems.map(item => (
                 <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={toggleMobileMenu}
-                    className="block text-center text-black hover:text-gray-400"
+                key={item.href}
+                href={item.href}
+                onClick={toggleMobileMenu}
+                className="block text-center text-black font-semibold hover:text-gray-400 transition duration-300 ease-in-out"
                 >
-                    {item.text}
+                {item.text}
                 </Link>
-                ))}
-                {isAuthenticated ? (
+            ))}
+            {isAuthenticated ? (
                 <button
-                    onClick={async () => {
+                onClick={async () => {
                     toggleMobileMenu();
                     await handleLogout();
-                    }}
-                    className="block w-full text-black hover:text-gray-400 text-center"
+                }}
+                className="block w-full text-black font-semibold hover:text-gray-400 transition duration-300 ease-in-out text-center"
                 >
-                    {loading ? "Logging out..." : "LOGOUT"}
+                {loading ? "Logging out..." : "LOGOUT"}
                 </button>
-                ) : (
+            ) : (
                 <button
-                    onClick={() => {
+                onClick={() => {
                     toggleMobileMenu();
                     router.push("/sign-in");
-                    }}
-                    className="block w-full text-black hover:text-gray-400 text-center"
+                }}
+                className="block w-full text-black font-semibold hover:text-gray-400 transition duration-300 ease-in-out text-center"
                 >
-                    LOGIN
+                LOGIN
                 </button>
-                )}
-            </div>
             )}
-        </div>
+            </div>
+        )}
         </nav>
     );
 };

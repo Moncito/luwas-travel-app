@@ -33,7 +33,7 @@ export default function FutureGoals() {
           <span className="font-bold text-white"> community contributions</span>, 
           and smarter ways to experience the Philippines like never before.  
           <br /><br />
-          The journey has just begun. 🌏✨
+          The journey has just begun.
         </p>
       </motion.section>
 

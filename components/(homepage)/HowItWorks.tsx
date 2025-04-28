@@ -69,7 +69,7 @@ export default function HowItWorks() {
         transition={{ duration: 0.7 }}
       >
         <h3 className="text-3xl md:text-4xl font-bold mb-4">
-          ✈️ Ready for your next adventure?
+          Ready for your next adventure?
         </h3>
         <p className="text-white/90 mb-6">
           Start planning with <span className="font-bold">Luwas</span> today—your all-in-one travel companion.
