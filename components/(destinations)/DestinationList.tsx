@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Image from 'next/image';
+import Link from 'next/link';
 
 const destinations = [
   {
@@ -51,7 +52,6 @@ export default function DestinationList({ searchTerm }: DestinationListProps) {
     <section className="w-full py-20 px-6 bg-white">
       <div className="max-w-7xl mx-auto">
 
-        {/* No Results Handling */}
         {filteredDestinations.length === 0 ? (
           <motion.div
             className="text-center text-gray-500 py-20"
@@ -63,7 +63,6 @@ export default function DestinationList({ searchTerm }: DestinationListProps) {
             <p className="text-sm">Try searching for a beach, adventure, or city!</p>
           </motion.div>
         ) : (
-          // Results Grid
           <motion.div
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
             initial="hidden"
@@ -72,38 +71,37 @@ export default function DestinationList({ searchTerm }: DestinationListProps) {
             transition={{ staggerChildren: 0.2 }}
           >
             {filteredDestinations.map((destination) => (
-              <motion.div
-                key={destination.id}
-                className="relative group rounded-2xl overflow-hidden shadow-lg hover:scale-105 hover:shadow-2xl transition-all duration-500"
-                initial={{ opacity: 0, y: 40 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7 }}
-              >
-                <Image
-                  src={destination.imageUrl}
-                  alt={destination.name}
-                  width={500}
-                  height={300}
-                  className="object-cover w-full h-60 group-hover:brightness-75 transition-all duration-300"
-                />
-                <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-all duration-300" />
-
-                {/* Card Text */}
-                <div className="absolute bottom-0 p-6 text-white">
-                  <h3 className="text-2xl font-bold">{destination.name}</h3>
-                  <p className="text-sm text-gray-300">{destination.location}</p>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {destination.tags.map((tag, idx) => (
-                      <span
-                        key={idx}
-                        className="bg-white/20 rounded-full px-3 py-1 text-xs"
-                      >
-                        {tag}
-                      </span>
-                    ))}
+              <Link href={`/destinations/${destination.id}`} key={destination.id}>
+                <motion.div
+                  className="relative group rounded-2xl overflow-hidden shadow-lg hover:scale-105 hover:shadow-2xl transition-all duration-500 cursor-pointer"
+                  initial={{ opacity: 0, y: 40 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.7 }}
+                >
+                  <Image
+                    src={destination.imageUrl}
+                    alt={destination.name}
+                    width={500}
+                    height={300}
+                    className="object-cover w-full h-60 group-hover:brightness-75 transition-all duration-300"
+                  />
+                  <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-all duration-300" />
+                  <div className="absolute bottom-0 p-6 text-white">
+                    <h3 className="text-2xl font-bold">{destination.name}</h3>
+                    <p className="text-sm text-gray-300">{destination.location}</p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {destination.tags.map((tag, idx) => (
+                        <span
+                          key={idx}
+                          className="bg-white/20 rounded-full px-3 py-1 text-xs"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              </motion.div>
+                </motion.div>
+              </Link>
             ))}
           </motion.div>
         )}

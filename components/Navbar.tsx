@@ -38,7 +38,7 @@ const Navbar = () => {
         { href: "/about", text: "ABOUT" },
         { href: "/services", text: "SERVICES" },
         { href: "/destinations", text: "DESTINATIONS" },
-        { href: "/plan", text: "PLAN / BOOK" },
+        { href: "/history", text: "TRAVEL HISTORY" },
     ];
 
     return (
