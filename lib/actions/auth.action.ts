@@ -8,7 +8,7 @@ const SESSION_DURATION = 60 * 60 * 24 * 7;
 
 // Set session cookie
 export async function setSessionCookie(idToken: string) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies(); // ✅ Corrected async usage
 
   const sessionCookie = await auth.createSessionCookie(idToken, {
     expiresIn: SESSION_DURATION * 1000,
@@ -22,6 +22,7 @@ export async function setSessionCookie(idToken: string) {
     sameSite: "lax",
   });
 }
+
 
 // Sign up a new user
 export async function signUp(params: SignUpParams) {
@@ -121,7 +122,7 @@ export async function getCurrentUser(): Promise<User | null> {
 }
 
 export const isAuthenticated = async (): Promise<boolean> => {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const sessionCookie = cookieStore.get("session")?.value;
 
   if (!sessionCookie) return false;

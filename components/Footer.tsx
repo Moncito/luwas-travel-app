@@ -39,7 +39,7 @@ export default function Footer() {
 
           <div className="flex space-x-19 text-gray-600 pt-8">
             <a href="#"><Instagram className="w-5 h-5 hover:text-black" /></a>
-            <a href="#"><Facebook className="w-5 h-5 hover:text-black" /></a>
+            <a href="https://www.facebook.com/mdcctravelandtours"><Facebook className="w-5 h-5 hover:text-black" /></a>
             <a href="mailto:support@luwas.app"><Mail className="w-5 h-5 hover:text-black" /></a>
             <a href="https://github.com/your-repo" target="_blank"><Github className="w-5 h-5 hover:text-black" /></a>
           </div>
