@@ -2,50 +2,54 @@
 
 import { useParams, useRouter } from 'next/navigation'
 import { notFound } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import { CalendarDays } from 'lucide-react'
 import { toast } from 'sonner'
+import { db } from '@/firebase/client'
+import { doc, getDoc } from 'firebase/firestore'
 
-// Mock Data
-const destinations = [
-    {
-        id: "1",
-        name: "Boracay Island",
-        location: "Aklan, Philippines",
-        description: "Powdery white sands and vibrant nightlife await you.",
-        imageUrl: "/images/boracay.png",
-        tags: ["Beach", "Luxury"],
-    },
-    {
-        id: "2",
-        name: "Banaue Rice Terraces",
-        location: "Ifugao, Philippines",
-        description: "Marvel at the 2,000-year-old hand-carved mountains.",
-        imageUrl: "/images/banaue.png",
-        tags: ["Adventure", "Heritage"],
-    },
-    {
-        id: "3",
-        name: "El Nido",
-        location: "Palawan, Philippines",
-        description: "Secret lagoons, limestone cliffs, paradise waters.",
-        imageUrl: "/images/elnido.png",
-        tags: ["Beach", "Adventure"],
-    },
-  // Add other destinations...
-]
+type Destination = {
+  id: string
+  name: string
+  location: string
+  description: string
+  imageUrl: string
+  tags: string[]
+}
 
 export default function DestinationPage() {
   const { id } = useParams()
   const router = useRouter()
+  const [destination, setDestination] = useState<Destination | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const destination = destinations.find((dest) => dest.id === id)
-  if (!destination) return notFound()
+  // Fetch destination from Firestore
+  useEffect(() => {
+    if (!id) return
+    const fetchDestination = async () => {
+      try {
+        const docRef = doc(db, 'destinations', String(id))
+        const docSnap = await getDoc(docRef)
 
-  // 🔐 Auth check logic
+        if (docSnap.exists()) {
+          setDestination({ id: docSnap.id, ...docSnap.data() } as Destination)
+        } else {
+          notFound()
+        }
+      } catch (error) {
+        console.error('Error fetching destination:', error)
+        notFound()
+      }
+    }
+
+    fetchDestination()
+  }, [id])
+
+  // Prevent rendering while loading
+  if (!destination) return null
+
   const handleStartPlanning = async () => {
     setLoading(true)
     try {
@@ -53,8 +57,7 @@ export default function DestinationPage() {
       const data = await res.json()
 
       if (data.user) {
-        // ✅ If logged in, redirect to booking form WITH destination info
-        router.push(`/destinations/${id}/book`) // this route will contain the embedded form
+        router.push(`/destinations/${id}/book`)
       } else {
         toast.error('Please sign in to start planning your trip!')
         router.push('/sign-in')
@@ -69,7 +72,7 @@ export default function DestinationPage() {
 
   return (
     <main className="min-h-screen bg-white">
-      {/* Hero */}
+      {/* Hero Section */}
       <section className="relative h-[70vh]">
         <Image
           src={destination.imageUrl}
@@ -78,7 +81,6 @@ export default function DestinationPage() {
           className="object-cover brightness-75"
         />
         <div className="absolute inset-0 bg-black/40" />
-
         <motion.div
           className="absolute z-10 bottom-24 left-1/2 transform -translate-x-1/2 text-center px-6"
           initial={{ opacity: 0, y: 30 }}
@@ -99,7 +101,7 @@ export default function DestinationPage() {
         </motion.div>
       </section>
 
-      {/* Description + Button */}
+      {/* Description and CTA */}
       <section className="max-w-4xl mx-auto px-6 py-16 text-center">
         <motion.p
           className="text-lg text-gray-700 leading-relaxed"

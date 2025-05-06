@@ -1,45 +1,37 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/firebase/client'; // Adjust if your Firebase client config path differs
 
-// Assume this will be replaced with DB data later
-const destinations = [
-  {
-    id: 1,
-    name: 'Boracay Island',
-    location: 'Aklan, Philippines',
-    tags: ['Beach', 'Luxury'],
-    description: 'Powdery white sands and vibrant nightlife await you.',
-    imageUrl: '/images/boracay.png',
-    price: 3000,
-  },
-  {
-    id: 2,
-    name: 'Banaue Rice Terraces',
-    location: 'Ifugao, Philippines',
-    tags: ['Adventure', 'Heritage'],
-    description: 'Marvel at the 2,000-year-old hand-carved mountains.',
-    imageUrl: '/images/banaue.png',
-    price: 2500,
-  },
-  {
-    id: 3,
-    name: 'El Nido',
-    location: 'Palawan, Philippines',
-    tags: ['Beach', 'Adventure'],
-    description: 'Secret lagoons, limestone cliffs, paradise waters.',
-    imageUrl: '/images/elnido.png',
-    price: 4500,
-  },
-];
+interface Destination {
+  id: string;
+  name: string;
+  location: string;
+  tags: string[];
+  description: string;
+  imageUrl: string;
+  price: number;
+}
 
 const itemsPerPage = 6;
 
 export default function DestinationList({ searchTerm }: { searchTerm: string }) {
+  const [destinations, setDestinations] = useState<Destination[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    const fetchDestinations = async () => {
+      const snapshot = await getDocs(collection(db, 'destinations'));
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Destination[];
+      setDestinations(data);
+    };
+
+    fetchDestinations();
+  }, []);
 
   const safeSearchTerm = (searchTerm ?? '').toLowerCase();
   const filteredDestinations = destinations.filter((destination) => {
