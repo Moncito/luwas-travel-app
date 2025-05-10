@@ -3,11 +3,15 @@ import { db } from "@/firebase/admin";
 
 export async function fetchAdminMetrics() {
   const usersSnapshot = await db.collection("users").get();
-  const totalUsers = usersSnapshot.size;
+  const tripsSnapshot = await db.collection("destinations").get();
 
-  // Placeholder values until we implement trips and approvals
-  const totalTrips = 0;
-  const pendingApprovals = 0;
+  const totalUsers = usersSnapshot.size;
+  const totalTrips = tripsSnapshot.size;
+
+  const pendingApprovals = tripsSnapshot.docs.filter(doc => {
+    const data = doc.data();
+    return data.status === "pending"; // optional if you track approval status
+  }).length;
 
   return {
     totalUsers,

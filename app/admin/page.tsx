@@ -1,9 +1,11 @@
 import { fetchAdminMetrics } from "@/lib/admin/fetchMetrics";
+import UserTripChartSection from "@/components/(admin)/UserTripChartSection"; // ✅ new import
+import BookingAnalyticsChart from "@/components/(admin)/BookingAnalyticsChart";
 
 export default async function AdminDashboardPage() {
   const { totalUsers, totalTrips, pendingApprovals } = await fetchAdminMetrics();
 
-  const greeting = getGreeting(); // Custom greeting function
+  const greeting = getGreeting();
 
   return (
     <div className="p-8 space-y-8 bg-gradient-to-br from-blue-50 via-white to-blue-100 min-h-screen">
@@ -17,6 +19,10 @@ export default async function AdminDashboardPage() {
         <DashboardCard title="Total Trips" value={totalTrips} color="green" />
         <DashboardCard title="Pending Approvals" value={pendingApprovals} color="orange" />
       </section>
+
+      <UserTripChartSection /> 
+
+      <BookingAnalyticsChart/>
     </div>
   );
 }

@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { addDoc, collection } from 'firebase/firestore';
 import { db } from '@/firebase/client';
 import { toast } from 'sonner';
+import { serverTimestamp } from 'firebase/firestore';
+
 
 export default function AddDestinationForm() {
   const [name, setName] = useState('');
@@ -47,8 +49,9 @@ export default function AddDestinationForm() {
         tags: tags.split(',').map(tag => tag.trim()),
         price: Number(price),
         imageUrl,
-        createdAt: new Date().toISOString(),
+        createdAt: serverTimestamp(), // ✅ Add this line
       });
+
 
       toast.success('Destination added successfully!');
       // Reset form fields
