@@ -1,9 +1,11 @@
 export type Booking = {
-    id: string
-    fullName: string
-    destination: string
-    departureDate: string
-    status: 'upcoming' | 'completed' | 'cancelled'
-    createdAt: string
-  }
-  
+  id: string
+  fullName: string
+  email: string
+  phone: string
+  destination: string
+  departureDate: string
+  createdAt: string
+  status: 'upcoming' | 'completed' | 'cancelled' | 'paid' | 'waiting_payment'
+  proofUrl?: string
+}

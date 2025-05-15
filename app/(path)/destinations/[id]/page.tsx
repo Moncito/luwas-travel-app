@@ -1,31 +1,31 @@
 // app/destinations/[id]/page.tsx
-import { notFound } from "next/navigation";
-import { db } from "@/firebase/admin";
-import Image from "next/image";
-import Link from "next/link";
+import { notFound } from "next/navigation"
+import { db } from "@/firebase/admin"
+import Image from "next/image"
+import Link from "next/link"
 
 interface Destination {
-  name: string;
-  location: string;
-  description: string;
-  imageUrl: string;
-  price: number;
-  tags: string[];
+  name: string
+  location: string
+  description: string
+  imageUrl: string
+  price: number
+  tags: string[]
 }
 
 export default async function DestinationPage({ params }: { params: { id: string } }) {
-  const destinationId = params.id;
+  const destinationId = params.id
 
-  // ✅ Proper Admin SDK usage
-  const snapshot = await db.collection("destinations").doc(destinationId).get();
+  // ✅ Fetch destination using Firestore Admin SDK
+  const snapshot = await db.collection("destinations").doc(destinationId).get()
 
-  if (!snapshot.exists) return notFound();
+  if (!snapshot.exists) return notFound()
 
-  const destination = snapshot.data() as Destination;
+  const destination = snapshot.data() as Destination
 
   return (
     <main className="min-h-screen bg-white">
-      {/* Hero */}
+      {/* Hero Section */}
       <section className="relative h-[60vh]">
         <Image
           src={destination.imageUrl}
@@ -64,5 +64,5 @@ export default async function DestinationPage({ params }: { params: { id: string
         </div>
       </section>
     </main>
-  );
+  )
 }

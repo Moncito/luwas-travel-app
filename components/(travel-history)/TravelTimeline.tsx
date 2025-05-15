@@ -1,22 +1,69 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { CalendarDays, PlaneTakeoff, MapPin } from 'lucide-react';
-import travelHistory from '@/components/(travel-history)/mockTravelHistory';
-import Image from 'next/image';
+import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
+import { CalendarDays, PlaneTakeoff, MapPin } from 'lucide-react'
+import Image from 'next/image'
+import { db } from '@/firebase/client'
+import { collection, getDocs, query, orderBy } from 'firebase/firestore'
+import BookingDetailModal from './BookingDetailModal'
 
-const FILTERS = ['Upcoming', 'Completed', 'Cancelled'] as const;
-type TripStatus = typeof FILTERS[number];
+interface Booking {
+  id: string
+  fullName: string
+  email: string
+  phone: string
+  destination: string
+  departureDate: string
+  createdAt: string
+  status: 'upcoming' | 'completed' | 'cancelled' | 'paid' | 'waiting_payment'
+  proofUrl?: string
+  specialRequests?: string
+  location?: string
+  travelers?: number
+  price?: number
+}
+
+const FILTERS = ['upcoming', 'completed', 'cancelled'] as const
+type TripStatus = typeof FILTERS[number]
+
+const statusBadge = {
+  upcoming: 'bg-blue-100 text-blue-800',
+  completed: 'bg-green-100 text-green-800',
+  cancelled: 'bg-red-100 text-red-700',
+  paid: 'bg-emerald-100 text-emerald-800',
+  waiting_payment: 'bg-yellow-100 text-yellow-700',
+}
 
 export default function TravelTimeline() {
-  const [filter, setFilter] = useState<TripStatus>('Upcoming');
+  const [filter, setFilter] = useState<TripStatus>('upcoming')
+  const [trips, setTrips] = useState<Booking[]>([])
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
 
-  const filteredTrips = travelHistory.filter(trip => trip.status === filter);
+  useEffect(() => {
+    const fetchTrips = async () => {
+      try {
+        const q = query(collection(db, 'bookings'), orderBy('createdAt', 'desc'))
+        const snapshot = await getDocs(q)
+        const bookings: Booking[] = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Booking[]
+
+        setTrips(bookings)
+      } catch (err) {
+        console.error('Failed to fetch trips:', err)
+      }
+    }
+
+    fetchTrips()
+  }, [])
+
+  const filteredTrips = trips.filter(trip => trip.status === filter)
 
   return (
     <section className="relative min-h-screen w-full flex flex-col items-center justify-center overflow-hidden text-white py-16 px-6">
-      {/* Background Image */}
+      {/* Background */}
       <div className="absolute inset-0 -z-10">
         <Image
           src="/images/vacation.png"
@@ -43,7 +90,7 @@ export default function TravelTimeline() {
                 : 'bg-white/30 text-white hover:bg-white/50'
             }`}
           >
-            {status}
+            {status.charAt(0).toUpperCase() + status.slice(1)}
           </button>
         ))}
       </div>
@@ -57,32 +104,57 @@ export default function TravelTimeline() {
         ) : (
           filteredTrips.map((trip, index) => (
             <motion.div
-              key={index}
-              className="flex flex-col bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 shadow-md transition duration-300 hover:scale-105"
+              key={trip.id}
+              onClick={() => setSelectedBooking(trip)}
+              className="cursor-pointer flex flex-col bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 shadow-md transition duration-300 hover:scale-105"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <div className="mb-2 flex items-center gap-2">
-                <PlaneTakeoff className="w-5 h-5 text-white" />
-                <h3 className="text-xl font-bold">{trip.destination}</h3>
+              <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center gap-2">
+                  <PlaneTakeoff className="w-5 h-5 text-white" />
+                  <h3 className="text-xl font-bold text-white">{trip.destination}</h3>
+                </div>
+                <span className={`text-xs font-medium px-3 py-1 rounded-full ${statusBadge[trip.status]}`}>
+                  {trip.status.replace('_', ' ')}
+                </span>
               </div>
 
-              <p className="text-sm text-white/80 mb-2">{trip.description}</p>
+              <p className="text-sm text-white/80 mb-2 line-clamp-3">{trip.specialRequests || 'No special requests.'}</p>
 
               <div className="text-sm text-white/70 flex items-center mb-1">
                 <CalendarDays className="w-4 h-4 mr-2" />
-                {trip.date}
+                {trip.departureDate}
               </div>
 
-              <div className="text-sm text-white/70 flex items-center">
+              <div className="text-sm text-white/70 flex items-center mb-1">
                 <MapPin className="w-4 h-4 mr-2" />
-                {trip.location}
+                {trip.location || 'Philippines'}
               </div>
+
+              {trip.travelers && trip.price && (
+                <div className="text-sm text-white/70">
+                  👥 {trip.travelers} traveler{trip.travelers > 1 ? 's' : ''} – ₱{(trip.travelers * trip.price).toLocaleString()}
+                </div>
+              )}
+
+              {trip.proofUrl && (
+                <div className="mt-4">
+                  <p className="text-xs font-medium text-white/80 mb-1">🧾 Receipt Uploaded</p>
+                </div>
+              )}
             </motion.div>
           ))
         )}
       </div>
+
+      {/* Booking Detail Modal */}
+      <BookingDetailModal
+        isOpen={!!selectedBooking}
+        booking={selectedBooking}
+        onClose={() => setSelectedBooking(null)}
+      />
     </section>
-  );
+  )
 }

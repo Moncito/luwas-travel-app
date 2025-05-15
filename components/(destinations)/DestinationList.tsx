@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/firebase/client'; // Adjust if your Firebase client config path differs
+import { db } from '@/firebase/client';
 
 interface Destination {
   id: string;

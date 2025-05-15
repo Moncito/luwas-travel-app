@@ -1,19 +1,21 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { toast } from 'sonner';
-import Image from 'next/image';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/firebase/client';
+import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
+import { toast } from 'sonner'
+import Image from 'next/image'
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from '@/firebase/client'
+import { useRouter } from 'next/navigation' // ✅ Correct import for App Router
 
 interface Props {
-  destinationId: string;
+  destinationId: string
 }
 
 export default function BookingForm({ destinationId }: Props) {
-  const [destination, setDestination] = useState<any>(null);
-  const [pricePerPerson, setPricePerPerson] = useState(0);
+  const router = useRouter()
+  const [destination, setDestination] = useState<any>(null)
+  const [pricePerPerson, setPricePerPerson] = useState(0)
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -24,42 +26,66 @@ export default function BookingForm({ destinationId }: Props) {
     returnDate: '',
     travelers: 1,
     specialRequests: '',
-  });
+  })
 
   useEffect(() => {
     const fetchDestination = async () => {
       try {
-        const docRef = doc(db, 'destinations', destinationId);
-        const docSnap = await getDoc(docRef);
+        const docRef = doc(db, 'destinations', destinationId)
+        const docSnap = await getDoc(docRef)
         if (docSnap.exists()) {
-          setDestination(docSnap.data());
-          setPricePerPerson(docSnap.data().price || 0);
+          setDestination(docSnap.data())
+          setPricePerPerson(docSnap.data().price || 0)
         } else {
-          toast.error('Destination not found.');
+          toast.error('Destination not found.')
         }
       } catch (error) {
-        toast.error('Failed to fetch destination.');
-        console.error(error);
+        toast.error('Failed to fetch destination.')
+        console.error(error)
       }
-    };
+    }
 
-    fetchDestination();
-  }, [destinationId]);
+    fetchDestination()
+  }, [destinationId])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: name === 'travelers' ? +value : value });
-  };
+    const { name, value } = e.target
+    setFormData({ ...formData, [name]: name === 'travelers' ? +value : value })
+  }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast.success('Booking Submitted!');
-    console.log('Booking Data:', { ...formData, destination: destination?.name });
-  };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
 
-  if (!destination) return null;
+    const bookingData = {
+      ...formData,
+      destination: destination?.name || '',
+      destinationId,
+      createdAt: Date.now(),
+      status: 'upcoming',
+    }
 
-  const totalPrice = formData.travelers * pricePerPerson;
+    try {
+      const res = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(bookingData),
+      })
+
+      if (!res.ok) throw new Error('Booking failed')
+
+      toast.success('Booking submitted! ✈️')
+      router.push('/booking-success') // ✅ Redirect after success
+    } catch (err) {
+      console.error(err)
+      toast.error('Something went wrong.')
+    }
+  }
+
+  if (!destination) return null
+
+  const totalPrice = formData.travelers * pricePerPerson
 
   return (
     <section className="relative min-h-screen flex items-center justify-center bg-gray-50 px-4 py-10">
@@ -115,5 +141,5 @@ export default function BookingForm({ destinationId }: Props) {
         `}</style>
       </motion.form>
     </section>
-  );
+  )
 }

@@ -1,6 +1,7 @@
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import TravelTimeline from '@/components/(travel-history)/TravelTimeline';
+
+import Navbar from '@/components/Navbar'
+import Footer from '@/components/Footer'
+import TravelTimeline from '@/components/(travel-history)/TravelTimeline'
 
 export default function TravelHistoryPage() {
   return (
@@ -9,5 +10,5 @@ export default function TravelHistoryPage() {
       <TravelTimeline />
       <Footer />
     </div>
-  );
+  )
 }

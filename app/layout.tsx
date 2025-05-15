@@ -4,10 +4,9 @@ import './globals.css';
 import { Toaster } from 'sonner';
 import ScrollToTop from './components/ScrollToTop';
 import PageLoader from './components/PageLoader';
-// import Navbar from "@/components/Navbar"
 
 const montserrat = Montserrat({
-  weight: '400', // Specify the desired font weight
+  weight: '400',
   subsets: ['latin'],
   variable: '--font-montserrat',
 });
@@ -21,14 +20,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className="light">
       <body className={`${montserrat.className} antialiased pattern`}>
-        <ScrollToTop />  
-        <PageLoader/>
-        {/* <Navbar/> */}
+        <ScrollToTop />
+        <PageLoader />
         {children}
-        {/* <Footer/> */}
         <Toaster />
       </body>
     </html>
   );
 }
-

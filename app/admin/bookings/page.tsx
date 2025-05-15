@@ -6,6 +6,22 @@ import { toast } from 'sonner'
 import type { Booking } from '@/types/booking'
 import EditBookingModal from '@/components/(admin)/EditBookingModal'
 import BookingAnalyticsChart from '@/components/(admin)/BookingAnalyticsChart'
+import BookingDetailsModal from '@/components/(admin)/BookingDetailsModal'
+
+const allowedStatuses = ['upcoming', 'completed', 'cancelled', 'paid', 'waiting_payment'] as const
+function safeStatus(status: string): Booking['status'] {
+  return allowedStatuses.includes(status as any)
+    ? (status as Booking['status'])
+    : 'upcoming'
+}
+
+const statusColor = {
+  upcoming: 'bg-blue-100 text-blue-800',
+  completed: 'bg-green-100 text-green-800',
+  cancelled: 'bg-red-100 text-red-600',
+  paid: 'bg-emerald-100 text-emerald-700',
+  waiting_payment: 'bg-yellow-100 text-yellow-700'
+}
 
 export default function AdminBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([])
@@ -13,13 +29,19 @@ export default function AdminBookingsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null)
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
 
   const fetchBookings = async () => {
     try {
       const res = await fetch('/api/bookings')
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
       const data = await res.json()
-      setBookings(data)
+      setBookings(
+        data.map((booking: any) => ({
+          ...booking,
+          status: safeStatus(booking.status),
+        }))
+      )
     } catch (err: any) {
       console.error('Error fetching bookings:', err)
       setError(err.message)
@@ -53,7 +75,6 @@ export default function AdminBookingsPage() {
     }
   }
 
-  // ✅ STEP A: Export to CSV function
   const handleExportToCSV = (): void => {
     const headers = ['Full Name', 'Destination', 'Departure Date', 'Status', 'Created At']
     const rows = filteredBookings.map((b) => [
@@ -84,20 +105,18 @@ export default function AdminBookingsPage() {
 
   return (
     <div className="p-8 space-y-10">
-      <h1 className="text-2xl font-bold">All Bookings</h1>
+      <h1 className="text-2xl font-bold text-blue-900">All Bookings</h1>
 
-      {/* Analytics Chart */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <BookingAnalyticsChart />
       </div>
 
-      {/* Filter Buttons */}
       <div className="bg-white rounded-lg shadow-md p-4 flex flex-wrap gap-4">
         {['all', 'upcoming', 'completed', 'cancelled'].map((f) => (
           <button
             key={f}
-            className={`px-4 py-2 rounded ${
-              filter === f ? 'bg-black text-white' : 'bg-gray-200'
+            className={`px-4 py-2 rounded-full font-semibold transition text-sm ${
+              filter === f ? 'bg-blue-900 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
             }`}
             onClick={() => setFilter(f as any)}
           >
@@ -106,7 +125,6 @@ export default function AdminBookingsPage() {
         ))}
       </div>
 
-      {/* Export CSV Button */}
       <div className="flex justify-end">
         <button
           onClick={handleExportToCSV}
@@ -116,7 +134,6 @@ export default function AdminBookingsPage() {
         </button>
       </div>
 
-      {/* Bookings Table */}
       <div className="bg-white rounded-lg shadow-md p-6 overflow-x-auto">
         <table className="min-w-full border">
           <thead className="bg-gray-100">
@@ -132,14 +149,20 @@ export default function AdminBookingsPage() {
           <tbody>
             {filteredBookings.map((booking) => (
               <tr key={booking.id} className="border-t">
-                <td className="px-4 py-2">{booking.fullName}</td>
+                <td className="px-4 py-2 font-medium text-gray-900">{booking.fullName}</td>
                 <td className="px-4 py-2">{booking.destination}</td>
                 <td className="px-4 py-2">{booking.departureDate}</td>
-                <td className="px-4 py-2 capitalize">{booking.status}</td>
                 <td className="px-4 py-2">
-                  {format(new Date(booking.createdAt), 'yyyy-MM-dd')}
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusColor[booking.status]}`}>{booking.status.replace('_', ' ')}</span>
                 </td>
+                <td className="px-4 py-2">{format(new Date(booking.createdAt), 'yyyy-MM-dd')}</td>
                 <td className="px-4 py-2 space-x-2">
+                  <button
+                    className="text-blue-600 hover:underline"
+                    onClick={() => setSelectedBooking(booking)}
+                  >
+                    View
+                  </button>
                   <button
                     className="text-blue-600 hover:underline"
                     onClick={() => setEditingBooking(booking)}
@@ -159,7 +182,6 @@ export default function AdminBookingsPage() {
         </table>
       </div>
 
-      {/* Edit Modal */}
       {editingBooking && (
         <EditBookingModal
           booking={editingBooking}
@@ -168,6 +190,21 @@ export default function AdminBookingsPage() {
             setEditingBooking(null)
             setLoading(true)
             fetchBookings()
+          }}
+        />
+      )}
+
+      {selectedBooking && (
+        <BookingDetailsModal
+          isOpen={!!selectedBooking}
+          onClose={() => setSelectedBooking(null)}
+          booking={selectedBooking}
+          onStatusChange={(id, newStatus) => {
+            setBookings(prev =>
+              prev.map(b =>
+                b.id === id ? { ...b, status: safeStatus(newStatus) } : b
+              )
+            )
           }}
         />
       )}

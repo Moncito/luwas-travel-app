@@ -1,9 +1,8 @@
-// next.config.js
-/** @type {import('next').NextConfig} */
+// next.config.ts
 const nextConfig = {
   images: {
-    domains: ['i.imgur.com'], 
+    domains: ['i.imgur.com'],
   },
 };
 
-module.exports = nextConfig;
+export default nextConfig;

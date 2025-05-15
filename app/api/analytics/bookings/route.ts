@@ -7,11 +7,20 @@ export async function GET() {
     const snapshot = await db.collection("bookings").get();
 
     const dailyCounts: Record<string, number> = {};
+
     snapshot.forEach((doc) => {
       const data = doc.data();
-      const ts = data.createdAt as Timestamp;
-      if (ts instanceof Timestamp) {
-        const date = ts.toDate().toISOString().split("T")[0];
+      const raw = data.createdAt;
+
+      let date: string | null = null;
+
+      if (raw instanceof Timestamp) {
+        date = raw.toDate().toISOString().split("T")[0];
+      } else if (typeof raw === "number") {
+        date = new Date(raw).toISOString().split("T")[0];
+      }
+
+      if (date) {
         dailyCounts[date] = (dailyCounts[date] || 0) + 1;
       }
     });
