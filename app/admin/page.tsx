@@ -1,6 +1,8 @@
 import { fetchAdminMetrics } from "@/lib/admin/fetchMetrics";
 import UserTripChartSection from "@/components/(admin)/UserTripChartSection"; // ✅ new import
 import BookingAnalyticsChart from "@/components/(admin)/BookingAnalyticsChart";
+import SentimentStats from "@/components/(admin)/SentimentStats";
+import TopReviewKeywords from '@/components/(admin)/TopReviewKeywords'
 
 export default async function AdminDashboardPage() {
   const { totalUsers, totalTrips, pendingApprovals } = await fetchAdminMetrics();
@@ -23,6 +25,8 @@ export default async function AdminDashboardPage() {
       <UserTripChartSection /> 
 
       <BookingAnalyticsChart/>
+      <SentimentStats />
+      <TopReviewKeywords />
     </div>
   );
 }
