@@ -1,8 +1,8 @@
 import { fetchAdminMetrics } from "@/lib/admin/fetchMetrics";
-import UserTripChartSection from "@/components/(admin)/UserTripChartSection"; // ✅ new import
+import UserTripChartSection from "@/components/(admin)/UserTripChartSection";
 import BookingAnalyticsChart from "@/components/(admin)/BookingAnalyticsChart";
-import SentimentStats from "@/components/(admin)/SentimentStats";
-import TopReviewKeywords from '@/components/(admin)/TopReviewKeywords'
+import RecentBookingsPanel from '@/components/(admin)/RecentBookingsPanel'
+import ItineraryBookingChart from "@/components/(admin)/ItineraryBookingChart";
 
 export default async function AdminDashboardPage() {
   const { totalUsers, totalTrips, pendingApprovals } = await fetchAdminMetrics();
@@ -22,11 +22,10 @@ export default async function AdminDashboardPage() {
         <DashboardCard title="Pending Approvals" value={pendingApprovals} color="orange" />
       </section>
 
+      <RecentBookingsPanel />
       <UserTripChartSection /> 
-
       <BookingAnalyticsChart/>
-      <SentimentStats />
-      <TopReviewKeywords />
+      <ItineraryBookingChart/>
     </div>
   );
 }

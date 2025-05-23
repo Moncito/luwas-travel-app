@@ -1,121 +1,69 @@
 'use client'
 
+import ReviewList from './ReviewList'
+import ReviewSummary from './ReviewSummary'
 import { useEffect, useState } from 'react'
-import { db } from '@/firebase/client'
-import {
-  collection,
-  query,
-  where,
-  orderBy,
-  onSnapshot,
-  Timestamp,
-} from 'firebase/firestore'
-import ReviewForm from './ReviewForm'
-
-interface Review {
-  id: string
-  name: string
-  rating: number
-  comment: string
-  createdAt: Timestamp
-}
+import { Star } from 'lucide-react'
 
 export default function ReviewSection({ destinationId }: { destinationId: string }) {
-  const [reviews, setReviews] = useState<Review[]>([])
-  const [summary, setSummary] = useState('')
-  const [loadingSummary, setLoadingSummary] = useState(false)
+  const [reviewCount, setReviewCount] = useState(0)
+  const [average, setAverage] = useState(0)
 
-  // Fetch reviews
   useEffect(() => {
-    const q = query(
-      collection(db, 'reviews'),
-      where('destinationId', '==', destinationId),
-      orderBy('createdAt', 'desc')
-    )
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetched = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...(doc.data() as Omit<Review, 'id'>),
-      }))
-      setReviews(fetched)
-    })
-
-    return () => unsubscribe()
-  }, [destinationId])
-
-  // Generate AI Summary
-  useEffect(() => {
-    if (reviews.length === 0) return
-
-    const loadSummary = async () => {
-      setLoadingSummary(true)
+    async function fetchStats() {
       try {
-        const res = await fetch('/api/review-summary', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ comments: reviews.map((r) => r.comment) }),
-        })
+        const res = await fetch(`/api/reviews/summary?destinationId=${destinationId}`)
         const data = await res.json()
-        setSummary(data.summary || '')
+        setReviewCount(data.count || 0)
+        setAverage(data.average || 0)
       } catch (err) {
-        console.error('AI Summary error:', err)
-        setSummary('')
-      } finally {
-        setLoadingSummary(false)
+        console.error('Error fetching review stats', err)
       }
     }
 
-    loadSummary()
-  }, [reviews])
+    fetchStats()
+  }, [destinationId])
 
   return (
-    <section className="max-w-6xl mx-auto px-6 py-16 space-y-16">
-      {/* AI Summary + Review Form */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* 🧠 AI Review Summary */}
+    <section className="max-w-6xl mx-auto px-6 py-16 space-y-12">
+      {/* Summary + Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center md:text-left">
-            🧠 AI Review Summary
-          </h2>
-          {loadingSummary ? (
-            <p className="text-gray-500 text-sm">Generating summary...</p>
-          ) : summary ? (
-            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
-              <p className="text-sm text-blue-700">{summary}</p>
-            </div>
-          ) : (
-            <p className="text-gray-500 text-sm">No reviews yet to summarize.</p>
-          )}
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">🧠 AI Review Summary</h2>
+          <ReviewSummary destinationId={destinationId} />
         </div>
 
-        {/* ✍️ Review Form */}
-        <div className="bg-white rounded-xl p-6 border shadow">
-          <ReviewForm destinationId={destinationId} />
-        </div>
+        {/* Average Rating */}
+        {reviewCount > 0 && (
+          <div className="bg-gray-50 p-6 rounded-xl shadow-md">
+            <p className="text-lg font-semibold text-gray-800 mb-2">
+              ⭐ Average Rating
+            </p>
+            <div className="flex items-center space-x-2">
+              <Star className="text-yellow-500 fill-yellow-500" />
+              <p className="text-2xl font-bold">{average.toFixed(1)} / 5</p>
+            </div>
+            <p className="text-sm text-gray-500 mt-1">
+              Based on {reviewCount} traveler {reviewCount === 1 ? 'review' : 'reviews'}
+            </p>
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                destinationId
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block mt-4 text-sm text-blue-600 underline"
+            >
+              See more reviews on Google Maps
+            </a>
+          </div>
+        )}
       </div>
 
-      {/* 💬 Traveler Reviews */}
+      {/* Traveler Reviews */}
       <div className="text-center max-w-3xl mx-auto">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">💬 Traveler Reviews</h2>
-        {reviews.length > 0 ? (
-          <div className="space-y-4">
-            {reviews.map((review) => (
-              <div key={review.id} className="border rounded p-4 shadow-sm text-left">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-semibold">{review.name}</h4>
-                  <span className="text-yellow-500 text-sm">
-                    {'⭐'.repeat(review.rating)}{' '}
-                    <span className="text-gray-400 ml-1">{review.rating}/5</span>
-                  </span>
-                </div>
-                <p className="text-sm text-gray-700">{review.comment}</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-gray-500">No reviews yet. Be the first to share your experience!</p>
-        )}
+        <ReviewList destinationId={destinationId} />
       </div>
     </section>
   )

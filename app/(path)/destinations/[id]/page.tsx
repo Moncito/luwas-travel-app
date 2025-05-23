@@ -1,56 +1,55 @@
-import { notFound } from "next/navigation"
-import { db } from "@/firebase/admin"
-import Image from "next/image"
-import Link from "next/link"
-import Navbar from "@/components/Navbar"
-import Footer from "@/components/Footer"
-import ReviewSection from "@/components/(map-reviews)/ReviewSection"
-import RecommendedPlaces from "@/components/(map-reviews)/RecommendedPlaces"
-import DestinationMapClientWrapper from "@/components/(map-reviews)/DestinationMapClientWrapper"
+import { notFound } from "next/navigation";
+import { db } from "@/firebase/admin";
+import Image from "next/image";
+import Link from "next/link";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import YelpSummary from '@/components/(map-reviews)/YelpSummary';
+import RecommendedPlaces from "@/components/(map-reviews)/RecommendedPlaces";
+import DestinationMapClientWrapper from "@/components/(map-reviews)/DestinationMapClientWrapper";
+import WeatherInsights from "@/components/(map-reviews)/WeatherInsights";
 
 interface Destination {
-  name: string
-  location: string
-  description: string
-  imageUrl: string
-  price: number
-  tags: string[]
-  latitude: number
-  longitude: number
+  name: string;
+  location: string;
+  description: string;
+  imageUrl: string;
+  price: number;
+  tags: string[];
+  latitude: number;
+  longitude: number;
 }
 
-export default async function DestinationPage({ params }: { params: { id: string } }) {
-  const destinationId = params.id
+export default async function DestinationPage(context: { params: { id: string } }) {
+  const { id: destinationId } = await Promise.resolve(context.params);
 
-  // 🔍 Fetch destination data from Firestore
-  const snapshot = await db.collection("destinations").doc(destinationId).get()
-  if (!snapshot.exists) return notFound()
-  const destination = snapshot.data() as Destination
+  const snapshot = await db.collection("destinations").doc(destinationId).get();
+  if (!snapshot.exists) return notFound();
 
-  // 🌍 Handle base URL for dev vs prod
-  const isDev = process.env.NODE_ENV !== 'production'
+  const destination = snapshot.data() as Destination;
+
+  const isDev = process.env.NODE_ENV !== 'production';
   const baseUrl = isDev
     ? 'http://localhost:3000'
-    : 'https://luwas-travel-r66za9rfh-moncitos-projects.vercel.app' // ✅ your Vercel domain
+    : process.env.NEXT_PUBLIC_SITE_URL || 'https://luwas-travel.vercel.app';
 
-  // 🗺️ Fetch nearby places dynamically
-  let recommendedPlaces: any[] = []
+  let recommendedPlaces: any[] = [];
   try {
     const res = await fetch(
       `${baseUrl}/api/recommendations?lat=${destination.latitude}&lon=${destination.longitude}`,
       { cache: 'no-store' }
-    )
-    const data = await res.json()
-    recommendedPlaces = data.places || []
+    );
+    const data = await res.json();
+    recommendedPlaces = data.places || [];
   } catch (err) {
-    console.error('🌐 Error fetching recommended places:', err)
+    console.error('🌐 Error fetching recommended places:', err);
   }
 
   return (
     <>
       <Navbar />
 
-      <main className="min-h-screen bg-white">
+      <main className="min-h-screen bg-white text-black">
         {/* Hero Section */}
         <section className="relative h-[60vh]">
           <Image
@@ -91,10 +90,18 @@ export default async function DestinationPage({ params }: { params: { id: string
 
         {/* Map */}
         <section className="max-w-4xl mx-auto px-6 pb-16">
-          <h2 className="text-xl font-semibold mb-4">🗺️ Location Map</h2>
+          <h2 className="text-xl font-semibold mb-4 text-center">🗺️ Location</h2>
           <DestinationMapClientWrapper
             lat={destination.latitude}
             lon={destination.longitude}
+          />
+        </section>
+
+        {/* Weather Insights */}
+        <section className="max-w-4xl mx-auto px-6 pb-16">
+          <WeatherInsights
+            title={destination.name}
+            location={destination.location}
           />
         </section>
 
@@ -106,11 +113,15 @@ export default async function DestinationPage({ params }: { params: { id: string
           />
         </section>
 
-        {/* Review Section */}
-        <ReviewSection destinationId={destinationId} />
+        {/* Yelp Review Summary */}
+        <YelpSummary
+          name={destination.name.replace(/(Trip|Itinerary|Tour)/gi, '').trim()}
+          location={destination.location}
+        />
+
       </main>
 
       <Footer />
     </>
-  )
+  );
 }

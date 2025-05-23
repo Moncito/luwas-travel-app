@@ -5,24 +5,15 @@ import { motion } from 'framer-motion'
 import { CalendarDays, PlaneTakeoff, MapPin } from 'lucide-react'
 import Image from 'next/image'
 import { db } from '@/firebase/client'
-import { collection, getDocs, query, orderBy } from 'firebase/firestore'
+import { collection, getDocs, query, orderBy, where } from 'firebase/firestore'
 import BookingDetailModal from './BookingDetailModal'
+import type { Booking } from '@/types/booking'
 
-interface Booking {
-  id: string
-  fullName: string
-  email: string
-  phone: string
-  destination: string
-  departureDate: string
-  createdAt: string
-  status: 'upcoming' | 'completed' | 'cancelled' | 'paid' | 'waiting_payment'
-  proofUrl?: string
-  specialRequests?: string
-  location?: string
-  travelers?: number
-  price?: number
+
+interface Props {
+  userId: string
 }
+
 
 const FILTERS = ['upcoming', 'completed', 'cancelled'] as const
 type TripStatus = typeof FILTERS[number]
@@ -35,7 +26,7 @@ const statusBadge = {
   waiting_payment: 'bg-yellow-100 text-yellow-700',
 }
 
-export default function TravelTimeline() {
+export default function TravelTimeline({ userId }: Props) {
   const [filter, setFilter] = useState<TripStatus>('upcoming')
   const [trips, setTrips] = useState<Booking[]>([])
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
@@ -43,21 +34,52 @@ export default function TravelTimeline() {
   useEffect(() => {
     const fetchTrips = async () => {
       try {
-        const q = query(collection(db, 'bookings'), orderBy('createdAt', 'desc'))
-        const snapshot = await getDocs(q)
-        const bookings: Booking[] = snapshot.docs.map(doc => ({
+        const bookingQuery = query(
+          collection(db, 'bookings'),
+          where('userId', '==', userId),
+          orderBy('createdAt', 'desc')
+        )
+
+        const itineraryQuery = query(
+          collection(db, 'itineraryBookings'),
+          where('userId', '==', userId),
+          orderBy('createdAt', 'desc')
+        )
+
+        const [bookingsSnap, itinerariesSnap] = await Promise.all([
+          getDocs(bookingQuery),
+          getDocs(itineraryQuery)
+        ])
+
+        const bookings = bookingsSnap.docs.map(doc => ({
           id: doc.id,
+          type: 'trip',
           ...doc.data(),
         })) as Booking[]
 
-        setTrips(bookings)
+        const itineraries = itinerariesSnap.docs.map(doc => ({
+          id: doc.id,
+          type: 'itinerary',
+          ...doc.data(),
+          status: doc.data().status || 'upcoming',
+          createdAt: doc.data().createdAt || new Date(),
+        })) as Booking[]
+
+        const combined = [...bookings, ...itineraries].map(item => ({
+          ...item,
+          createdAt: typeof item.createdAt?.toDate === 'function'
+            ? item.createdAt.toDate()
+            : new Date(item.createdAt),
+        })).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+
+        setTrips(combined)
       } catch (err) {
-        console.error('Failed to fetch trips:', err)
+        console.error('❌ Failed to fetch trips:', err)
       }
     }
 
     fetchTrips()
-  }, [])
+  }, [userId])
 
   const filteredTrips = trips.filter(trip => trip.status === filter)
 
@@ -78,7 +100,7 @@ export default function TravelTimeline() {
       {/* Title */}
       <h2 className="text-5xl font-bold mb-10 text-white text-center">Your Travel History</h2>
 
-      {/* Filter Tabs */}
+      {/* Filters */}
       <div className="flex flex-wrap justify-center gap-4 mb-12">
         {FILTERS.map(status => (
           <button
@@ -95,7 +117,7 @@ export default function TravelTimeline() {
         ))}
       </div>
 
-      {/* Travel Cards */}
+      {/* Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full max-w-6xl">
         {filteredTrips.length === 0 ? (
           <p className="col-span-full text-center text-white/70">
@@ -114,14 +136,21 @@ export default function TravelTimeline() {
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-2">
                   <PlaneTakeoff className="w-5 h-5 text-white" />
-                  <h3 className="text-xl font-bold text-white">{trip.destination}</h3>
+                  <h3 className="text-xl font-bold text-white">
+                    {trip.destination || trip.title}
+                    {trip.type === 'itinerary' && (
+                      <span className="text-xs text-white/50 ml-1">[Itinerary]</span>
+                    )}
+                  </h3>
                 </div>
                 <span className={`text-xs font-medium px-3 py-1 rounded-full ${statusBadge[trip.status]}`}>
                   {trip.status.replace('_', ' ')}
                 </span>
               </div>
 
-              <p className="text-sm text-white/80 mb-2 line-clamp-3">{trip.specialRequests || 'No special requests.'}</p>
+              <p className="text-sm text-white/80 mb-2 line-clamp-3">
+                {trip.specialRequests || 'No special requests.'}
+              </p>
 
               <div className="text-sm text-white/70 flex items-center mb-1">
                 <CalendarDays className="w-4 h-4 mr-2" />
@@ -149,7 +178,7 @@ export default function TravelTimeline() {
         )}
       </div>
 
-      {/* Booking Detail Modal */}
+      {/* Modal */}
       <BookingDetailModal
         isOpen={!!selectedBooking}
         booking={selectedBooking}

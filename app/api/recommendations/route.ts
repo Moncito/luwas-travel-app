@@ -1,86 +1,63 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from "next/server";
+import { fetchImageForPlace } from "@/lib/fetchImage";
 
-async function fetchWikipediaImage(title: string): Promise<string | null> {
-  try {
-    const res = await fetch(
-      `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`
-    )
-    const data = await res.json()
-    return data?.thumbnail?.source || null
-  } catch {
-    return null
-  }
-}
-
-async function fetchUnsplashImage(title: string): Promise<string | null> {
-  try {
-    const accessKey = process.env.UNSPLASH_ACCESS_KEY
-    if (!accessKey) return null
-
-    const query = `Tourism ${title}`
-    const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(
-      query
-    )}&client_id=${accessKey}&per_page=1`
-
-    const res = await fetch(url)
-    const data = await res.json()
-    return data?.results?.[0]?.urls?.small || null
-  } catch {
-    return null
-  }
-}
+export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const lat = req.nextUrl.searchParams.get('lat')
-  const lon = req.nextUrl.searchParams.get('lon')
+  const { searchParams } = req.nextUrl;
+  const lat = searchParams.get("lat");
+  const lon = searchParams.get("lon");
 
   if (!lat || !lon) {
-    return NextResponse.json({ error: 'Missing coordinates' }, { status: 400 })
+    return NextResponse.json({ error: "Missing lat or lon" }, { status: 400 });
   }
 
-  const query = `
-    [out:json];
+  const radius = 1000;
+  const overpassQuery = `
+    [out:json][timeout:25];
     (
-      node["tourism"](around:3000, ${lat}, ${lon});
-      node["attraction"](around:3000, ${lat}, ${lon});
+      node["tourism"](around:${radius},${lat},${lon});
+      node["historic"](around:${radius},${lat},${lon});
+      node["amenity"="place_of_worship"](around:${radius},${lat},${lon});
     );
-    out center 10;
-  `
-
-  const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`
+    out center 6;
+  `;
 
   try {
-    const response = await fetch(url)
-    const data = await response.json()
+    const res = await fetch("https://overpass-api.de/api/interpreter", {
+      method: "POST",
+      body: overpassQuery,
+    });
+    const json = await res.json();
 
-    const enrichedPlaces = await Promise.all(
-      data.elements.map(async (el: any) => {
-        const title = el.tags?.name || 'Unnamed Place'
+    const rawPlaces = json.elements || [];
+    const seenTitles = new Set<string>();
 
-        const wikipediaImage = await fetchWikipediaImage(title)
-        const unsplashImage = wikipediaImage ? null : await fetchUnsplashImage(title)
+    const places = (
+      await Promise.all(
+        rawPlaces
+          .filter((el: any) => el.tags?.name)
+          .slice(0, 10)
+          .map(async (place: any) => {
+            const name = place.tags.name;
+            if (seenTitles.has(name)) return null;
+            seenTitles.add(name);
 
-        return {
-          title,
-          description: el.tags?.description || 'Tourist spot near this destination.',
-          link: `https://maps.google.com/?q=${el.lat},${el.lon}`,
-          image:
-            wikipediaImage ||
-            unsplashImage ||
-            'https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg',
-          hasImage: !!(wikipediaImage || unsplashImage),
-        }
-      })
-    )
+            const image = await fetchImageForPlace(name);
 
-    const topPlaces = enrichedPlaces
-      .filter((place) => place.hasImage)
-      .sort((a, b) => a.title.localeCompare(b.title)) // Optional: alphabetically
-      .slice(0, 3)
+            return {
+              title: name,
+              description: place.tags?.["description"] || "A recommended spot nearby.",
+              link: `https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lon}`,
+              image,
+            };
+          })
+      )
+    ).filter(Boolean).slice(0, 3); // ✅ Limit to top 3
 
-    return NextResponse.json({ places: topPlaces })
+    return NextResponse.json({ places });
   } catch (err) {
-    console.error('[RECOMMENDATIONS ERROR]', err)
-    return NextResponse.json({ places: [] }, { status: 500 })
+    console.error("🧭 Overpass error:", err);
+    return NextResponse.json({ places: [] });
   }
 }

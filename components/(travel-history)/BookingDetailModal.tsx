@@ -1,30 +1,16 @@
 'use client'
 
 import { Dialog } from '@headlessui/react'
-import { motion } from 'framer-motion'
+import type { Booking } from '@/types/booking'
 import Image from 'next/image'
 
-interface Booking {
-  id: string
-  fullName: string
-  email: string
-  phone: string
-  destination: string
-  departureDate: string
-  createdAt: string
-  status: string
-  proofUrl?: string
-  specialRequests?: string
-  location?: string
-  travelers?: number
-  price?: number
-}
 
 interface Props {
+  booking: Booking | null
   isOpen: boolean
   onClose: () => void
-  booking: Booking | null
 }
+
 
 export default function BookingDetailModal({ isOpen, onClose, booking }: Props) {
   if (!booking) return null

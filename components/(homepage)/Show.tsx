@@ -3,6 +3,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import Image from 'next/image';
+import Link from 'next/link';
+
 
 const fadeUp = {
   hidden: { opacity: 0, y: 40 },
@@ -122,9 +124,11 @@ const Show = () => {
             <div className="p-4">
               <h3 className="text-lg font-semibold">{dest.name}</h3>
               <p className="text-sm text-gray-500">{dest.tag}</p>
-              <button className="mt-3 text-user-primary font-medium hover:underline">
-                Explore →
-              </button>
+             <Link href="/itineraries">
+            <button className="mt-3 text-user-primary font-medium hover:underline">
+            Explore →
+          </button>
+        </Link>
             </div>
           </motion.div>
         ))}

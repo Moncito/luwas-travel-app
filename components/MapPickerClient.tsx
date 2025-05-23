@@ -16,11 +16,11 @@ interface MapPickerClientProps {
 }
 
 export default function MapPickerClient({ onSelectLocation }: MapPickerClientProps) {
-  const [position, setPosition] = useState<[number, number]>([14.5995, 120.9842]) // Default: Manila
+  const [position, setPosition] = useState<[number, number]>([14.5995, 120.9842])
   const [searchTerm, setSearchTerm] = useState('')
   const [suggestions, setSuggestions] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
 
-  // Handle map click
   function LocationMarker() {
     useMapEvents({
       click(e) {
@@ -51,12 +51,16 @@ export default function MapPickerClient({ onSelectLocation }: MapPickerClientPro
     return null
   }
 
-  // Fetch suggestions from Nominatim
+  // Fetch search suggestions
   useEffect(() => {
     const controller = new AbortController()
     const delay = setTimeout(async () => {
-      if (!searchTerm) return setSuggestions([])
+      if (!searchTerm.trim()) {
+        setSuggestions([])
+        return
+      }
 
+      setLoading(true)
       try {
         const res = await fetch(
           `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
@@ -68,8 +72,10 @@ export default function MapPickerClient({ onSelectLocation }: MapPickerClientPro
         setSuggestions(data)
       } catch (err) {
         if (err.name !== 'AbortError') console.error(err)
+      } finally {
+        setLoading(false)
       }
-    }, 500)
+    }, 400)
 
     return () => {
       controller.abort()
@@ -86,12 +92,17 @@ export default function MapPickerClient({ onSelectLocation }: MapPickerClientPro
     setSearchTerm(place.display_name)
   }
 
+  const clearSearch = () => {
+    setSearchTerm('')
+    setSuggestions([])
+  }
+
   return (
     <div className="w-full space-y-4 relative">
       <MapContainer
         center={position}
         zoom={13}
-        scrollWheelZoom={true}
+        scrollWheelZoom
         className="rounded-lg z-0"
         style={{ height: '300px', width: '100%' }}
       >
@@ -106,11 +117,26 @@ export default function MapPickerClient({ onSelectLocation }: MapPickerClientPro
       <div className="relative">
         <input
           type="text"
-          placeholder="Search location..."
-          className="w-full px-4 py-2 border border-gray-300 rounded"
+          placeholder="🔍 Search location..."
+          className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-400"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
+        {searchTerm && (
+          <button
+            type="button"
+            onClick={clearSearch}
+            className="absolute right-3 top-2 text-gray-500 hover:text-red-500"
+            title="Clear"
+          >
+            ✕
+          </button>
+        )}
+
+        {loading && (
+          <div className="text-sm text-blue-500 mt-1">Searching...</div>
+        )}
+
         {suggestions.length > 0 && (
           <ul className="absolute left-0 right-0 bg-white shadow-md border rounded mt-1 z-[999] max-h-48 overflow-y-auto">
             {suggestions.map((place, i) => (
@@ -123,6 +149,10 @@ export default function MapPickerClient({ onSelectLocation }: MapPickerClientPro
               </li>
             ))}
           </ul>
+        )}
+
+        {!loading && searchTerm && suggestions.length === 0 && (
+          <p className="text-sm text-gray-500 mt-1">No results found.</p>
         )}
       </div>
     </div>

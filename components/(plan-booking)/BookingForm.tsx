@@ -6,13 +6,15 @@ import { toast } from 'sonner'
 import Image from 'next/image'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/firebase/client'
-import { useRouter } from 'next/navigation' // ✅ Correct import for App Router
+import { useRouter } from 'next/navigation'
+import type { User } from 'firebase/auth'
 
 interface Props {
   destinationId: string
+  user: User
 }
 
-export default function BookingForm({ destinationId }: Props) {
+export default function BookingForm({ destinationId, user }: Props) {
   const router = useRouter()
   const [destination, setDestination] = useState<any>(null)
   const [pricePerPerson, setPricePerPerson] = useState(0)
@@ -28,6 +30,18 @@ export default function BookingForm({ destinationId }: Props) {
     specialRequests: '',
   })
 
+  // ✅ Auto-fill user info
+  useEffect(() => {
+    if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        fullName: user.displayName || '',
+        email: user.email || '',
+      }))
+    }
+  }, [user])
+
+  // ✅ Fetch destination
   useEffect(() => {
     const fetchDestination = async () => {
       try {
@@ -58,6 +72,7 @@ export default function BookingForm({ destinationId }: Props) {
 
     const bookingData = {
       ...formData,
+      userId: user.uid,
       destination: destination?.name || '',
       destinationId,
       createdAt: Date.now(),
@@ -76,7 +91,7 @@ export default function BookingForm({ destinationId }: Props) {
       if (!res.ok) throw new Error('Booking failed')
 
       toast.success('Booking submitted! ✈️')
-      router.push('/booking-success') // ✅ Redirect after success
+      router.push(`/bookings/success?destinationId=${destinationId}`)
     } catch (err) {
       console.error(err)
       toast.error('Something went wrong.')
@@ -103,24 +118,88 @@ export default function BookingForm({ destinationId }: Props) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input name="fullName" value={formData.fullName} onChange={handleChange} placeholder="Full Name" className="input-style" required />
-          <input name="email" type="email" value={formData.email} onChange={handleChange} placeholder="Email" className="input-style" required />
-          <input name="phone" value={formData.phone} onChange={handleChange} placeholder="Phone" className="input-style" required />
-          <input name="localAddress" value={formData.localAddress} onChange={handleChange} placeholder="Local Address" className="input-style" required />
-          <input name="departureDate" type="date" value={formData.departureDate} onChange={handleChange} className="input-style" />
-          <input name="returnDate" type="date" value={formData.returnDate} onChange={handleChange} className="input-style" />
-          <input name="travelers" type="number" min={1} value={formData.travelers} onChange={handleChange} className="input-style" />
-          <input value={destination.name} disabled className="input-style bg-gray-100 cursor-not-allowed" />
+          <input
+            name="fullName"
+            value={formData.fullName}
+            onChange={handleChange}
+            placeholder="Full Name"
+            className="input-style"
+            required
+          />
+          <input
+            name="email"
+            type="email"
+            value={formData.email}
+            onChange={handleChange}
+            placeholder="Email"
+            className="input-style"
+            required
+          />
+          <input
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+            placeholder="Phone"
+            className="input-style"
+            required
+          />
+          <input
+            name="localAddress"
+            value={formData.localAddress}
+            onChange={handleChange}
+            placeholder="Local Address"
+            className="input-style"
+            required
+          />
+          <input
+            name="departureDate"
+            type="date"
+            value={formData.departureDate}
+            onChange={handleChange}
+            className="input-style"
+            required
+          />
+          <input
+            name="returnDate"
+            type="date"
+            value={formData.returnDate}
+            onChange={handleChange}
+            className="input-style"
+          />
+          <input
+            name="travelers"
+            type="number"
+            min={1}
+            value={formData.travelers}
+            onChange={handleChange}
+            className="input-style"
+            required
+          />
+          <input
+            value={destination.name}
+            disabled
+            className="input-style bg-gray-100 cursor-not-allowed"
+          />
         </div>
 
-        <textarea name="specialRequests" value={formData.specialRequests} onChange={handleChange} placeholder="Special Requests" rows={3} className="input-style" />
+        <textarea
+          name="specialRequests"
+          value={formData.specialRequests}
+          onChange={handleChange}
+          placeholder="Special Requests"
+          rows={3}
+          className="input-style"
+        />
 
         <div className="text-right text-sm">
           Total Price: <strong>₱{totalPrice.toLocaleString()}</strong>
         </div>
 
         <div className="text-center">
-          <button type="submit" className="bg-black text-white px-8 py-3 rounded-full hover:bg-gray-800 transition-all">
+          <button
+            type="submit"
+            className="bg-black text-white px-8 py-3 rounded-full hover:bg-gray-800 transition-all"
+          >
             Book My Adventure
           </button>
         </div>

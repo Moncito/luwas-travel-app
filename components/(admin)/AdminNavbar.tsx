@@ -9,6 +9,7 @@ const navLinks = [
   { label: "All Users", href: "/admin/users" },
   { label: "All Trips", href: "/admin/trips" },
   { label: "Add Destination", href: "/admin/add-destination" },
+  { label: "Add Itineraries", href: "/admin/itineraries" },
   { label: "Bookings", href: "/admin/bookings" },
 ];
 
