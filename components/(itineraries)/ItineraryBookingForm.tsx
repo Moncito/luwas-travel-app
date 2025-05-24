@@ -1,10 +1,10 @@
-'use client'
+'use client';
 
-import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
-import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
-import { db } from '@/firebase/client'
+import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
+import { db } from '@/firebase/client';
 import {
   addDoc,
   collection,
@@ -12,18 +12,18 @@ import {
   query,
   where,
   getDocs,
-} from 'firebase/firestore'
-import type { User } from 'firebase/auth'
+} from 'firebase/firestore';
+import type { User } from 'firebase/auth';
 
 interface Props {
-  slug: string
-  user: User
+  slug: string;
+  user: User;
 }
 
 export default function ItineraryBookingForm({ slug, user }: Props) {
-  const router = useRouter()
-  const [itinerary, setItinerary] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const router = useRouter();
+  const [itinerary, setItinerary] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -33,7 +33,7 @@ export default function ItineraryBookingForm({ slug, user }: Props) {
     date: '',
     people: '1',
     notes: '',
-  })
+  });
 
   // ✅ Autofill from authenticated user
   useEffect(() => {
@@ -42,40 +42,41 @@ export default function ItineraryBookingForm({ slug, user }: Props) {
         ...prev,
         name: user.displayName || '',
         email: user.email || '',
-      }))
+      }));
     }
-  }, [user])
+  }, [user]);
 
   // ✅ Fetch itinerary by slug
   useEffect(() => {
     const fetchItinerary = async () => {
       try {
-        const q = query(collection(db, 'itineraries'), where('slug', '==', slug))
-        const snapshot = await getDocs(q)
+        const q = query(collection(db, 'itineraries'), where('slug', '==', slug));
+        const snapshot = await getDocs(q);
         if (snapshot.empty) {
-          router.push('/404')
-          return
+          router.push('/404');
+          return;
         }
-        const doc = snapshot.docs[0]
-        setItinerary({ id: doc.id, ...doc.data() })
+        const doc = snapshot.docs[0];
+        setItinerary({ id: doc.id, ...doc.data() });
       } catch (err) {
-        console.error('Error fetching itinerary:', err)
-        toast.error('Failed to load itinerary.')
+        console.error('Error fetching itinerary:', err);
+        toast.error('Failed to load itinerary.');
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    if (slug) fetchItinerary()
-  }, [slug, router])
+    if (slug) fetchItinerary();
+  }, [slug, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
+  // ✅ Booking submission + redirect to success page
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     try {
       await addDoc(collection(db, 'itineraryBookings'), {
@@ -87,21 +88,21 @@ export default function ItineraryBookingForm({ slug, user }: Props) {
         title: itinerary.title,
         status: 'upcoming',
         createdAt: serverTimestamp(),
-      })
+      });
 
-      toast.success('✅ Booking Confirmed!')
-      router.push('/bookings/success?type=itinerary')
+      toast.success('✅ Booking Confirmed!');
+      router.push(`/itinerary-bookings/success?itinerary=${slug}`);
     } catch (err) {
-      console.error('Booking failed:', err)
-      toast.error('❌ Failed to submit booking.')
+      console.error('Booking failed:', err);
+      toast.error('❌ Failed to submit booking.');
     }
-  }
+  };
 
   const totalPrice =
-    itinerary && formData.people ? itinerary.price * Number(formData.people) : 0
+    itinerary && formData.people ? itinerary.price * Number(formData.people) : 0;
 
   if (loading || !itinerary) {
-    return <h1 className="text-center text-xl mt-16">Loading itinerary...</h1>
+    return <h1 className="text-center text-xl mt-16">Loading itinerary...</h1>;
   }
 
   return (
@@ -188,7 +189,7 @@ export default function ItineraryBookingForm({ slug, user }: Props) {
           </p>
           <button
             type="submit"
-            className="bg-blue-700 text-white px-6 py-3 rounded-full hover:bg-blue-800"
+            className="bg-blue-700 text-white px-6 py-3 rounded-full hover:bg-blue-800 transition"
           >
             Book My Adventure
           </button>
@@ -206,9 +207,10 @@ export default function ItineraryBookingForm({ slug, user }: Props) {
           .input-style:focus {
             border-color: #3b82f6;
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+            outline: none;
           }
         `}</style>
       </motion.form>
     </div>
-  )
+  );
 }

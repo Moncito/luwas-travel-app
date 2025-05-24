@@ -124,7 +124,7 @@ const Show = () => {
             <div className="p-4">
               <h3 className="text-lg font-semibold">{dest.name}</h3>
               <p className="text-sm text-gray-500">{dest.tag}</p>
-             <Link href="/itineraries">
+              <Link href="/itineraries">
             <button className="mt-3 text-user-primary font-medium hover:underline">
             Explore →
           </button>

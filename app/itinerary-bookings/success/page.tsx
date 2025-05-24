@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Home, MapPin, CheckCircle } from 'lucide-react';
@@ -8,15 +9,21 @@ import { motion } from 'framer-motion';
 import Confetti from 'react-confetti';
 import { useWindowSize } from 'react-use';
 
-export default function BookingSuccessPage() {
+export default function ItineraryBookingSuccessPage() {
   const searchParams = useSearchParams();
-  const destinationId = searchParams.get('destinationId');
+  const [itinerarySlug, setItinerarySlug] = useState<string | null>(null);
   const { width, height } = useWindowSize();
 
-  if (!destinationId) {
+  // ✅ Safely load the slug client-side
+  useEffect(() => {
+    const slug = searchParams.get('itinerary');
+    if (slug) setItinerarySlug(slug);
+  }, [searchParams]);
+
+  if (!itinerarySlug) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-neutral-100">
-        <p className="text-gray-500">Missing destination ID. Please try booking again.</p>
+        <p className="text-gray-500">Missing itinerary information. Please try booking again.</p>
       </div>
     );
   }
@@ -28,13 +35,13 @@ export default function BookingSuccessPage() {
       transition={{ duration: 0.6, ease: 'easeOut' }}
       className="relative min-h-screen bg-cover bg-center flex flex-col items-center justify-center px-6 pb-12 text-center"
       style={{
-        backgroundImage: `url('/images/booking-bg.png')`, // ✅ Your own travel background
+        backgroundImage: `url('/images/booking-bg.png')`, // match the booking success background
       }}
     >
       {/* Confetti */}
       <Confetti width={width} height={height} numberOfPieces={150} recycle={false} />
 
-      {/* Overlay for readability */}
+      {/* Overlay */}
       <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-0"></div>
 
       {/* Content */}
@@ -47,7 +54,7 @@ export default function BookingSuccessPage() {
         >
           <CheckCircle className="text-green-500 w-12 h-12 mx-auto animate-pulse" />
           <h1 className="text-3xl font-bold text-gray-800 animate-[blinker_2s_ease-in-out_infinite]">
-            Booking Confirmed!
+            Itinerary Booked!
           </h1>
           <p className="text-gray-600">
             Thank you for booking with <span className="font-semibold text-blue-600">Luwas</span>. 
@@ -55,6 +62,7 @@ export default function BookingSuccessPage() {
           </p>
         </motion.div>
 
+        {/* Buttons */}
         <div className="mt-8 flex gap-4 flex-wrap justify-center">
           <Link
             href="/"
@@ -70,19 +78,23 @@ export default function BookingSuccessPage() {
           </Link>
         </div>
 
+        {/* Review Form */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5, duration: 0.6 }}
           className="mt-12 w-full max-w-xl"
         >
-          <SubmitReviewForm destinationId={destinationId} />
+          <SubmitReviewForm itinerarySlug={itinerarySlug} />
         </motion.div>
       </div>
 
+      {/* Blinker animation */}
       <style jsx>{`
         @keyframes blinker {
-          50% { opacity: 0.8; }
+          50% {
+            opacity: 0.8;
+          }
         }
       `}</style>
     </motion.main>

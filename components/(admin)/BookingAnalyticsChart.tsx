@@ -80,6 +80,23 @@ export default function BookingsAnalyticsChart() {
         </select>
       </div>
 
+      {/* 🆕 Text Summary Block */}
+      <div className="bg-white border border-green-100 rounded-md px-4 py-2 mb-4 shadow-sm text-sm text-gray-700">
+        {selectedMonth !== 'All' ? (
+          <p>
+            In <span className="font-semibold text-green-700">{selectedMonth}</span>, there were{" "}
+            <span className="font-bold">{bookingStats.total}</span> bookings. Compared to the previous period,{" "}
+            {bookingStats.growth >= 0
+              ? `bookings increased by ${bookingStats.growth}% 📈`
+              : `bookings dropped by ${Math.abs(bookingStats.growth)}% ⚠️`}.
+          </p>
+        ) : (
+          <p>
+            This chart displays all booking trends over time. Use the filter above to explore changes month by month and identify growth patterns.
+          </p>
+        )}
+      </div>
+
       <ResponsiveContainer width="100%" height={350}>
         <LineChart data={filteredData}>
           <CartesianGrid stroke="#d1fae5" strokeDasharray="5 5" />

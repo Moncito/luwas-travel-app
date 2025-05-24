@@ -7,7 +7,6 @@ import {
   getDocs,
   query,
   orderBy,
-  limit,
 } from 'firebase/firestore'
 
 interface Booking {
@@ -47,19 +46,20 @@ export default function RecentBookingsPanel() {
           }
         })
 
-        const itinResults: Booking[] = itinSnap.docs.map((doc) => {
-          const data = doc.data()
-          return {
-            id: doc.id,
-            fullName: data.fullName,
-            destination: data.destination,
-            status: data.status || 'upcoming',
-            createdAt: typeof data.createdAt?.toDate === 'function'
-              ? data.createdAt.toDate()
-              : new Date(data.createdAt),
-            type: 'itinerary',
-          }
-        })
+      const itinResults: Booking[] = itinSnap.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          fullName: data.fullName || data.name || '[unknown]',
+          destination: data.destination || data.title || '[itinerary]',
+          status: data.status || 'upcoming',
+          createdAt: typeof data.createdAt?.toDate === 'function'
+            ? data.createdAt.toDate()
+            : new Date(data.createdAt),
+          type: 'itinerary',
+        };
+      });
+
 
         const combined = [...tripResults, ...itinResults]
           .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())

@@ -138,8 +138,8 @@ export default async function ItineraryPage({
 
         {/* ✅ Yelp Summary */}
         <YelpSummary
-          name={itinerary.title.replace(/(Trip|Itinerary|Tour)/gi, '').trim()}
-          location={itinerary.location}
+          name={itinerary.title.replace(/(Trip|Itinerary|Tour)/gi, '').replace(/[^\w\s]/g, '').trim()}
+          location={itinerary.location || 'Philippines'} // ✅ fallback if undefined
         />
       </main>
       <Footer />

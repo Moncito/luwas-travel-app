@@ -1,45 +1,62 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { toast } from 'sonner'
-import { Star } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { Star } from 'lucide-react';
+import { motion } from 'framer-motion';
 
-export default function SubmitReviewForm({ destinationId }: { destinationId: string }) {
-  const [name, setName] = useState('')
-  const [rating, setRating] = useState<number>(0)
-  const [hovered, setHovered] = useState<number>(0)
-  const [comment, setComment] = useState('')
-  const [loading, setLoading] = useState(false)
+interface Props {
+  destinationId?: string;
+  itinerarySlug?: string;
+}
+
+export default function SubmitReviewForm({ destinationId, itinerarySlug }: Props) {
+  const [name, setName] = useState('');
+  const [rating, setRating] = useState<number>(0);
+  const [hovered, setHovered] = useState<number>(0);
+  const [comment, setComment] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!name || !rating || !comment) {
-      toast.error('Please complete all fields.')
-      return
+      toast.error('Please complete all fields.');
+      return;
     }
 
-    setLoading(true)
+    if (!destinationId && !itinerarySlug) {
+      toast.error('Missing destination or itinerary reference.');
+      return;
+    }
+
+    setLoading(true);
     try {
+      const payload = {
+        name,
+        rating,
+        comment,
+        ...(destinationId ? { destinationId } : { itinerarySlug }),
+      };
+
       const res = await fetch('/api/reviews/submit', {
         method: 'POST',
-        body: JSON.stringify({ name, rating, comment, destinationId }),
-      })
+        body: JSON.stringify(payload),
+      });
 
-      if (!res.ok) throw new Error('Submission failed')
+      if (!res.ok) throw new Error('Submission failed');
 
-      toast.success('Thank you for your feedback!')
-      setName('')
-      setRating(0)
-      setComment('')
+      toast.success('Thank you for your feedback!');
+      setName('');
+      setRating(0);
+      setComment('');
     } catch (err) {
-      toast.error('Something went wrong.')
-      console.error(err)
+      toast.error('Something went wrong.');
+      console.error(err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <motion.form
@@ -54,7 +71,6 @@ export default function SubmitReviewForm({ destinationId }: { destinationId: str
         <p className="text-sm text-gray-500">Share your experience to help other travelers.</p>
       </div>
 
-      {/* Name */}
       <input
         type="text"
         placeholder="Your Name"
@@ -64,7 +80,6 @@ export default function SubmitReviewForm({ destinationId }: { destinationId: str
         required
       />
 
-      {/* Star Rating */}
       <div className="flex gap-1">
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
@@ -79,7 +94,6 @@ export default function SubmitReviewForm({ destinationId }: { destinationId: str
         ))}
       </div>
 
-      {/* Comment */}
       <textarea
         value={comment}
         onChange={(e) => setComment(e.target.value)}
@@ -97,5 +111,5 @@ export default function SubmitReviewForm({ destinationId }: { destinationId: str
         {loading ? 'Submitting...' : 'Submit Review'}
       </button>
     </motion.form>
-  )
+  );
 }

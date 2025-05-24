@@ -1,4 +1,3 @@
-// components/(admin)/UserTripCharts.tsx
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
@@ -93,6 +92,27 @@ export default function UserTripCharts() {
             <option key={month} value={month}>{month}</option>
           ))}
         </select>
+      </div>
+
+      {/* 🆕 Text Summary */}
+      <div className="bg-white border border-blue-100 rounded-md px-4 py-2 mb-4 shadow-sm text-sm text-gray-700">
+        {selectedMonth !== 'All' ? (
+          <p>
+            In <span className="font-semibold text-blue-700">{selectedMonth}</span>, there were{" "}
+            <span className="font-bold">{filteredData.reduce((sum, d) => sum + d.totalUsers, 0)}</span> new users and{" "}
+            <span className="font-bold">{filteredData.reduce((sum, d) => sum + d.totalTrips, 0)}</span> trips booked. Compared to the previous month,{" "}
+            {growthStats.userGrowth >= 0
+              ? `user signups grew by ${growthStats.userGrowth}%`
+              : `user signups dropped by ${Math.abs(growthStats.userGrowth)}%`}, and{" "}
+            {growthStats.tripGrowth >= 0
+              ? `trip bookings increased by ${growthStats.tripGrowth}%`
+              : `trip bookings decreased by ${Math.abs(growthStats.tripGrowth)}%`}.
+          </p>
+        ) : (
+          <p>
+            This chart shows the overall trend of users and trips across all months. Use the filter above to drill down by month and gain detailed insights.
+          </p>
+        )}
       </div>
 
       <ResponsiveContainer width="100%" height={350}>

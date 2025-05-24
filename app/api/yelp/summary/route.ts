@@ -9,26 +9,36 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Step 1: Search for the business
-    const searchRes = await fetch(`https://api.yelp.com/v3/businesses/search?term=${encodeURIComponent(name)}&location=${encodeURIComponent(location)}`, {
-      headers: {
-        Authorization: `Bearer ${process.env.YELP_API_KEY}`,
-      },
-    })
+    // Step 1: Search for the business by name and location
+    const searchRes = await fetch(
+      `https://api.yelp.com/v3/businesses/search?term=${encodeURIComponent(name)}&location=${encodeURIComponent(location)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.YELP_API_KEY}`,
+        },
+      }
+    )
 
     const searchJson = await searchRes.json()
     const biz = searchJson.businesses?.[0]
-    if (!biz) return NextResponse.json({ summary: 'No Yelp data found.' })
 
-    // Step 2: Get reviews for the found business
-    const reviewsRes = await fetch(`https://api.yelp.com/v3/businesses/${biz.id}/reviews`, {
-      headers: {
-        Authorization: `Bearer ${process.env.YELP_API_KEY}`,
-      },
-    })
+    if (!biz) {
+      return NextResponse.json({ summary: 'No Yelp data found.' }, { status: 404 })
+    }
+
+    // Step 2: Fetch reviews for the matched business
+    const reviewsRes = await fetch(
+      `https://api.yelp.com/v3/businesses/${biz.id}/reviews`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.YELP_API_KEY}`,
+        },
+      }
+    )
 
     const reviewsJson = await reviewsRes.json()
 
+    // Step 3: Return the combined data
     return NextResponse.json({
       summary: biz.categories?.map((c: any) => c.title).join(', ') || 'Tourism spot',
       rating: biz.rating,
@@ -38,6 +48,9 @@ export async function GET(req: NextRequest) {
     })
   } catch (err) {
     console.error('[YELP ERROR]', err)
-    return NextResponse.json({ summary: 'Failed to fetch Yelp data.' }, { status: 500 })
+    return NextResponse.json(
+      { summary: 'Failed to fetch Yelp data.' },
+      { status: 500 }
+    )
   }
 }

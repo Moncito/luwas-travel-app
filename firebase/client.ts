@@ -6,17 +6,19 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAUEbZmesvFJu8qe4Yy2isHe-0_HS1Yi9s",
-  authDomain: "luwas-966e2.firebaseapp.com",
-  projectId: "luwas-966e2",
-  storageBucket: "luwas-966e2.appspot.com", // ✅ corrected .app to .com
-  messagingSenderId: "1030258873457",
-  appId: "1:1030258873457:web:4d489e4a65048a829d77d0",
-  measurementId: "G-MTE0777XK0"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET!,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID!,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID!,
 };
+
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 export const auth = getAuth(app);
-export const db = getFirestore(app);       // ✅ This was missing
+export const db = getFirestore(app);
 export const storage = getStorage(app);
+

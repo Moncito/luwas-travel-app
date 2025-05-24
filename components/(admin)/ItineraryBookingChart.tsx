@@ -113,6 +113,23 @@ export default function ItineraryBookingChart() {
         </select>
       </div>
 
+      {/* 🆕 Summary Section */}
+      <div className="bg-white border border-blue-100 rounded-md px-4 py-2 mb-4 shadow-sm text-sm text-gray-700">
+        {selectedMonth !== 'All' ? (
+          <p>
+            In <span className="font-semibold text-blue-700">{selectedMonth}</span>, there were{" "}
+            <span className="font-bold">{bookingStats.total}</span> itinerary bookings recorded. Compared to the previous period,{" "}
+            {bookingStats.growth >= 0
+              ? `bookings increased by ${bookingStats.growth}% 📈`
+              : `bookings dropped by ${Math.abs(bookingStats.growth)}% ⚠️`}.
+          </p>
+        ) : (
+          <p>
+            This chart shows total itinerary bookings across all months. Use the dropdown filter to see performance month by month.
+          </p>
+        )}
+      </div>
+
       <ResponsiveContainer width="100%" height={350}>
         <LineChart data={filteredData}>
           <CartesianGrid stroke="#dbeafe" strokeDasharray="5 5" />

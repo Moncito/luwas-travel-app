@@ -1,9 +1,6 @@
-// app/layout.tsx
 import { Montserrat } from 'next/font/google';
 import './globals.css';
-import { Toaster } from 'sonner';
-import ScrollToTop from './components/ScrollToTop';
-import PageLoader from './components/PageLoader';
+import LayoutWithLoader from './components/LayoutWithLoader';
 
 const montserrat = Montserrat({
   weight: '400',
@@ -20,10 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className="light">
       <body className={`${montserrat.className} antialiased pattern`}>
-        <ScrollToTop />
-        <PageLoader />
-        {children}
-        <Toaster />
+        <LayoutWithLoader>{children}</LayoutWithLoader>
       </body>
     </html>
   );
