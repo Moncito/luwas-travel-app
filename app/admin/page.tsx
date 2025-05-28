@@ -1,5 +1,8 @@
 export const dynamic = "force-dynamic";
 
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { adminAuth } from "@/lib/firebaseAdmin";
 import { fetchAdminMetrics } from "@/lib/admin/fetchMetrics";
 import BookingAnalyticsChart from "@/components/(admin)/BookingAnalyticsChart";
 import RecentBookingsPanel from '@/components/(admin)/RecentBookingsPanel'
@@ -9,7 +12,26 @@ import WeatherSummaryCards from "@/components/(admin)/WeatherSummaryCards";
 import WeatherAnalyticsChart from "@/components/(admin)/WeatherAnalyticsChart";
 import UserTripCharts from "@/components/(admin)/UserTripCharts";
 
+// ✅ Protected route
 export default async function AdminDashboardPage() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("__session")?.value;
+
+  if (!token) {
+    return redirect("/admin/log-in");
+  }
+
+  try {
+    const decoded = await adminAuth.verifySessionCookie(token, true);
+
+    if (!decoded.admin) {
+      return redirect("/admin/log-in");
+    }
+  } catch (err) {
+    console.error("❌ Admin session verification failed:", err);
+    return redirect("/admin/log-in");
+  }
+
   const { totalUsers, totalTrips, totalItineraries } = await fetchAdminMetrics();
   const greeting = getGreeting();
 
@@ -43,7 +65,7 @@ function DashboardCard({ title, value, color }: { title: string; value: number; 
     blue: "bg-blue-100 text-blue-800",
     green: "bg-green-100 text-green-800",
     orange: "bg-orange-100 text-orange-800",
-    purple: "bg-purple-100 text-purple-800", // Added purple style
+    purple: "bg-purple-100 text-purple-800",
   };
 
   const iconMap: Record<string, string> = {
@@ -64,7 +86,6 @@ function DashboardCard({ title, value, color }: { title: string; value: number; 
   );
 }
 
-// Get Greeting based on time
 function getGreeting() {
   const hour = new Date().getHours();
   if (hour < 12) return "Good morning";
