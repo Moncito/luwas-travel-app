@@ -1,0 +1,71 @@
+[33mcommit 1da503f3c1d49605917b6944bb3f3d7da95dfa42[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: Moncito <moncitoglenn03@gmail.com>
+Date:   Sun May 4 01:39:35 2025 +0800
+
+    finish admin auth
+
+[33mcommit b50f1c30b709df17984d20d704e4d5ff83d578a2[m[33m ([m[1;32mfix/admin-auth[m[33m)[m
+Author: Moncito <moncitoglenn03@gmail.com>
+Date:   Sun May 4 01:31:15 2025 +0800
+
+    ✅ Cleaned repo and removed secrets
+
+[33mcommit 7103f4814c1fc1e10d26768274b6997488bac692[m
+Author: Moncito <moncitoglenn03@gmail.com>
+Date:   Sun May 4 00:38:58 2025 +0800
+
+    finally finished the admin log-in fetch
+
+[33mcommit 0a2f0c00290e63f1aed1b812fb8b89ccc8d2953f[m
+Author: Moncito <moncitoglenn03@gmail.com>
+Date:   Wed Apr 30 15:22:44 2025 +0800
+
+    complete the mocks
+
+[33mcommit d9538ac9734cb53d50f4da662ff0f7593a243b95[m
+Author: Moncito <moncitoglenn03@gmail.com>
+Date:   Tue Apr 29 20:49:30 2025 +0800
+
+    Add search funtionality in the destination page
+
+[33mcommit 5a598e530ccd69c89ddc90b85254e9cf85eb6039[m
+Author: Moncito <moncitoglenn03@gmail.com>
+Date:   Mon Apr 28 11:39:27 2025 +0800
+
+    add service page
+
+[33mcommit 3376453d556cfd55cc6de76acad90ba6ca011eed[m
+Author: Moncito <moncitoglenn03@gmail.com>
+Date:   Sat Apr 26 16:21:46 2025 +0800
+
+    fixed and finish the about page
+
+[33mcommit 2318ec97b373317e14ca1b518e3d45409b856cee[m
+Author: Moncito <moncitoglenn03@gmail.com>
+Date:   Thu Apr 24 18:59:37 2025 +0800
+
+    fix the spacing and footer, and globalize nav and footer
+
+[33mcommit 3610b15c82a0c3d51572df0648a215f9f2aba116[m
+Author: Moncito <moncitoglenn03@gmail.com>
+Date:   Thu Apr 24 08:21:59 2025 +0800
+
+    add howitworks page
+
+[33mcommit addd1c2ccf21eff63bffb943f295941ac1f95fc6[m
+Author: Moncito <moncitoglenn03@gmail.com>
+Date:   Thu Apr 24 07:16:04 2025 +0800
+
+    add show UI below main page
+
+[33mcommit 95f3bb4bf99975813db868dc3c54aeaa0eaabcac[m
+Author: Moncito <moncitoglenn03@gmail.com>
+Date:   Tue Apr 22 14:06:51 2025 +0800
+
+    add forgot password on auth
+
+[33mcommit 83e850c31dd205fa2c25f29c87556c66664ea68d[m
+Author: Moncito <moncitoglenn03@gmail.com>
+Date:   Tue Apr 15 23:39:00 2025 +0800
+
+    Initial commit with LFS

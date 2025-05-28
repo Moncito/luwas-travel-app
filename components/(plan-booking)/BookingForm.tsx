@@ -1,0 +1,243 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { toast } from 'sonner';
+import Image from 'next/image';
+import { doc, getDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/firebase/client';
+import type { User } from 'firebase/auth';
+
+interface Props {
+  destinationId: string;
+  user: User;
+}
+
+interface Destination {
+  name: string;
+  price: number;
+  // Add more fields as needed (e.g., image, location)
+}
+
+export default function BookingForm({ destinationId, user }: Props) {
+  const [destination, setDestination] = useState<Destination | null>(null);
+  const [pricePerPerson, setPricePerPerson] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    localAddress: '',
+    departureDate: '',
+    returnDate: '',
+    travelers: 1,
+    specialRequests: '',
+  });
+
+  useEffect(() => {
+    if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        fullName: user.displayName || '',
+        email: user.email || '',
+      }));
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const fetchDestination = async () => {
+      try {
+        const docRef = doc(db, 'destinations', destinationId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data() as Destination;
+          setDestination(data);
+          setPricePerPerson(data.price || 0);
+        } else {
+          toast.error('Destination not found.');
+        }
+      } catch (error) {
+        toast.error('Failed to fetch destination.');
+        console.error(error);
+      }
+    };
+
+    fetchDestination();
+  }, [destinationId]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: name === 'travelers' ? +value : value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const bookingRef = await addDoc(collection(db, 'bookings'), {
+        ...formData,
+        userId: user.uid,
+        destinationId,
+        destination: destination?.name,
+        travelers: Number(formData.travelers),
+        totalPrice,
+        status: 'upcoming',
+        paid: false,
+        createdAt: serverTimestamp(),
+      });
+
+      const bookingId = bookingRef.id;
+
+      const res = await fetch('/api/paymongo/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.fullName,
+          email: formData.email,
+          amount: totalPrice,
+          bookingId,
+          destinationId,
+          successType: 'destination',
+        }),
+      });
+
+      const data = await res.json();
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        toast.error('❌ Payment failed. Try again.');
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error('Booking error:', err);
+      toast.error('Something went wrong.');
+      setLoading(false);
+    }
+  };
+
+  const totalPrice = formData.travelers * pricePerPerson;
+
+  if (!destination) return null;
+
+  return (
+    <section className="relative min-h-screen flex items-center justify-center bg-gray-50 px-4 py-10">
+      <motion.form
+        onSubmit={handleSubmit}
+        className="w-full max-w-2xl bg-white p-6 md:p-10 rounded-xl shadow-lg space-y-6"
+        initial={{ opacity: 0, y: 50 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8 }}
+      >
+        <div className="text-center">
+          <Image src="/logo.png" alt="Luwas Logo" width={60} height={60} className="mx-auto mb-4" />
+          <h2 className="text-3xl font-bold text-black mb-2">Let us Craft your Getaway</h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <input
+            name="fullName"
+            value={formData.fullName}
+            onChange={handleChange}
+            placeholder="Full Name"
+            className="input-style"
+            required
+          />
+          <input
+            name="email"
+            type="email"
+            value={formData.email}
+            onChange={handleChange}
+            placeholder="Email"
+            className="input-style"
+            required
+          />
+          <input
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+            placeholder="Phone"
+            className="input-style"
+            required
+          />
+          <input
+            name="localAddress"
+            value={formData.localAddress}
+            onChange={handleChange}
+            placeholder="Local Address"
+            className="input-style"
+            required
+          />
+          <input
+            name="departureDate"
+            type="date"
+            value={formData.departureDate}
+            onChange={handleChange}
+            className="input-style"
+            required
+          />
+          <input
+            name="returnDate"
+            type="date"
+            value={formData.returnDate}
+            onChange={handleChange}
+            className="input-style"
+          />
+          <input
+            name="travelers"
+            type="number"
+            min={1}
+            value={formData.travelers}
+            onChange={handleChange}
+            className="input-style"
+            required
+          />
+          <input
+            value={destination.name}
+            disabled
+            className="input-style bg-gray-100 cursor-not-allowed"
+          />
+        </div>
+
+        <textarea
+          name="specialRequests"
+          value={formData.specialRequests}
+          onChange={handleChange}
+          placeholder="Special Requests"
+          rows={3}
+          className="input-style"
+        />
+
+        <div className="text-right text-sm">
+          Total Price: <strong>₱{totalPrice.toLocaleString()}</strong>
+        </div>
+
+        <div className="text-center">
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-black text-white px-8 py-3 rounded-full hover:bg-gray-800 transition-all disabled:opacity-50"
+          >
+            {loading ? 'Processing...' : 'Book My Adventure'}
+          </button>
+        </div>
+
+        <style jsx>{`
+          .input-style {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            margin-top: 0.25rem;
+          }
+          .input-style:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+          }
+        `}</style>
+      </motion.form>
+    </section>
+  );
+}
