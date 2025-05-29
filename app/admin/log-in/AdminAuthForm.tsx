@@ -6,10 +6,9 @@ import { auth } from "@/firebase/client";
 import { toast } from "sonner";
 import Image from "next/image";
 import { setSessionCookie, signIn as serverSignIn } from "@/lib/actions/auth.action";
-import { useRouter } from "next/navigation"; // ✅ Import router
+
 
 const AdminAuthForm = () => {
-  const router = useRouter(); // ✅ Init router
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -64,7 +63,7 @@ const AdminAuthForm = () => {
       await serverSignIn({ email, idToken });
 
       toast.success("Welcome back, Admin!");
-      router.push("/admin"); // ✅ Proper Next.js navigation
+      window.location.href = "/admin";
     } catch (error: unknown) {
       console.error("Login error:", error);
 

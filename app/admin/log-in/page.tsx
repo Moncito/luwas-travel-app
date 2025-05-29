@@ -4,3 +4,4 @@ import AdminAuthForm from './AdminAuthForm'
 export default function AdminLoginPage() {
   return <AdminAuthForm />
 }
+

@@ -50,3 +50,5 @@ checkAdmin.ts
 setAdmin.ts
 
 serviceAccountKey.jsonsecret/firebase-service-account.json
+
+serviceAccount.json

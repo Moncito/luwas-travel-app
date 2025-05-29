@@ -1,11 +1,8 @@
 export const dynamic = "force-dynamic";
 
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import { auth } from "@/firebase/admin";
 import { fetchAdminMetrics } from "@/lib/admin/fetchMetrics";
 import BookingAnalyticsChart from "@/components/(admin)/BookingAnalyticsChart";
-import RecentBookingsPanel from '@/components/(admin)/RecentBookingsPanel';
+import RecentBookingsPanel from '@/components/(admin)/RecentBookingsPanel'
 import ItineraryBookingChart from "@/components/(admin)/ItineraryBookingChart";
 import TopPerformers from "@/components/(admin)/TopPerformers";
 import WeatherSummaryCards from "@/components/(admin)/WeatherSummaryCards";
@@ -13,23 +10,6 @@ import WeatherAnalyticsChart from "@/components/(admin)/WeatherAnalyticsChart";
 import UserTripCharts from "@/components/(admin)/UserTripCharts";
 
 export default async function AdminDashboardPage() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("__session")?.value;
-
-  if (!token) {
-    return redirect("/admin/log-in");
-  }
-
-  try {
-    const decoded = await auth.verifySessionCookie(token, true);
-    if (!decoded.admin) {
-      return redirect("/admin/log-in");
-    }
-  } catch (err) {
-    console.error("❌ Invalid session:", err);
-    return redirect("/admin/log-in");
-  }
-
   const { totalUsers, totalTrips, totalItineraries } = await fetchAdminMetrics();
   const greeting = getGreeting();
 
@@ -49,8 +29,8 @@ export default async function AdminDashboardPage() {
       <TopPerformers />
       <WeatherSummaryCards />
       <RecentBookingsPanel />
-      <WeatherAnalyticsChart />
-      <UserTripCharts />
+      <WeatherAnalyticsChart/>
+      <UserTripCharts/>
       <BookingAnalyticsChart />
       <ItineraryBookingChart />
     </div>
@@ -63,7 +43,7 @@ function DashboardCard({ title, value, color }: { title: string; value: number; 
     blue: "bg-blue-100 text-blue-800",
     green: "bg-green-100 text-green-800",
     orange: "bg-orange-100 text-orange-800",
-    purple: "bg-purple-100 text-purple-800",
+    purple: "bg-purple-100 text-purple-800", // Added purple style
   };
 
   const iconMap: Record<string, string> = {
@@ -84,6 +64,7 @@ function DashboardCard({ title, value, color }: { title: string; value: number; 
   );
 }
 
+// Get Greeting based on time
 function getGreeting() {
   const hour = new Date().getHours();
   if (hour < 12) return "Good morning";
