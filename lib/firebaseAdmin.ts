@@ -1,13 +1,13 @@
 // lib/firebaseAdmin.ts
 
-import admin from 'firebase-admin';
+import admin from "firebase-admin";
 
 if (!admin.apps.length) {
   const key = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-  if (!key) throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY is missing.');
+  if (!key) throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY is missing.");
 
   const serviceAccount = JSON.parse(
-    Buffer.from(key, 'base64').toString('utf8')
+    Buffer.from(key, "base64").toString("utf8")
   );
 
   admin.initializeApp({
