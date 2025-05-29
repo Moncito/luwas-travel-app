@@ -1,91 +1,98 @@
-"use server"
+"use server";
 
-import { auth, db } from "@/firebase/admin"
-import { cookies } from "next/headers"
-import { FieldValue } from "firebase-admin/firestore"
-import type { User } from "@/types/User"
+import { auth, db } from "@/firebase/admin";
+import { cookies } from "next/headers";
+import { FieldValue } from "firebase-admin/firestore";
+import type { User } from "@/types/User";
 
+const SESSION_DURATION = 60 * 60 * 24 * 7; // 7 days
 
-const SESSION_DURATION = 60 * 60 * 24 * 7 // 7 days
-
-// Set session cookie
+// ✅ Set session cookie with __session
 export async function setSessionCookie(idToken: string) {
-  const cookieStore = await cookies() // ✅ Await required here
+  const cookieStore = await cookies();
 
   const sessionCookie = await auth.createSessionCookie(idToken, {
     expiresIn: SESSION_DURATION * 1000,
-  })
+  });
 
-  cookieStore.set("session", sessionCookie, {
+  cookieStore.set("__session", sessionCookie, {
     maxAge: SESSION_DURATION,
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     path: "/",
     sameSite: "lax",
-  })
+  });
 }
 
 // 🔐 Sign up using Admin SDK
-export async function signUp({ email, password, name }: { email: string; password: string; name: string }) {
+export async function signUp({
+  email,
+  password,
+  name,
+}: {
+  email: string;
+  password: string;
+  name: string;
+}) {
   try {
     const userRecord = await auth.createUser({
       email,
       password,
       displayName: name,
-    })
+    });
 
     await db.collection("users").doc(userRecord.uid).set({
       uid: userRecord.uid,
       email: userRecord.email,
       name,
       createdAt: FieldValue.serverTimestamp(),
-    })
+    });
 
-    return { success: true }
+    return { success: true };
   } catch (error) {
-    console.error("Error signing up:", error)
-    return { success: false, error }
+    console.error("Error signing up:", error);
+    return { success: false, error };
   }
 }
 
-// Sign in user (verifies and sets session)
+// ✅ Sign in user (sets __session)
 export async function signIn(params: SignInParams) {
-  const { email, idToken } = params
+  const { email, idToken } = params;
 
   try {
-    const userRecord = await auth.getUserByEmail(email)
+    const userRecord = await auth.getUserByEmail(email);
     if (!userRecord) {
       return {
         success: false,
         message: "User does not exist. Create an account.",
-      }
+      };
     }
 
-    await setSessionCookie(idToken)
+    await setSessionCookie(idToken);
 
     return {
       success: true,
       message: "Login successful.",
-    }
+    };
   } catch (error) {
-    console.error("Sign-in error:", error)
+    console.error("Sign-in error:", error);
     return {
       success: false,
       message: "Failed to log into account. Please try again.",
-    }
+    };
   }
 }
 
-// Sign out
+// ✅ Sign out (deletes __session)
 export async function signOut() {
-  const cookieStore = await cookies() // ✅ Await added here
-  cookieStore.delete("session")
+  const cookieStore = await cookies();
+  cookieStore.delete("__session");
 }
 
-// Get current user
+// ✅ Get current user (reads __session)
 export async function getCurrentUser(): Promise<User | null> {
-  const cookieStore = await cookies(); // ✅ MUST be awaited in App Router
-  const sessionCookie = cookieStore.get("session")?.value;
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get("__session")?.value;
   if (!sessionCookie) return null;
 
   try {
@@ -103,17 +110,16 @@ export async function getCurrentUser(): Promise<User | null> {
   }
 }
 
-
-// Auth check
+// ✅ Auth check using __session
 export const isAuthenticated = async (): Promise<boolean> => {
-  const cookieStore = await cookies() // ✅ Await added here
-  const sessionCookie = cookieStore.get("session")?.value
-  if (!sessionCookie) return false
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get("__session")?.value;
+  if (!sessionCookie) return false;
 
   try {
-    const decoded = await auth.verifySessionCookie(sessionCookie, true)
-    return !!decoded
+    const decoded = await auth.verifySessionCookie(sessionCookie, true);
+    return !!decoded;
   } catch {
-    return false
+    return false;
   }
-}
+};
