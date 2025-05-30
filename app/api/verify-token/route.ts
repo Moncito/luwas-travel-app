@@ -1,12 +1,10 @@
-// app/api/verify-token/route.ts
-
 import { NextRequest, NextResponse } from "next/server";
 import { adminAuth } from "@/lib/firebaseAdmin";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const token = body.token ?? req.cookies.get("adminSession")?.value;
+    const token = body.token ?? req.cookies.get("session")?.value; // ✅ fixed cookie key
 
     if (!token) {
       console.error("❌ No token provided in body or cookies.");
