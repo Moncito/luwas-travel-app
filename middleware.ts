@@ -13,7 +13,8 @@ export async function middleware(req: NextRequest) {
           body: JSON.stringify({ token: sessionCookie }),
         });
 
-        if (res.ok) {
+        const result = await res.json();
+        if (result.valid) {
           return NextResponse.redirect(new URL("/admin", req.url));
         }
       } catch (err) {
@@ -36,7 +37,8 @@ export async function middleware(req: NextRequest) {
         body: JSON.stringify({ token: sessionCookie }),
       });
 
-      if (!res.ok) {
+      const result = await res.json();
+      if (!result.valid) {
         return NextResponse.redirect(new URL("/admin-log-in", req.url));
       }
     } catch (err) {

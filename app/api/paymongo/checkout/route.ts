@@ -22,10 +22,10 @@ export async function POST(req: NextRequest) {
     successType: 'destination' | 'itinerary';
   } = await req.json();
 
+  const fallbackBaseUrl = req.headers.get('origin') || 'http://localhost:3000';
+
   const baseUrl =
-    process.env.NODE_ENV === 'production'
-      ? process.env.NEXT_PUBLIC_SITE_URL || 'https://luwas-travel.vercel.app'
-      : 'http://localhost:3000';
+    process.env.NEXT_PUBLIC_SITE_URL || fallbackBaseUrl;
 
   const successPath =
     successType === 'itinerary'
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
           name,
           email,
         },
-        type: 'gcash', // Can be 'card' if you add that later
+        type: 'gcash',
         currency: 'PHP',
       },
     },

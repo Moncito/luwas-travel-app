@@ -12,35 +12,22 @@ interface Performer {
 
 export default function TopPerformers() {
   const [top, setTop] = useState<{ topDestination: Performer; topItinerary: Performer } | null>(null)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/top-performers')
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to load top performers')
-        return res.json()
-      })
+      .then(res => res.json())
       .then(data => {
         console.log('✅ Top Performers Data:', data)
         setTop(data)
       })
       .catch(err => {
         console.error('❌ Failed to fetch top performers:', err)
-        setError('Could not fetch top performers.')
       })
   }, [])
 
-  if (error) {
-    return (
-      <div className="p-4 text-red-500 text-sm text-center mt-4 rounded-md bg-red-50 border border-red-200">
-        {error}
-      </div>
-    )
-  }
-
   if (!top) {
     return (
-      <div className="p-4 text-sm text-gray-500 text-center mt-4">
+      <div className="bg-yellow-100 text-center p-4 rounded-xl text-sm text-gray-700 mt-4">
         Loading top performers...
       </div>
     )
@@ -61,7 +48,7 @@ export default function TopPerformers() {
           key={i}
           className="relative rounded-xl overflow-hidden shadow-lg bg-center bg-cover min-h-[200px]"
           style={{
-            backgroundImage: `url(${item.imageUrl?.startsWith('http') ? item.imageUrl : 'https://i.imgur.com/Lq3Q8O3.jpg'})`,
+            backgroundImage: `url(${item.imageUrl || 'https://i.imgur.com/Lq3Q8O3.jpg'})`,
             backgroundColor: !item.imageUrl ? '#1e40af' : undefined
           }}
         >
@@ -69,7 +56,7 @@ export default function TopPerformers() {
             <div>
               <p className="text-sm uppercase tracking-wide text-gray-300">{item.label}</p>
               <h2 className="text-2xl font-bold">{item.name}</h2>
-              <p className="text-sm text-white">{item.metric}</p>
+              <p className="text-sm">{item.metric}</p>
             </div>
             <p className={`text-sm ${item.growth >= 0 ? 'text-green-400' : 'text-red-400'}`}>
               {item.growth >= 0 ? `↑ ${item.growth}%` : `↓ ${Math.abs(item.growth)}%`} vs last month

@@ -63,7 +63,7 @@ const AdminAuthForm = () => {
       await serverSignIn({ email, idToken });
 
       toast.success("Welcome back, Admin!");
-      window.location.href = "/admin";
+      window.location.replace("/admin"); 
     } catch (error: unknown) {
       console.error("Login error:", error);
 

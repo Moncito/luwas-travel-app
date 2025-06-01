@@ -5,7 +5,7 @@ import AdminNavbar from "@/components/(admin)/AdminNavbar";
 import type { DecodedIdToken } from "firebase-admin/auth";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const cookieStore = cookies(); // ✅ no need for `await`
+  const cookieStore = await cookies(); // ✅ no need for `await`
   const session = cookieStore.get("session");
 
   if (!session?.value) redirect("/admin-log-in"); // ✅ Updated

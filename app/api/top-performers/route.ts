@@ -57,12 +57,13 @@ export async function GET() {
     const data = snapshot.data();
     const growth = stats.prev ? Math.round(((stats.current - stats.prev) / stats.prev) * 100) : 0;
 
-    topDestinationInfo = {
-      name: data?.name || id,
-      imageUrl: data?.imageUrl || '',
-      count: stats.current,
-      growth,
-    };
+topDestinationInfo = {
+  name: data?.name || id,             // ← change back to `name`
+  imageUrl: data?.imageUrl || '',     // ← change back to `imageUrl`
+  count: stats.current,
+  growth,
+};
+
   }
 
   // ---------- ITINERARY BOOKINGS ----------
