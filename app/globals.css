@@ -359,3 +359,16 @@ ul, li {
   padding: 5;
   margin: 5;
 }
+
+table th,
+table td {
+  white-space: nowrap;
+}
+
+tr {
+  transition: background 0.2s ease;
+}
+tr:hover {
+  background-color: #f9fafb;
+}
+

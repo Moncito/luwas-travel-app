@@ -1,112 +1,149 @@
-'use client'
+'use client';
 
-import { Dialog } from '@headlessui/react'
-import { useState } from 'react'
-import { toast } from 'sonner'
-import Image from 'next/image'
+import { Dialog } from '@headlessui/react';
+import { toast } from 'sonner';
+import { useState } from 'react';
+import { CheckCircle, XCircle, Mail, Phone, MapPin, CalendarDays, BadgeInfo } from 'lucide-react';
+import { motion } from 'framer-motion';
+import Image from 'next/image';
 
 interface Props {
-  isOpen: boolean
-  onClose: () => void
+  isOpen: boolean;
+  onClose: () => void;
   booking: {
-    id: string
-    fullName: string
-    email: string
-    phone: string
-    destination: string
-    departureDate: string
-    status: string
-    proofUrl?: string
-  }
-  onStatusChange: (id: string, newStatus: string) => void
+    id: string;
+    fullName: string;
+    email: string;
+    phone: string;
+    destination: string;
+    departureDate: string;
+    status: string;
+    proofUrl?: string;
+  };
+  onStatusChange: (id: string, newStatus: string) => void;
 }
 
 export default function BookingDetailsModal({ isOpen, onClose, booking, onStatusChange }: Props) {
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false);
 
   const handleStatusUpdate = async (newStatus: string) => {
-    setLoading(true)
+    setLoading(true);
     try {
       const res = await fetch(`/api/bookings/${booking.id}/status`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ status: newStatus })
-      })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
 
-      if (!res.ok) throw new Error('Failed to update status')
+      if (!res.ok) throw new Error('Failed to update status');
 
-      toast.success(`Booking marked as ${newStatus}`)
-      onStatusChange(booking.id, newStatus)
-      onClose()
+      toast.success(`Booking marked as ${newStatus}`);
+      onStatusChange(booking.id, newStatus);
+      onClose();
     } catch (err) {
-      toast.error('Failed to update status')
-      console.error(err)
+      toast.error('Failed to update status');
+      console.error(err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <Dialog open={isOpen} onClose={onClose} className="relative z-50">
+    <Dialog open={isOpen} onClose={onClose} className="relative z-100">
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity" aria-hidden="true" />
-      <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl animate-fade-in-up border border-gray-200">
-          <Dialog.Title className="text-2xl font-bold text-blue-800 mb-4">Booking Information</Dialog.Title>
+      <div className="fixed inset-0 flex items-center justify-center p-10">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 30 }}
+        >
+          <Dialog.Panel className="w-full max-w-lg rounded-xl bg-white/70 shadow-2xl backdrop-blur-md border border-blue-100 p-6">
+            <Dialog.Title className="text-2xl font-extrabold text-blue-900 mb-6 flex items-center gap-2">
+              <BadgeInfo className="w-6 h-6" /> Booking Information
+            </Dialog.Title>
 
-          <div className="space-y-3 text-sm text-gray-800">
-            <div><strong>Name:</strong> {booking.fullName}</div>
-            <div><strong>Email:</strong> {booking.email}</div>
-            <div><strong>Phone:</strong> {booking.phone}</div>
-            <div><strong>Destination:</strong> {booking.destination}</div>
-            <div><strong>Departure Date:</strong> {booking.departureDate}</div>
-            <div><strong>Status:</strong> <span className="capitalize font-semibold text-blue-700">{booking.status}</span></div>
-          </div>
-
-          {booking.proofUrl && (
-            <div className="mt-6">
-              <p className="text-sm font-semibold text-gray-700 mb-2">🧾 Uploaded Receipt:</p>
-              <a href={booking.proofUrl} target="_blank" rel="noopener noreferrer" className="inline-block">
-                <Image
-                  src={booking.proofUrl}
-                  alt="Receipt"
-                  width={400}
-                  height={300}
-                  className="rounded-lg border hover:shadow-lg transition"
-                />
-              </a>
+            <div className="space-y-4 text-sm text-blue-900">
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4" />
+                <span><strong>Email:</strong> {booking.email}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Phone className="w-4 h-4" />
+                <span><strong>Phone:</strong> {booking.phone}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4" />
+                <span><strong>Destination:</strong> {booking.destination}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CalendarDays className="w-4 h-4" />
+                <span><strong>Departure:</strong> {booking.departureDate}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <BadgeInfo className="w-4 h-4" />
+                <span>
+                  <strong>Status:</strong>{' '}
+                  <span
+                    className={`inline-block px-2 py-1 rounded-full text-xs font-semibold capitalize ${
+                      booking.status === 'paid'
+                        ? 'bg-green-100 text-green-800'
+                        : booking.status === 'cancelled'
+                        ? 'bg-red-100 text-red-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}
+                  >
+                    {booking.status}
+                  </span>
+                </span>
+              </div>
             </div>
-          )}
 
-          <div className="flex justify-end gap-3 mt-8">
-            {booking.status !== 'paid' && (
-              <button
-                onClick={() => handleStatusUpdate('paid')}
-                disabled={loading}
-                className="bg-green-600 text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-green-700 transition"
-              >
-                {loading ? 'Approving...' : '✅ Approve'}
-              </button>
+            {booking.proofUrl && (
+              <div className="mt-6">
+                <p className="text-sm font-semibold text-blue-800 mb-2">🧾 Uploaded Receipt:</p>
+                <a href={booking.proofUrl} target="_blank" rel="noopener noreferrer">
+                  <Image
+                    src={booking.proofUrl}
+                    alt="Receipt"
+                    width={400}
+                    height={300}
+                    className="rounded-lg border hover:shadow-md transition"
+                  />
+                </a>
+              </div>
             )}
-            {booking.status !== 'cancelled' && (
+
+            <div className="flex justify-end gap-3 mt-8">
+              {booking.status !== 'paid' && (
+                <button
+                  onClick={() => handleStatusUpdate('paid')}
+                  disabled={loading}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-full text-sm font-medium transition"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  {loading ? 'Approving...' : 'Approve'}
+                </button>
+              )}
+              {booking.status !== 'cancelled' && (
+                <button
+                  onClick={() => handleStatusUpdate('cancelled')}
+                  disabled={loading}
+                  className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-medium transition"
+                >
+                  <XCircle className="w-4 h-4" />
+                  {loading ? 'Cancelling...' : 'Cancel'}
+                </button>
+              )}
               <button
-                onClick={() => handleStatusUpdate('cancelled')}
-                disabled={loading}
-                className="bg-red-500 text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-red-600 transition"
+                onClick={onClose}
+                className="px-4 py-2 border border-gray-300 text-gray-800 rounded-full text-sm font-medium hover:bg-gray-100 transition"
               >
-                {loading ? 'Cancelling...' : '🗑 Cancel'}
+                Close
               </button>
-            )}
-            <button
-              onClick={onClose}
-              className="px-5 py-2 border border-gray-300 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-100 transition"
-            >
-              Close
-            </button>
-          </div>
-        </Dialog.Panel>
+            </div>
+          </Dialog.Panel>
+        </motion.div>
       </div>
     </Dialog>
-  )
+  );
 }

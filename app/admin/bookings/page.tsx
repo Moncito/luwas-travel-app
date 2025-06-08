@@ -10,6 +10,11 @@ import type { ItineraryBooking } from '@/types/itineraryBooking';
 import EditBookingModal from '@/components/(admin)/EditBookingModal';
 import BookingDetailsModal from '@/components/(admin)/BookingDetailsModal';
 import EditItineraryBookingModal from '@/components/(admin)/EditItineraryBookingModal';
+import ConfirmActionModal from "@/components/(admin)/ConfirmActionModal";
+
+import { Eye, Pencil, Trash, Mail } from "lucide-react";
+
+
 
 import { sendReceiptEmail } from '@/lib/mail';
 
@@ -37,6 +42,16 @@ export default function AdminBookingsPage() {
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [editingItinerary, setEditingItinerary] = useState<ItineraryBooking | null>(null);
+  const [selectedItinerary, setSelectedItinerary] = useState<ItineraryBooking | null>(null);
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmType, setConfirmType] = useState<"delete" | "send" | null>(null);
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
+  const [selectedBookingType, setSelectedBookingType] = useState<"destination" | "itinerary" | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+
+
 
   useEffect(() => {
     fetchBookings();
@@ -85,32 +100,82 @@ export default function AdminBookingsPage() {
       }
     };
 
+// 
+const handleConfirm = async () => {
+  if (!selectedBookingId || !confirmType || !selectedBookingType) return;
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this booking?')) return;
-    try {
-      const res = await fetch(`/api/bookings/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      setBookings((prev) => prev.filter((b) => b.id !== id));
-      toast.success('Booking deleted!');
-    } catch (err) {
-      console.error('Error deleting booking:', err);
-      toast.error('Error deleting booking.');
-    }
-  };
+  setIsProcessing(true);
 
-  const handleDeleteItineraryBooking = async (id: string) => {
-    if (!confirm('Delete this itinerary booking?')) return;
-    try {
-      const res = await fetch(`/api/itinerary-bookings/${id}`, { method: 'DELETE' });
+  try {
+    if (confirmType === "delete") {
+      const url =
+        selectedBookingType === "destination"
+          ? `/api/bookings/${selectedBookingId}`
+          : `/api/itinerary-bookings/${selectedBookingId}`;
+
+      const res = await fetch(url, { method: "DELETE" });
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      setItineraryBookings((prev) => prev.filter((b) => b.id !== id));
-      toast.success('Itinerary booking deleted.');
-    } catch (err) {
-      console.error('Error deleting itinerary booking:', err);
-      toast.error('Error deleting itinerary booking.');
+
+      if (selectedBookingType === "destination") {
+        setBookings((prev) => prev.filter((b) => b.id !== selectedBookingId));
+      } else {
+        setItineraryBookings((prev) => prev.filter((b) => b.id !== selectedBookingId));
+      }
+
+      toast.success("Booking deleted.");
     }
-  };
+
+    if (confirmType === "send") {
+      if (selectedBookingType === "destination") {
+        const booking = bookings.find((b) => b.id === selectedBookingId);
+        if (!booking) throw new Error("Booking not found");
+
+        await handleSendReceipt({
+          name: booking.fullName,
+          email: booking.email,
+          type: "destination",
+          booking: {
+            id: booking.id,
+            amount: booking.totalPrice,
+            departureDate: booking.departureDate,
+            destinationName: booking.destination,
+            type: "destination",
+          } satisfies DestinationBooking,
+        });
+      } else if (selectedBookingType === "itinerary") {
+        const itinerary = itineraryBookings.find((b) => b.id === selectedBookingId);
+        if (!itinerary) throw new Error("Itinerary booking not found");
+
+        await handleSendReceipt({
+          name: itinerary.name,
+          email: itinerary.email,
+          type: "itinerary",
+          booking: {
+            id: itinerary.id,
+            amount: itinerary.totalPrice,
+            departureDate: itinerary.date,
+            itineraryTitle: itinerary.slug?.replace(/-/g, " ") ?? "Untitled",
+            type: "itinerary",
+          },
+        });
+      }
+
+      toast.success("Receipt sent.");
+    }
+  } catch (err) {
+    toast.error("Action failed.");
+    console.error(err);
+  } finally {
+    setIsProcessing(false);
+    setConfirmOpen(false);
+    setConfirmType(null);
+    setSelectedBookingId(null);
+    setSelectedBookingType(null);
+  }
+};
+
+// 
+
 
   const handleExportToCSV = async () => {
     try {
@@ -173,155 +238,248 @@ return (
       ))}
     </div>
 
-    {/* Destination Bookings */}
-    <section className="bg-white p-4 rounded-lg shadow-md">
-      <h2 className="text-xl font-semibold text-blue-800 mb-4">Destination Bookings</h2>
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-sm">
-          <thead className="bg-gray-100 text-left">
-            <tr>
-              <th className="px-6 py-3">Full Name</th>
-              <th className="px-6 py-3">Destination</th>
-              <th className="px-6 py-3">Departure</th>
-              <th className="px-6 py-3">Status</th>
-              <th className="px-6 py-3">Created</th>
-              <th className="px-6 py-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredBookings.map((booking) => (
-              <tr key={booking.id} className="border-t hover:bg-gray-50 transition">
-                <td className="px-6 py-3">{booking.fullName}</td>
-                <td className="px-6 py-3">{booking.destination}</td>
-                <td className="px-6 py-3">{booking.departureDate}</td>
-                <td className="px-6 py-3">
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusColor[booking.status]}`}>
-                    {booking.status.replace('_', ' ')}
-                  </span>
-                </td>
-                <td className="px-6 py-3">{format(new Date(booking.createdAt), 'yyyy-MM-dd')}</td>
-                <td className="px-6 py-3 space-y-1">
-                  <div className="flex flex-col md:flex-row md:gap-4 text-sm">
-                    <button className="text-blue-600 hover:underline" onClick={() => setSelectedBooking(booking)}>View</button>
-                    <button className="text-blue-600 hover:underline" onClick={() => setEditingBooking(booking)}>Edit</button>
-                    <button className="text-red-600 hover:underline" onClick={() => handleDelete(booking.id)}>Delete</button>
-                    <button
-                      className="text-green-600 hover:underline"
-                      onClick={() =>
-                        handleSendReceipt({
-                          name: booking.fullName,
-                          email: booking.email,
-                          type: 'destination',
-                          booking: {
-                            id: booking.id,
-                            amount: Number(booking.totalPrice ?? 0),
-                            departureDate: booking.departureDate,
-                            destinationName: booking.destination ?? 'Unknown',
-                            type: 'destination',
-                          } satisfies DestinationBooking,
-                        })
-                      }
-                    >
-                      Send Receipt
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </section>
+{/* Destination Bookings */}
+<section className="bg-white p-4 rounded-lg shadow-md">
+  <h2 className="text-xl font-semibold text-blue-800 mb-4">Destination Bookings</h2>
+  <div className="overflow-x-auto">
+    <table className="min-w-full text-sm">
+      <thead className="bg-gray-100 text-left">
+        <tr>
+          <th className="px-6 py-3">Name</th>
+          <th className="px-6 py-3">Email</th>
+          <th className="px-6 py-3">Departure</th>
+          <th className="px-6 py-3">People</th>
+          <th className="px-6 py-3">Status</th>
+          <th className="px-6 py-3">Created</th>
+          <th className="px-6 py-3">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {filteredBookings.map((booking) => (
+          <tr key={booking.id} className="border-t hover:bg-gray-50 transition">
+            <td className="px-6 py-3">{booking.fullName}</td>
+            <td className="px-6 py-3">{booking.email}</td>
+            <td className="px-6 py-3">{booking.departureDate}</td>
+            <td className="px-6 py-3">{booking.travelers ?? 1}</td>
+            <td className="px-6 py-3">
+              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusColor[booking.status]}`}>
+                {booking.status.replace('_', ' ')}
+              </span>
+            </td>
+            <td className="px-6 py-3">{format(new Date(booking.createdAt), 'MMM dd, yyyy')}</td>
+            <td className="px-6 py-3">
+              <div className="flex gap-3 items-center">
+              <button
+                title="View"
+                className="text-blue-600 hover:text-blue-800 cursor-pointer"
+                onClick={() => setSelectedBooking(booking)}
+              >
+                <Eye className="w-5 h-5" />
+              </button>
 
-    {/* Itinerary Bookings */}
-    <section className="bg-white p-4 rounded-lg shadow-md">
-      <h2 className="text-xl font-semibold text-blue-800 mb-4">Itinerary Bookings</h2>
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-sm">
-          <thead className="bg-gray-100 text-left">
-            <tr>
-              <th className="px-6 py-3">Name</th>
-              <th className="px-6 py-3">Email</th>
-              <th className="px-6 py-3">Travel Date</th>
-              <th className="px-6 py-3">People</th>
-              <th className="px-6 py-3">Itinerary</th>
-              <th className="px-6 py-3">Status</th>
-              <th className="px-6 py-3">Created</th>
-              <th className="px-6 py-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {itineraryBookings.map((booking) => (
-              <tr key={booking.id} className="border-t hover:bg-gray-50 transition">
-                <td className="px-6 py-3">{booking.name}</td>
-                <td className="px-6 py-3">{booking.email}</td>
-                <td className="px-6 py-3">{booking.date}</td>
-                <td className="px-6 py-3">{booking.people}</td>
-                <td className="px-6 py-3 capitalize">{booking.slug?.replace(/-/g, ' ') ?? 'Untitled'}</td>
-                <td className="px-6 py-3">
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusColor[booking.status ?? 'upcoming']}`}>
-                    {booking.status?.replace('_', ' ') ?? 'upcoming'}
-                  </span>
-                </td>
-                <td className="px-6 py-3">{booking.createdAt?.seconds ? new Date(booking.createdAt.seconds * 1000).toLocaleDateString() : '-'}</td>
-                <td className="px-6 py-3 space-y-1">
-                  <div className="flex flex-col md:flex-row md:gap-4 text-sm">
-                    <button className="text-blue-600 hover:underline" onClick={() => setEditingItinerary(booking)}>Edit</button>
-                    <button className="text-red-600 hover:underline" onClick={() => handleDeleteItineraryBooking(booking.id)}>Delete</button>
-                    <button
-                      className="text-green-600 hover:underline"
-                      onClick={() =>
-                        handleSendReceipt({
-                          name: booking.name,
-                          email: booking.email,
-                          type: 'itinerary',
-                          booking: {
-                            id: booking.id,
-                            amount: Number(booking.totalPrice ?? 0),
-                            departureDate: booking.date,
-                            itineraryTitle: booking.slug?.replace(/-/g, ' ') ?? 'Untitled',
-                            type: 'itinerary',
-                          },
-                        })
-                      }
-                    >
-                      Send Receipt
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </section>
+              <button
+                title="Edit"
+                className="text-yellow-600 hover:text-yellow-800 cursor-pointer"
+                onClick={() => setEditingBooking(booking)}
+              >
+                <Pencil className="w-5 h-5" />
+              </button>
+
+              <button
+                title="Delete"
+                className="text-red-600 hover:text-red-800 cursor-pointer"
+                onClick={() => {
+                  setSelectedBookingId(booking.id);
+                  setSelectedBookingType("destination"); // ✅ required for conditional logic
+                  setConfirmType("delete");
+                  setConfirmOpen(true);
+                }}
+              >
+                <Trash className="w-5 h-5" />
+              </button>
+
+            <button
+                title="Send Receipt"
+                className="text-green-600 hover:text-green-800 cursor-pointer"
+                onClick={() => {
+                  setSelectedBookingId(booking.id);
+                  setSelectedBookingType("destination"); // ✅
+                  setConfirmType("send");
+                  setConfirmOpen(true);
+                }}
+              >
+                <Mail className="w-5 h-5" />
+              </button>
+            </div>
+
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{/* Itinerary Bookings */}
+<section className="bg-white p-4 rounded-lg shadow-md mt-10">
+  <h2 className="text-xl font-semibold text-blue-800 mb-4">Itinerary Bookings</h2>
+  <div className="overflow-x-auto">
+    <table className="min-w-full text-sm">
+      <thead className="bg-gray-100 text-left">
+        <tr>
+          <th className="px-6 py-3">Name</th>
+          <th className="px-6 py-3">Email</th>
+          <th className="px-6 py-3">Departure</th>
+          <th className="px-6 py-3">People</th>
+          <th className="px-6 py-3">Status</th>
+          <th className="px-6 py-3">Created</th>
+          <th className="px-6 py-3">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {itineraryBookings.map((booking) => (
+          <tr key={booking.id} className="border-t hover:bg-gray-50 transition">
+            <td className="px-6 py-3">{booking.name}</td>
+            <td className="px-6 py-3">{booking.email}</td>
+            <td className="px-6 py-3">{booking.date}</td>
+            <td className="px-6 py-3">{booking.people}</td>
+            <td className="px-6 py-3">
+              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusColor[booking.status ?? 'upcoming']}`}>
+                {booking.status?.replace('_', ' ') ?? 'upcoming'}
+              </span>
+            </td>
+            <td className="px-6 py-3">{format(new Date(booking.createdAt), 'MMM dd, yyyy')}</td>
+            <td className="px-6 py-3">
+              <div className="flex gap-3 items-center">
+              <button
+                title="View"
+                className="text-blue-600 hover:text-blue-800 cursor-pointer"
+                onClick={() => setSelectedItinerary(booking)}
+              >
+                <Eye className="w-5 h-5" />
+              </button>
+
+              <button
+                title="Edit"
+                className="text-yellow-600 hover:text-yellow-800 cursor-pointer"
+                onClick={() => setEditingItinerary(booking)}
+              >
+                <Pencil className="w-5 h-5" />
+              </button>
+
+              <button
+                title="Delete"
+                className="text-red-600 hover:text-red-800 cursor-pointer"
+                onClick={() => {
+                  setSelectedBookingId(booking.id);
+                  setSelectedBookingType("itinerary"); // ✅ required for logic
+                  setConfirmType("delete");
+                  setConfirmOpen(true);
+                }}
+              >
+                <Trash className="w-5 h-5" />
+              </button>
+
+              <button
+              title="Send Receipt"
+              className="text-green-600 hover:text-green-800 cursor-pointer"
+              onClick={() => {
+                setSelectedBookingId(booking.id);
+                setSelectedBookingType("itinerary"); // ✅
+                setConfirmType("send");
+                setConfirmOpen(true);
+              }}
+            >
+              <Mail className="w-5 h-5" />
+            </button>
+
+            </div>
+
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</section>
+
 
     {/* Modals */}
     {editingBooking && (
-      <EditBookingModal booking={editingBooking} onClose={() => setEditingBooking(null)} onUpdated={fetchBookings} />
-    )}
-    {selectedBooking && (
-      <BookingDetailsModal
-        isOpen={!!selectedBooking}
-        onClose={() => setSelectedBooking(null)}
-        booking={{
-            id: selectedBooking.id,
-            fullName: selectedBooking.fullName,
-            email: selectedBooking.email,
-            phone: selectedBooking.phone ?? '',
-            destination: selectedBooking.destination,
-            departureDate: selectedBooking.departureDate,
-            status: selectedBooking.status,
-            proofUrl: selectedBooking.proofUrl,
-          }}
-        onStatusChange={(id, newStatus) =>
-          setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: safeStatus(newStatus) } : b)))
-        }
+      <EditBookingModal
+        booking={editingBooking}
+        onClose={() => setEditingBooking(null)}
+        onUpdated={fetchBookings}
       />
     )}
-    {editingItinerary && (
-      <EditItineraryBookingModal booking={editingItinerary} onClose={() => setEditingItinerary(null)} onUpdated={fetchItineraryBookings} />
-    )}
+
+{selectedBooking && (
+  <BookingDetailsModal
+    isOpen={!!selectedBooking}
+    onClose={() => setSelectedBooking(null)}
+    booking={{
+      id: selectedBooking.id,
+      fullName: selectedBooking.fullName,
+      email: selectedBooking.email,
+      phone: selectedBooking.phone ?? '',
+      destination: selectedBooking.destination,
+      departureDate: selectedBooking.departureDate,
+      status: selectedBooking.status,
+      proofUrl: selectedBooking.proofUrl,
+    }}
+    onStatusChange={(id, newStatus) =>
+      setBookings((prev) =>
+        prev.map((b) => (b.id === id ? { ...b, status: safeStatus(newStatus) } : b))
+      )
+    }
+  />
+)}
+
+{selectedItinerary && (
+  <BookingDetailsModal
+    isOpen={!!selectedItinerary}
+    onClose={() => setSelectedItinerary(null)}
+    booking={{
+      id: selectedItinerary.id,
+      fullName: selectedItinerary.name,
+      email: selectedItinerary.email,
+      phone: selectedItinerary.phone ?? '',
+      destination: selectedItinerary.slug?.replace(/-/g, ' ') ?? 'Untitled',
+      departureDate: selectedItinerary.date,
+      status: selectedItinerary.status ?? 'upcoming',
+      proofUrl: selectedItinerary.proofUrl,
+    }}
+    onStatusChange={(id, newStatus) =>
+      setItineraryBookings((prev) =>
+        prev.map((b) => (b.id === id ? { ...b, status: safeStatus(newStatus) } : b))
+      )
+    }
+  />
+)}
+
+
+{editingItinerary && (
+  <EditItineraryBookingModal
+    booking={editingItinerary}
+    onClose={() => setEditingItinerary(null)}
+    onUpdated={fetchItineraryBookings}
+  />
+)}
+
+
+<ConfirmActionModal
+  isOpen={confirmOpen}
+  onClose={() => {
+    setConfirmOpen(false);
+    setConfirmType(null);
+    setSelectedBookingId(null);
+    setSelectedBookingType(null);
+  }}
+  onConfirm={handleConfirm}
+  action={confirmType || "delete"}
+  loading={isProcessing}
+/>
+
   </div>
 );
 }

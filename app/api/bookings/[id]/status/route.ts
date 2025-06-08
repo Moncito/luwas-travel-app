@@ -1,25 +1,24 @@
-// app/api/bookings/[id]/status/route.ts
-import { db } from '@/firebase/admin'
-import { NextResponse } from 'next/server'
+import { db } from "@/firebase/admin";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function PATCH(
-  req: Request,
-  context: { params: { id: string } }
-) {
-  const { id } = context.params
-
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { status } = await req.json()
+    const bookingId = params.id;
 
-    if (!['upcoming', 'completed', 'cancelled', 'paid', 'waiting_payment'].includes(status)) {
-      return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
+    if (!bookingId) {
+      console.error("❌ Missing booking ID");
+      return NextResponse.json({ success: false, message: "Booking ID is required." }, { status: 400 });
     }
 
-    await db.collection('bookings').doc(id).update({ status })
+    const docRef = db.collection("bookings").doc(bookingId);
 
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Error updating booking status:', error)
-    return NextResponse.json({ error: 'Unauthorized or failed' }, { status: 403 })
+    await docRef.update({
+      status: "paid",
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    console.error("🔥 Failed to update booking:", err.message, err.code, err.stack);
+    return NextResponse.json({ success: false, message: "Failed to update booking." }, { status: 500 });
   }
 }
