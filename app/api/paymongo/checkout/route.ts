@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 
-const PAYMONGO_SECRET = process.env.PAYMONGO_SECRET_KEY!;
+const PAYMONGO_SECRET = process.env.PAYMONGO_SECRET_KEY as string;
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   const {
     amount,
     name,
@@ -24,8 +24,7 @@ export async function POST(req: NextRequest) {
 
   const fallbackBaseUrl = req.headers.get('origin') || 'http://localhost:3000';
 
-  const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL || fallbackBaseUrl;
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || fallbackBaseUrl;
 
   const successPath =
     successType === 'itinerary'
@@ -35,7 +34,7 @@ export async function POST(req: NextRequest) {
   const payload = {
     data: {
       attributes: {
-        amount: amount * 100, // Convert to centavos
+        amount: amount * 100, // centavos
         redirect: {
           success: `${baseUrl}${successPath}`,
           failed: `${baseUrl}/bookings/failed`,
@@ -43,6 +42,7 @@ export async function POST(req: NextRequest) {
         billing: {
           name,
           email,
+          reference_number: `${successType}:${bookingId}`,
         },
         type: 'gcash',
         currency: 'PHP',
@@ -83,6 +83,9 @@ export async function POST(req: NextRequest) {
       console.error('[PAYMONGO ERROR]', error);
     }
 
-    return NextResponse.json({ error: 'Failed to create payment link.' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to create payment link.' },
+      { status: 500 }
+    );
   }
 }

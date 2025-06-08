@@ -19,6 +19,7 @@ export async function GET() {
         createdAt: (data.createdAt instanceof Timestamp)
           ? data.createdAt.toDate().toISOString()
           : new Date().toISOString(),
+        totalPrice: Number(data.totalPrice) || 0,
         status: data.status || 'upcoming',
         proofUrl: data.proofUrl || null,
       };

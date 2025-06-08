@@ -1,137 +1,99 @@
-"use client"
+"use client";
 
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-import { Button } from "@/components/ui/button"
-import { Form } from "@/components/ui/form"
-import Image from "next/image"
-import Link from "next/link"
-import { toast } from "sonner"
-import FormField from "@/components/FormField"
-import { useRouter } from "next/navigation"
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
-} from "firebase/auth"
-import { auth } from "@/firebase/client"
-import {
-  setSessionCookie,
-  signIn,
-  signUp,
-} from "@/lib/actions/auth.action"
+} from "firebase/auth";
+import { auth } from "@/firebase/client";
 
-const authFormSchema = (type: FormType) => {
-  return z.object({
+import { signUp, setSessionCookie, signIn } from "@/lib/actions/auth.action";
+
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
+
+import FormField from "@/components/FormField";
+import { Button } from "@/components/ui/button";
+import { Form } from "@/components/ui/form";
+
+const authFormSchema = (type: FormType) =>
+  z.object({
     name: type === "sign-up" ? z.string().min(3) : z.string().optional(),
     email: z.string().email(),
-    password: z.string().min(3),
-  })
-}
+    password: z.string().min(6),
+  });
 
 const AuthForm = ({ type }: { type: FormType }) => {
-  const router = useRouter()
-  const formSchema = authFormSchema(type)
+  const router = useRouter();
+  const isSignIn = type === "sign-in";
+  const formSchema = authFormSchema(type);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      password: "",
-    },
-  })
-
-  const isSignIn = type === "sign-in"
+    defaultValues: { name: "", email: "", password: "" },
+  });
 
   const handleForgotPassword = async (email: string) => {
-    if (!email) {
-      toast.error("Please enter your email first.")
-      return
-    }
-
+    if (!email) return toast.error("Please enter your email first.");
     try {
-      await sendPasswordResetEmail(auth, email)
-      toast.success("Password reset email sent. Check your inbox.")
-    } catch (error) {
-      console.error(error)
-      toast.error("Error sending password reset email.")
+      await sendPasswordResetEmail(auth, email);
+      toast.success("Reset email sent.");
+    } catch {
+      toast.error("Failed to send reset email.");
     }
-  }
+  };
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    const { name, email, password } = values;
+
     try {
       if (type === "sign-up") {
-        const { name, email, password } = values
+        const userCred = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCred.user;
+        const idToken = await user.getIdToken();
 
-        const userCredentials = await createUserWithEmailAndPassword(
-          auth,
-          email,
-          password
-        )
-        const user = userCredentials.user
-        const idToken = await user.getIdToken()
+        await signUp({ uid: user.uid, name: name!, email });
+        await setSessionCookie(idToken);
 
-        const result = await signUp({
-          uid: user.uid,
-          name: name!,
-          email,
-          password,
-        })
-
-        await setSessionCookie(idToken)
-
-        if (!result?.success) {
-          toast.error(result?.message)
-          return
-        }
-
-        toast.success("Account Created Successfully. Please Sign in.")
-        router.push("/sign-in")
+        toast.success("Account created successfully!");
+        router.push("/");
       } else {
-        const { email, password } = values
+        const userCred = await signInWithEmailAndPassword(auth, email, password);
+        const idToken = await userCred.user.getIdToken();
 
-        const userCredentials = await signInWithEmailAndPassword(
-          auth,
-          email,
-          password
-        )
+        await signIn({ email, idToken });
 
-        const idToken = await userCredentials.user.getIdToken()
-
-        if (!idToken) {
-          toast.error("Sign-in Failed")
-          return
-        }
-
-        await signIn({ email, idToken })
-
-        toast.success("Login Successful")
-        router.push("/")
+        toast.success("Logged in successfully!");
+        router.push("/");
       }
-    } catch (e) {
-      console.log(e)
-      toast.error(`There was an Error: ${e}`)
+    } catch (error: any) {
+      console.error("Auth error:", error);
+      if (error.code === "auth/email-already-in-use") {
+        toast.error("Email is already registered.");
+      } else if (error.code === "auth/invalid-credential") {
+        toast.error("Invalid credentials.");
+      } else {
+        toast.error("Authentication error.");
+      }
     }
-
-    console.log(values)
-  }
+  };
 
   return (
     <div className="card-border lg:min-w-[480px]">
       <div className="flex flex-col gap-6 card py-14 px-10">
-        <div className="flex flex-row gap-2 justify-center">
-          <Image src="/logo1.png" alt="logo" height={32} width={38} />
+        <div className="flex justify-center gap-2">
+          <Image src="/logo1.png" alt="logo" width={38} height={32} />
           <h2 className="">Luwas</h2>
         </div>
 
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="w-full space-y-6 mt-4 form"
-          >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-4 form">
             {!isSignIn && (
               <FormField
                 control={form.control}
@@ -140,7 +102,6 @@ const AuthForm = ({ type }: { type: FormType }) => {
                 placeholder="Your name"
               />
             )}
-
             <FormField
               control={form.control}
               name="email"
@@ -148,7 +109,6 @@ const AuthForm = ({ type }: { type: FormType }) => {
               placeholder="Your Email Address"
               type="email"
             />
-
             <FormField
               control={form.control}
               name="password"
@@ -156,7 +116,6 @@ const AuthForm = ({ type }: { type: FormType }) => {
               placeholder="Enter your Password"
               type="password"
             />
-
             {isSignIn && (
               <div className="text-right">
                 <button
@@ -168,25 +127,24 @@ const AuthForm = ({ type }: { type: FormType }) => {
                 </button>
               </div>
             )}
-
-            <Button className="btn" type="submit">
+            <Button type="submit" className="btn">
               {isSignIn ? "Sign-in" : "Create an Account"}
             </Button>
           </form>
         </Form>
 
-        <p className="text-center">
+        <p className="text-center text-sm">
           {isSignIn ? "No Account Yet? " : "Have an Account Already?"}
           <Link
-            href={!isSignIn ? "/sign-in" : "/sign-up"}
+            href={isSignIn ? "/sign-up" : "/sign-in"}
             className="font-bold text-user-primary ml-1"
           >
-            {!isSignIn ? "Sign in" : "Sign up"}
+            {isSignIn ? "Sign up" : "Sign in"}
           </Link>
         </p>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default AuthForm
+export default AuthForm;

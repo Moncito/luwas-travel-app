@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect,} from 'react';
+import { useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Home, MapPin, CheckCircle } from 'lucide-react';
@@ -10,6 +10,7 @@ import Confetti from 'react-confetti';
 import { useWindowSize } from 'react-use';
 import { db } from '@/firebase/client';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { toast } from 'sonner';
 
 export default function ItineraryBookingSuccessPage() {
   const searchParams = useSearchParams();
@@ -17,30 +18,34 @@ export default function ItineraryBookingSuccessPage() {
   const itinerarySlug = searchParams.get('itinerary');
   const { width, height } = useWindowSize();
 
-  // ✅ Update Firestore booking as paid
+  // ✅ Firestore update logic
   useEffect(() => {
-    if (!bookingId) return;
+    const updateBookingAsPaid = async () => {
+      if (!bookingId) return;
 
-    const updateBookingStatus = async () => {
       try {
         await updateDoc(doc(db, 'itineraryBookings', bookingId), {
           paid: true,
           paidAt: serverTimestamp(),
           paymentMethod: 'PayMongo',
         });
+        toast.success('Booking marked as paid. ✅');
         console.log('✅ Itinerary booking marked as paid in Firestore');
       } catch (error) {
         console.error('❌ Failed to update booking:', error);
+        toast.error('Something went wrong updating your booking.');
       }
     };
 
-    updateBookingStatus();
+    updateBookingAsPaid();
   }, [bookingId]);
 
   if (!itinerarySlug) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-neutral-100">
-        <p className="text-gray-500">Missing itinerary information. Please try booking again.</p>
+        <p className="text-gray-500">
+          Missing itinerary information. Please try booking again.
+        </p>
       </div>
     );
   }
@@ -51,15 +56,13 @@ export default function ItineraryBookingSuccessPage() {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.6, ease: 'easeOut' }}
       className="relative min-h-screen bg-cover bg-center flex flex-col items-center justify-center px-6 pb-12 text-center"
-      style={{
-        backgroundImage: `url('/images/booking-bg.png')`,
-      }}
+      style={{ backgroundImage: `url('/images/booking-bg.png')` }}
     >
-      {/* Confetti */}
-      <Confetti width={width} height={height} numberOfPieces={150} recycle={false} />
+      {/* Confetti once */}
+      <Confetti width={width} height={height} numberOfPieces={200} recycle={false} />
 
       {/* Overlay */}
-      <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-0"></div>
+      <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px] z-0" />
 
       {/* Content */}
       <div className="z-10">
@@ -79,7 +82,7 @@ export default function ItineraryBookingSuccessPage() {
           </p>
         </motion.div>
 
-        {/* Buttons */}
+        {/* CTA Buttons */}
         <div className="mt-8 flex gap-4 flex-wrap justify-center">
           <Link
             href="/"
@@ -106,7 +109,7 @@ export default function ItineraryBookingSuccessPage() {
         </motion.div>
       </div>
 
-      {/* Blinker animation */}
+      {/* Pulse text animation */}
       <style jsx>{`
         @keyframes blinker {
           50% {

@@ -4,9 +4,16 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import Image from 'next/image';
-import { doc, getDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  addDoc,
+  collection,
+  serverTimestamp,
+} from 'firebase/firestore';
 import { db } from '@/firebase/client';
 import type { User } from 'firebase/auth';
+import { Mail, Phone, Calendar, Home, Users, User as UserIcon } from 'lucide-react';
 
 interface Props {
   destinationId: string;
@@ -16,7 +23,18 @@ interface Props {
 interface Destination {
   name: string;
   price: number;
-  // Add more fields as needed (e.g., image, location)
+}
+
+function IconInput({ icon: Icon, ...props }: any) {
+  return (
+    <div className="relative w-full">
+      <Icon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+      <input
+        {...props}
+        className="pl-10 pr-4 py-3 w-full rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
+      />
+    </div>
+  );
 }
 
 export default function BookingForm({ destinationId, user }: Props) {
@@ -68,7 +86,10 @@ export default function BookingForm({ destinationId, user }: Props) {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: name === 'travelers' ? +value : value });
+    setFormData({
+      ...formData,
+      [name]: name === 'travelers' ? Number(value) : value,
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,6 +97,8 @@ export default function BookingForm({ destinationId, user }: Props) {
     setLoading(true);
 
     try {
+      const totalPrice = formData.travelers * pricePerPerson;
+
       const bookingRef = await addDoc(collection(db, 'bookings'), {
         ...formData,
         userId: user.uid,
@@ -88,7 +111,7 @@ export default function BookingForm({ destinationId, user }: Props) {
         createdAt: serverTimestamp(),
       });
 
-      const bookingId = bookingRef.id;
+      toast.success('Booking submitted! Redirecting to payment...');
 
       const res = await fetch('/api/paymongo/checkout', {
         method: 'POST',
@@ -97,7 +120,7 @@ export default function BookingForm({ destinationId, user }: Props) {
           name: formData.fullName,
           email: formData.email,
           amount: totalPrice,
-          bookingId,
+          bookingId: bookingRef.id,
           destinationId,
           successType: 'destination',
         }),
@@ -105,7 +128,9 @@ export default function BookingForm({ destinationId, user }: Props) {
 
       const data = await res.json();
       if (data?.url) {
-        window.location.href = data.url;
+        setTimeout(() => {
+          window.location.href = data.url;
+        }, 1200);
       } else {
         toast.error('❌ Payment failed. Try again.');
         setLoading(false);
@@ -118,14 +143,13 @@ export default function BookingForm({ destinationId, user }: Props) {
   };
 
   const totalPrice = formData.travelers * pricePerPerson;
-
   if (!destination) return null;
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center bg-gray-50 px-4 py-10">
+    <section className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-blue-50 to-orange-50 px-4 py-10">
       <motion.form
         onSubmit={handleSubmit}
-        className="w-full max-w-2xl bg-white p-6 md:p-10 rounded-xl shadow-lg space-y-6"
+        className="w-full max-w-2xl bg-white p-6 md:p-10 rounded-2xl shadow-2xl space-y-6 border border-orange-100"
         initial={{ opacity: 0, y: 50 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
@@ -133,71 +157,23 @@ export default function BookingForm({ destinationId, user }: Props) {
       >
         <div className="text-center">
           <Image src="/logo.png" alt="Luwas Logo" width={60} height={60} className="mx-auto mb-4" />
-          <h2 className="text-3xl font-bold text-black mb-2">Let us Craft your Getaway</h2>
+          <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-800 to-orange-500 mb-2">
+            Let Us Craft Your Getaway
+          </h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input
-            name="fullName"
-            value={formData.fullName}
-            onChange={handleChange}
-            placeholder="Full Name"
-            className="input-style"
-            required
-          />
-          <input
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            placeholder="Email"
-            className="input-style"
-            required
-          />
-          <input
-            name="phone"
-            value={formData.phone}
-            onChange={handleChange}
-            placeholder="Phone"
-            className="input-style"
-            required
-          />
-          <input
-            name="localAddress"
-            value={formData.localAddress}
-            onChange={handleChange}
-            placeholder="Local Address"
-            className="input-style"
-            required
-          />
-          <input
-            name="departureDate"
-            type="date"
-            value={formData.departureDate}
-            onChange={handleChange}
-            className="input-style"
-            required
-          />
-          <input
-            name="returnDate"
-            type="date"
-            value={formData.returnDate}
-            onChange={handleChange}
-            className="input-style"
-          />
-          <input
-            name="travelers"
-            type="number"
-            min={1}
-            value={formData.travelers}
-            onChange={handleChange}
-            className="input-style"
-            required
-          />
+          <IconInput icon={UserIcon} name="fullName" value={formData.fullName} onChange={handleChange} placeholder="Full Name" required />
+          <IconInput icon={Mail} type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Email" required />
+          <IconInput icon={Phone} name="phone" value={formData.phone} onChange={handleChange} placeholder="Phone Number" required />
+          <IconInput icon={Home} name="localAddress" value={formData.localAddress} onChange={handleChange} placeholder="Local Address" required />
+          <IconInput icon={Calendar} type="date" name="departureDate" value={formData.departureDate} onChange={handleChange} required />
+          <IconInput icon={Calendar} type="date" name="returnDate" value={formData.returnDate} onChange={handleChange} />
+          <IconInput icon={Users} type="number" min={1} name="travelers" value={formData.travelers} onChange={handleChange} placeholder="Travelers" required />
           <input
             value={destination.name}
             disabled
-            className="input-style bg-gray-100 cursor-not-allowed"
+            className="w-full p-3 rounded-md bg-gray-100 border border-gray-300 text-gray-500 cursor-not-allowed"
           />
         </div>
 
@@ -207,36 +183,22 @@ export default function BookingForm({ destinationId, user }: Props) {
           onChange={handleChange}
           placeholder="Special Requests"
           rows={3}
-          className="input-style"
+          className="w-full p-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
         />
 
-        <div className="text-right text-sm">
-          Total Price: <strong>₱{totalPrice.toLocaleString()}</strong>
+        <div className="text-right text-base text-blue-900 font-semibold">
+          Total Price: <span className="text-orange-600">₱{totalPrice.toLocaleString()}</span>
         </div>
 
         <div className="text-center">
           <button
             type="submit"
             disabled={loading}
-            className="bg-black text-white px-8 py-3 rounded-full hover:bg-gray-800 transition-all disabled:opacity-50"
+            className="bg-gradient-to-r from-orange-500 to-blue-700 text-white px-8 py-3 rounded-full font-bold hover:from-orange-600 hover:to-blue-800 transition disabled:opacity-50"
           >
             {loading ? 'Processing...' : 'Book My Adventure'}
           </button>
         </div>
-
-        <style jsx>{`
-          .input-style {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 1px solid #d1d5db;
-            border-radius: 0.5rem;
-            margin-top: 0.25rem;
-          }
-          .input-style:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
-          }
-        `}</style>
       </motion.form>
     </section>
   );

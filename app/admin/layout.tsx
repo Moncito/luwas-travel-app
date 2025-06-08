@@ -1,32 +1,27 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import { auth as firebaseAuth } from "@/firebase/admin";
-import AdminNavbar from "@/components/(admin)/AdminNavbar";
-import type { DecodedIdToken } from "firebase-admin/auth";
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { auth as firebaseAuth } from '@/firebase/admin';
+import type { DecodedIdToken } from 'firebase-admin/auth';
+import ClientAdminNavbar from '@/components/(admin)/ClientAdminNavbar';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const cookieStore = await cookies(); // ✅ no need for `await`
-  const session = cookieStore.get("session");
+  const cookieStore = await cookies();
+  const session = cookieStore.get('session');
 
-  if (!session?.value) redirect("/admin-log-in"); // ✅ Updated
+  if (!session?.value) redirect('/admin-log-in');
 
   try {
     const decoded: DecodedIdToken = await firebaseAuth.verifySessionCookie(session.value, true);
-
-    if (!decoded.admin) {
-      redirect("/admin-log-in"); // ✅ Updated
-    }
+    if (!decoded.admin) redirect('/admin-log-in');
   } catch (err) {
-    console.error("🔥 Session verification failed:", err);
-    redirect("/admin-log-in"); // ✅ Updated
+    console.error('🔥 Session verification failed:', err);
+    redirect('/admin-log-in');
   }
 
   return (
     <div className="min-h-screen flex">
-      <AdminNavbar />
-      <main className="flex-1 p-8 bg-gray-50">
-        {children}
-      </main>
+      <ClientAdminNavbar /> {/* ✅ wrapped in a client-safe container */}
+      <main className="flex-1 p-8 bg-gray-50">{children}</main>
     </div>
   );
 }

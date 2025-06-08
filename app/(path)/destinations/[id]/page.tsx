@@ -27,12 +27,8 @@ interface Place {
   link: string;
 }
 
-interface Props {
-  params: { id: string };
-}
-
-export default async function DestinationPage(props: Props) {
-  const { id: destinationId } = props.params;
+export default async function DestinationPage({ params }: { params: { id: string } }) {
+  const destinationId = params.id;
 
   const snapshot = await db.collection("destinations").doc(destinationId).get();
   if (!snapshot.exists) return notFound();
@@ -72,6 +68,7 @@ export default async function DestinationPage(props: Props) {
             src={destination.imageUrl}
             alt={destination.name}
             fill
+            priority
             className="object-cover brightness-75"
           />
           <div className="absolute inset-0 bg-black/40" />

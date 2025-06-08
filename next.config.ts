@@ -14,6 +14,10 @@ const NextConfig: NextConfig = {
       'upload.wikimedia.org',
       'images.unsplash.com',
       'lh3.googleusercontent.com',
+      's3-media0.fl.yelpcdn.com',
+      's3-media1.fl.yelpcdn.com',
+      's3-media2.fl.yelpcdn.com',
+      's3-media3.fl.yelpcdn.com',
     ],
   },
   experimental: {

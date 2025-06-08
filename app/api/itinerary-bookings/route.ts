@@ -28,6 +28,7 @@ export async function GET() {
         slug: data.slug || '',
         status: data.status || "upcoming",
         people: data.people || 1,
+        totalPrice: Number(data.totalPrice) || 0,
         createdAt, // ✅ always valid Date object
       };
     });

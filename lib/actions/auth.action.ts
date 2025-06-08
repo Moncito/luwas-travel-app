@@ -3,13 +3,11 @@
 import { auth, db } from "@/firebase/admin";
 import { cookies } from "next/headers";
 import { FieldValue } from "firebase-admin/firestore";
-import type { User } from "@/types/User";
 
-const SESSION_DURATION = 60 * 60 * 24 * 7; // 7 days
-
-// Set session cookie
+// ✅ Set session cookie securely
 export async function setSessionCookie(idToken: string) {
-  const cookieStore = await cookies(); // ✅ Await required here
+  const SESSION_DURATION = 60 * 60 * 24 * 7; // moved inside ✅
+  const cookieStore = await cookies();
 
   const sessionCookie = await auth.createSessionCookie(idToken, {
     expiresIn: SESSION_DURATION * 1000,
@@ -24,49 +22,59 @@ export async function setSessionCookie(idToken: string) {
   });
 }
 
-// 🔐 Sign up using Admin SDK
-export async function signUp({ email, password, name }: { email: string; password: string; name: string }) {
+// ✅ Write user to Firestore after sign-up
+export async function signUp({
+  uid,
+  email,
+  name,
+}: {
+  uid: string;
+  email: string;
+  name: string;
+}) {
   try {
-    const userRecord = await auth.createUser({
-      email,
-      password,
-      displayName: name,
-    });
+    const docRef = db.collection("users").doc(uid);
+    const existing = await docRef.get();
 
-    await db.collection("users").doc(userRecord.uid).set({
-      uid: userRecord.uid,
-      email: userRecord.email,
-      name,
-      createdAt: FieldValue.serverTimestamp(),
-    });
+    if (!existing.exists) {
+      await docRef.set({
+        uid,
+        email,
+        name,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+    }
 
     return { success: true };
   } catch (error) {
-    console.error("Error signing up:", error);
-    return { success: false, error };
+    console.error("🔥 Error writing Firestore user:", error);
+    return { success: false, message: "Failed to store user in Firestore." };
   }
 }
 
-// ✅ Updated: Sign in user (verifies and syncs user in Firestore)
-export async function signIn(params: SignInParams) {
-  const { email, idToken } = params;
-
+// ✅ Ensure user exists and sync to Firestore on login
+export async function signIn({
+  email,
+  idToken,
+}: {
+  email: string;
+  idToken: string;
+}) {
   try {
     const userRecord = await auth.getUserByEmail(email);
     if (!userRecord) {
       return {
         success: false,
-        message: "User does not exist. Create an account.",
+        message: "User not found. Please sign up.",
       };
     }
 
     await setSessionCookie(idToken);
 
-    // ✅ Ensure Firestore user exists
-    const userDocRef = db.collection("users").doc(userRecord.uid);
-    const userDoc = await userDocRef.get();
-    if (!userDoc.exists) {
-      await userDocRef.set({
+    const userRef = db.collection("users").doc(userRecord.uid);
+    const snapshot = await userRef.get();
+    if (!snapshot.exists) {
+      await userRef.set({
         uid: userRecord.uid,
         email: userRecord.email,
         name: userRecord.displayName || "Unnamed",
@@ -76,46 +84,46 @@ export async function signIn(params: SignInParams) {
 
     return {
       success: true,
-      message: "Login successful.",
+      message: "Logged in successfully.",
     };
   } catch (error) {
-    console.error("Sign-in error:", error);
+    console.error("🔥 Sign-in Error:", error);
     return {
       success: false,
-      message: "Failed to log into account. Please try again.",
+      message: "Login failed. Please try again.",
     };
   }
 }
 
-// Sign out
+// ✅ Remove session cookie
 export async function signOut() {
   const cookieStore = await cookies();
   cookieStore.delete("session");
 }
 
-// Get current user
-export async function getCurrentUser(): Promise<User | null> {
+// ✅ Get currently authenticated user
+export async function getCurrentUser() {
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get("session")?.value;
   if (!sessionCookie) return null;
 
   try {
-    const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
-    const userDoc = await db.collection("users").doc(decodedClaims.uid).get();
-    if (!userDoc.exists) return null;
+    const decoded = await auth.verifySessionCookie(sessionCookie, true);
+    const userSnap = await db.collection("users").doc(decoded.uid).get();
+    if (!userSnap.exists) return null;
 
     return {
-      ...userDoc.data(),
-      id: userDoc.id,
-    } as User;
-  } catch (error) {
-    console.error("Session verification failed:", error);
+      ...userSnap.data(),
+      id: userSnap.id,
+    };
+  } catch (err) {
+    console.error("Session verification failed:", err);
     return null;
   }
 }
 
-// Auth check
-export const isAuthenticated = async (): Promise<boolean> => {
+// ✅ Check if user is authenticated
+export async function isAuthenticated(): Promise<boolean> {
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get("session")?.value;
   if (!sessionCookie) return false;
@@ -126,4 +134,4 @@ export const isAuthenticated = async (): Promise<boolean> => {
   } catch {
     return false;
   }
-};
+}

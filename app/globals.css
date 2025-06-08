@@ -349,3 +349,13 @@ html {
     transform: translateY(0);
   }
 }
+
+.input-styled {
+  @apply w-full p-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-400 transition;
+}
+
+ul, li {
+  list-style: none;
+  padding: 5;
+  margin: 5;
+}

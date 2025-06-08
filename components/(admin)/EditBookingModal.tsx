@@ -3,7 +3,7 @@
 
 import { useState } from 'react'
 import { toast } from 'sonner'
-import type { Booking } from '@/app/admin/type'
+import type { Booking } from '@/types/booking';
 
 interface Props {
   booking: Booking
@@ -48,7 +48,7 @@ export default function EditBookingModal({ booking, onClose, onUpdated }: Props)
           value={status}
           onChange={(e) => setStatus(e.target.value as Booking['status'])}
         >
-          {['upcoming', 'completed', 'cancelled'].map((option) => (
+        {['upcoming', 'completed', 'cancelled', 'paid', 'waiting_payment'].map((option) => (
             <option key={option} value={option}>
               {option.charAt(0).toUpperCase() + option.slice(1)}
             </option>
