@@ -4,7 +4,13 @@ import { format } from 'date-fns'
 
 export async function GET() {
   try {
-    const snapshot = await db.collection("bookings").get();
+    // 🔄 Fetch both destination and itinerary bookings
+    const [tripSnap, itinerarySnap] = await Promise.all([
+      db.collection("bookings").get(),
+      db.collection("itineraryBookings").get(),
+    ]);
+
+    const allDocs = [...tripSnap.docs, ...itinerarySnap.docs];
 
     const monthMap: Record<string, {
       totalBookings: number;
@@ -12,18 +18,21 @@ export async function GET() {
       weatherCounts: Record<string, number>;
     }> = {};
 
-    snapshot.forEach((doc) => {
+    allDocs.forEach((doc) => {
       const data = doc.data();
-      const createdAt =
-        data.createdAt?.toDate?.() ||
-        (data.createdAt?.seconds
-          ? new Date(data.createdAt.seconds * 1000)
-          : null);
+
+      const createdAt = data.createdAt instanceof Date
+        ? data.createdAt
+        : data.createdAt?.toDate?.() ||
+          (data.createdAt?.seconds ? new Date(data.createdAt.seconds * 1000) : null);
 
       const temp = data.weather?.avgTemp;
       const condition = data.weather?.condition;
 
-      if (!createdAt || typeof temp !== "number" || typeof condition !== "string") return;
+      if (!createdAt || typeof temp !== "number" || typeof condition !== "string") {
+        console.warn("⛔ Skipping invalid doc:", { id: doc.id, createdAt, temp, condition });
+        return;
+      }
 
       const month = format(createdAt, "MMMM");
 
@@ -41,15 +50,18 @@ export async function GET() {
         (monthMap[month].weatherCounts[condition] || 0) + 1;
     });
 
+    const monthOrder = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ];
+
     const result = Object.entries(monthMap)
       .map(([month, data]) => {
         const mostCommonWeather = Object.entries(data.weatherCounts).sort(
           (a, b) => b[1] - a[1]
         )[0]?.[0] || "Unknown";
 
-        const avgTemp = parseFloat(
-          (data.tempSum / data.totalBookings).toFixed(1)
-        );
+        const avgTemp = parseFloat((data.tempSum / data.totalBookings).toFixed(1));
 
         return {
           month,
@@ -58,11 +70,7 @@ export async function GET() {
           topCondition: mostCommonWeather,
         };
       })
-      .sort(
-        (a, b) =>
-          new Date(`1 ${a.month} 2023`).getMonth() -
-          new Date(`1 ${b.month} 2023`).getMonth()
-      );
+      .sort((a, b) => monthOrder.indexOf(a.month) - monthOrder.indexOf(b.month));
 
     return NextResponse.json(result);
   } catch (error) {
