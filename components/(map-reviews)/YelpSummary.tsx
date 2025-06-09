@@ -52,16 +52,21 @@ export default function YelpSummary({ name, location }: Props) {
     <section className="max-w-6xl mx-auto px-6 pb-24 space-y-12">
       {/* Summary Card */}
       <div className="bg-white rounded-2xl shadow-md p-6 flex flex-col sm:flex-row items-start gap-6 transition-all duration-300 border border-gray-200">
-        {data.image && (
-          <div className="relative w-full sm:w-52 h-36 sm:h-44 rounded-lg overflow-hidden shadow-sm">
-            <Image
-              src={data.image}
-              alt="Yelp Business"
-              fill
-              className="object-cover transition-transform duration-300 hover:scale-105"
-            />
-          </div>
-        )}
+{data.image ? (
+  <div className="relative w-full sm:w-52 h-36 sm:h-44 rounded-lg overflow-hidden shadow-sm">
+    <Image
+      src={data.image}
+      alt="Yelp Business"
+      fill
+      className="object-cover transition-transform duration-300 hover:scale-105"
+    />
+  </div>
+) : (
+  <div className="w-full sm:w-52 h-36 sm:h-44 bg-gray-100 flex items-center justify-center text-gray-500 text-sm rounded-lg">
+    No image available
+  </div>
+)}
+
 
         <div className="flex-1">
           <h2 className="text-2xl font-semibold text-gray-900 mb-2">

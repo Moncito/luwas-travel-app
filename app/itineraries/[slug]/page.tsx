@@ -51,9 +51,9 @@ function extractYelpFriendlyName(title: string): string {
 export default async function ItineraryPage({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }) {
-  const slug = params.slug;
+  const { slug } = await params;
 
   const snapshot = await db
     .collection("itineraries")
@@ -80,15 +80,10 @@ export default async function ItineraryPage({
     const recData = await recRes.json();
 
     recommendedPlaces = Array.isArray(recData.places)
-      ? (recData.places as RawPlace[]).map((p, i): Place => ({
-          title: p.title?.trim() || `Suggested Place #${i + 1}`,
-          description: p.description || "A recommended spot nearby.",
-          image: p.image || "/fallback.jpg",
-          link:
-            p.link ||
-            `https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lon}`,
-        }))
+      ? recData.places
       : [];
+
+    console.log("✅ Fetched recommendedPlaces:", recommendedPlaces);
   } catch (err) {
     console.error("🌐 Error fetching recommended places:", err);
   }
@@ -173,6 +168,7 @@ export default async function ItineraryPage({
             places={recommendedPlaces}
           />
         </section>
+
 
         {/* Yelp Summary */}
         <YelpSummary

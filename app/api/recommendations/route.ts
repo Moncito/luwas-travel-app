@@ -1,20 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchImageForPlace } from "@/lib/fetchImage";
+import OpenAI from "openai";
 
 export const dynamic = "force-dynamic";
 
-// Define the Overpass element structure
-interface OverpassElement {
-  type: "node";
-  id: number;
-  lat: number;
-  lon: number;
-  tags?: {
-    name?: string;
-    description?: string;
-    [key: string]: string | undefined;
-  };
-}
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 interface Place {
   title: string;
@@ -32,12 +24,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Missing lat or lon" }, { status: 400 });
   }
 
-  const radius = 1000;
+  const radius = 10000;
+
   const overpassQuery = `
     [out:json][timeout:25];
     (
       node["tourism"](around:${radius},${lat},${lon});
       node["historic"](around:${radius},${lat},${lon});
+      node["natural"](around:${radius},${lat},${lon});
+      node["leisure"](around:${radius},${lat},${lon});
       node["amenity"="place_of_worship"](around:${radius},${lat},${lon});
     );
     out center 6;
@@ -50,34 +45,68 @@ export async function GET(req: NextRequest) {
     });
 
     const json = await res.json();
-    const rawPlaces: OverpassElement[] = json.elements || [];
-    const seenTitles = new Set<string>();
+    const elements = json.elements || [];
 
-    const places: Place[] = (
-      await Promise.all(
-        rawPlaces
-          .filter((place): place is OverpassElement => !!place.tags?.name)
-          .slice(0, 10)
-          .map(async (place) => {
-            const name = place.tags!.name!;
-            if (seenTitles.has(name)) return null;
-            seenTitles.add(name);
+    const seen = new Set();
+    const places: Place[] = [];
 
-            const image = await fetchImageForPlace(name);
+    for (const item of elements) {
+      const name = item.tags?.name;
+      if (!name || seen.has(name)) continue;
+      seen.add(name);
 
-            return {
-              title: name,
-              description: place.tags?.description || "A recommended spot nearby.",
-              link: `https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lon}`,
-              image,
-            };
-          })
-      )
-    ).filter((p): p is Place => p !== null).slice(0, 3);
+      const image = await fetchImageForPlace(name);
+      places.push({
+        title: name,
+        description: item.tags?.description || "A recommended spot nearby.",
+        link: `https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lon}`,
+        image,
+      });
 
-    return NextResponse.json({ places });
+      if (places.length >= 3) break;
+    }
+
+    if (places.length > 0) {
+      return NextResponse.json({ places });
+    }
+
+    // 🧠 OpenAI fallback
+    const aiPrompt = `
+Suggest 3 must-visit tourist attractions near latitude ${lat} and longitude ${lon} (Palawan area).
+Each item must follow this format:
+1. Title – Short description.
+
+Be clear, local, and helpful to travelers. Avoid generic or repeated names.`;
+
+    const chat = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [{ role: "user", content: aiPrompt }],
+    });
+
+    const aiResponse = chat.choices[0].message.content || "";
+
+    const aiPlaces: Place[] = [];
+
+    const lines = aiResponse.split("\n").filter((line) => line.trim() !== "");
+    for (const line of lines) {
+      const match = line.match(/^\d+\.\s*(.+?)\s*(–|-)\s*(.+)$/);
+      if (!match) continue;
+
+      const [, title, description] = match; // ✅ destructure without unused _
+      const image = await fetchImageForPlace(title);
+      aiPlaces.push({
+        title,
+        description,
+        link: `https://www.google.com/maps/search/?q=${encodeURIComponent(title)}`,
+        image,
+      });
+
+      if (aiPlaces.length >= 3) break;
+    }
+
+    return NextResponse.json({ places: aiPlaces });
   } catch (err) {
-    console.error("🧭 Overpass error:", err);
+    console.error("❌ Recommendation error:", err);
     return NextResponse.json({ places: [] });
   }
 }

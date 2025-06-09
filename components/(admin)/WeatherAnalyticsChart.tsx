@@ -53,7 +53,7 @@ export default function WeatherAnalyticsChart() {
 
   return (
     <div className="mt-10 p-8 rounded-xl bg-white shadow">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">📊 Bookings vs. Temperature</h2>
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">Bookings vs. Temperature</h2>
 
       <ResponsiveContainer width="100%" height={350}>
         <ComposedChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 10 }}>

@@ -16,38 +16,34 @@ type Props = {
   places: Place[];
 };
 
-const isGeneric = (value: string | undefined): boolean => {
-  if (!value) return true;
-  const lower = value.toLowerCase();
-  return lower.includes('recommended spot') || lower === 'unknown' || lower.trim() === '';
-};
-
-const RecommendedPlaces: React.FC<Props> = ({ destination, places }) => {
+const RecommendedPlacesForDestinations: React.FC<Props> = ({ destination, places }) => {
   if (!places || !Array.isArray(places)) return null;
 
-  const maxPlaces = places.slice(0, 6);
-  const hasNoData = maxPlaces.length === 0;
+  const displayedPlaces = places.slice(0, 6);
+  const hasNoData = displayedPlaces.length === 0;
 
   return (
     <section className="mt-10">
-      <h2 className="text-2xl font-bold mb-6 text-gray-900">
+      <h2 className="text-2xl font-bold mb-6 text-gray-900 text-center">
         Places to Visit in {destination}
       </h2>
 
       {hasNoData ? (
-        <p className="text-sm text-gray-500 italic">
+        <p className="text-sm text-gray-500 italic text-center">
           No popular spots found near this location. Try exploring the area manually or check back later.
         </p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {maxPlaces.map((place, index) => {
-            const fallbackTitle = `Recommended Spot #${index + 1}`;
-            const title = isGeneric(place.title) ? fallbackTitle : place.title!.trim();
+          {displayedPlaces.map((place, index) => {
+            const rawTitle = place.title?.trim();
+            const title = rawTitle && rawTitle.toLowerCase().includes('recommended spot')
+              ? `Spot near ${destination} #${index + 1}`
+              : rawTitle || `Spot near ${destination} #${index + 1}`;
 
-            const fallbackDescription = `Explore this place near ${destination}.`;
-            const description = isGeneric(place.description)
-              ? fallbackDescription
-              : place.description!.trim();
+            const rawDesc = place.description?.trim();
+            const description = rawDesc && rawDesc.toLowerCase().includes('recommended spot')
+              ? `One of the known places to visit around ${destination}.`
+              : rawDesc || `A place to check out near ${destination}.`;
 
             const image = place.image || '/images/fallback.jpg';
 
@@ -104,4 +100,4 @@ const RecommendedPlaces: React.FC<Props> = ({ destination, places }) => {
   );
 };
 
-export default RecommendedPlaces;
+export default RecommendedPlacesForDestinations;

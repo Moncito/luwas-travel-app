@@ -87,7 +87,7 @@ export default function AdminBookingsPage() {
     const handleSendReceipt = async ({ name, email, type, booking }: EmailPayload) => {
       const toastId = toast.loading('Sending receipt email...');
 
-      console.log('📤 Sending Receipt with booking payload:', booking); // ✅ Log full booking object
+      console.log('📤 Sending Receipt with booking payload:', booking); //  Log full booking object
 
       try {
         await sendReceiptEmail({ name, email, type, booking });

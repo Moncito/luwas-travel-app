@@ -14,7 +14,7 @@ const steps = [
   {
     title: "Plan",
     icon: <Calendar className="w-8 h-10 text-white" />,
-    description: "Customize your itinerary with our smart planning tools.",
+    description: "Customized Itineraries Ready for your Travel.",
   },
   {
     title: "Travel",
@@ -24,7 +24,7 @@ const steps = [
   {
     title: "Use the App",
     icon: <Smartphone className="w-8 h-10 text-white" />,
-    description: "Access your plans on mobile anytime, even offline. Coming soon to iOS & Android!",
+    description: "Access your plans on mobile anytime, even offline. Coming soon to iOS",
   },
 ];
 
@@ -68,15 +68,13 @@ export default function HowItWorks() {
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7 }}
       >
-        <h3 className="text-3xl md:text-4xl font-bold mb-4">
+        <h3 className="text-3xl md:text-4xl font-bold mb-1 pt-20">
           Ready for your next adventure?
         </h3>
-        <p className="text-white/90 mb-6">
+        <p className="text-white/90 mb-2 ">
           Start planning with <span className="font-bold">Luwas</span> today—your all-in-one travel companion.
         </p>
-        <button className="bg-white text-black font-semibold py-2 px-6 rounded-full hover:bg-gray-200 transition-all">
-          Start Now
-        </button>
+        
       </motion.div>
     </section>
   );

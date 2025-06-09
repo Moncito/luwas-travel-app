@@ -49,8 +49,8 @@ export default function TravelHistoryPage() {
           </p>
 
           <button
-            onClick={() => router.push('/log-in')}
-            className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-full shadow-md hover:bg-blue-700 transition"
+            onClick={() => router.push('/sign-up')}
+            className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-full shadow-md hover:bg-blue-700 transition cursor-pointer"
           >
             Log In
           </button>

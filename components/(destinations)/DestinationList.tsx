@@ -61,21 +61,50 @@ export default function DestinationList({ searchTerm }: { searchTerm: string }) 
           </motion.div>
         ) : (
           <>
-            <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" initial="hidden" whileInView="visible" viewport={{ once: true }} transition={{ staggerChildren: 0.2 }}>
+            <motion.div
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              transition={{ staggerChildren: 0.2 }}
+            >
               {currentDestinations.map((destination) => (
                 <Link href={`/destinations/${destination.id}`} key={destination.id}>
-                  <motion.div className="relative group rounded-2xl overflow-hidden shadow-lg hover:scale-105 hover:shadow-2xl transition-all duration-500 cursor-pointer" initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
-                    <Image src={destination.imageUrl} alt={destination.name} width={500} height={300} className="object-cover w-full h-60 group-hover:brightness-75 transition-all duration-300" />
-                    <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-all duration-300" />
-                    <div className="absolute top-4 right-4 bg-white text-black text-sm font-bold px-3 py-1 rounded-full shadow">
-                      ₱{destination.price || '—'}
+                  <motion.div
+                    className="relative group rounded-2xl overflow-hidden shadow-lg transition-all duration-500 cursor-pointer"
+                    initial={{ opacity: 0, y: 40 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.7 }}
+                  >
+                    {/* Image */}
+                    <Image
+                      src={destination.imageUrl}
+                      alt={destination.name}
+                      width={500}
+                      height={300}
+                      className="object-cover w-full h-60"
+                    />
+
+                    {/* Gradient overlay */}
+                    <div className="absolute bottom-0 left-0 right-0 h-2/3 bg-gradient-to-t from-black to-transparent z-10" />
+
+                    {/* Price */}
+                    <div className="absolute top-4 right-4 z-20 bg-white text-black text-sm font-bold px-3 py-1 rounded-full shadow-md">
+                      ₱{destination.price.toLocaleString()}
                     </div>
-                    <div className="absolute bottom-0 p-6 text-white">
-                      <h3 className="text-2xl font-bold">{destination.name}</h3>
-                      <p className="text-sm text-gray-300">{destination.location}</p>
+
+                    {/* Content */}
+                    <div className="absolute bottom-4 left-4 right-4 z-20 text-white">
+                      <h3 className="text-xl font-bold drop-shadow-md">{destination.name}</h3>
+                      <p className="text-sm text-white/90 drop-shadow-sm">{destination.location}</p>
                       <div className="flex flex-wrap gap-2 mt-2">
                         {destination.tags.map((tag, idx) => (
-                          <span key={idx} className="bg-white/20 rounded-full px-3 py-1 text-xs">{tag}</span>
+                          <span
+                            key={idx}
+                            className="bg-white/30 text-white text-xs px-3 py-1 rounded-full backdrop-blur-sm"
+                          >
+                            {tag}
+                          </span>
                         ))}
                       </div>
                     </div>
@@ -84,15 +113,31 @@ export default function DestinationList({ searchTerm }: { searchTerm: string }) 
               ))}
             </motion.div>
 
-            {/* Pagination Controls */}
+            {/* Pagination */}
             <div className="flex justify-center gap-2 mt-12">
-              <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50">Previous</button>
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+              >
+                Previous
+              </button>
               {[...Array(totalPages)].map((_, i) => (
-                <button key={i + 1} onClick={() => handlePageChange(i + 1)} className={`px-4 py-2 rounded ${currentPage === i + 1 ? 'bg-black text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>
+                <button
+                  key={i + 1}
+                  onClick={() => handlePageChange(i + 1)}
+                  className={`px-4 py-2 rounded ${currentPage === i + 1 ? 'bg-black text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
+                >
                   {i + 1}
                 </button>
               ))}
-              <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50">Next</button>
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+              >
+                Next
+              </button>
             </div>
           </>
         )}

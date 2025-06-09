@@ -64,7 +64,7 @@ const Navbar = () => {
             <button
               onClick={handleLogout}
               disabled={loading}
-              className="text-white font-semibold hover:underline underline-offset-8 text-sm xl:text-base"
+              className="text-white font-semibold hover:underline underline-offset-8 text-sm xl:text-base cursor-pointer"
             >
               {loading ? "Logging out..." : "LOGOUT"}
             </button>
@@ -117,7 +117,7 @@ const Navbar = () => {
                 toggleMobileMenu()
                 router.push("/sign-in")
               }}
-              className="block w-full text-black font-semibold hover:text-gray-400 text-center"
+              className="block w-full text-black font-semibold hover:text-gray-400 text-center cursor-pointer"
             >
               LOGIN
             </button>

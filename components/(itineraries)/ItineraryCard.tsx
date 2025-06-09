@@ -1,15 +1,15 @@
-'use client'
+'use client';
 
-import Image from 'next/image'
-import Link from 'next/link'
+import Image from 'next/image';
+import Link from 'next/link';
 
 interface ItineraryProps {
-  slug: string
-  title: string
-  imageUrl: string
-  duration?: string
-  highlights: string[]
-  price?: number
+  slug: string;
+  title: string;
+  imageUrl: string;
+  duration?: string;
+  highlights: string[];
+  price?: number;
 }
 
 export default function ItineraryCard({
@@ -21,34 +21,44 @@ export default function ItineraryCard({
   price = 0
 }: ItineraryProps) {
   return (
-    <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border border-blue-100 overflow-hidden">
-      <div className="relative h-48 w-full">
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 text-black flex flex-col">
+      {/* Image */}
+      <div className="relative h-56 w-full">
         <Image
           src={imageUrl}
           alt={title}
           fill
           className="object-cover"
         />
+        <div className="absolute inset-0 bg-black/20" />
       </div>
 
-      <div className="p-5 space-y-2">
-        <h2 className="text-lg font-bold">{title}</h2>
-        <p className="text-sm text-gray-600 italic">{duration}</p>
-        <p className="text-sm font-semibold">₱{price.toLocaleString()} per person</p>
+      {/* Content */}
+      <div className="p-6 flex flex-col flex-grow justify-between text-center">
+        <div className="space-y-2">
+          <h2 className="text-xl font-bold">{title}</h2>
+          <p className="text-sm italic text-black/80">{duration}</p>
+          <p className="text-base font-semibold">
+            ₱{price.toLocaleString()} per person
+          </p>
 
-        <ul className="text-xs text-gray-600 list-disc list-inside">
-          {highlights.slice(0, 3).map((h, i) => (
-            <li key={i} className="truncate">{h}</li>
-          ))}
-        </ul>
+          <ul className="text-sm text-black/80 list-disc list-inside space-y-1 max-w-xs mx-auto min-h-[72px]">
+            {highlights.slice(0, 3).map((h, i) => (
+              <li key={i} className="truncate">{h}</li>
+            ))}
+          </ul>
+        </div>
 
-        <Link
-          href={`/itineraries/${slug}`}
-          className="inline-block text-sm  hover:underline font-medium mt-3"
-        >
-          View Details →
-        </Link>
+        {/* Button aligned at bottom */}
+        <div className="pt-4">
+          <Link
+            href={`/itineraries/${slug}`}
+            className="inline-block text-sm font-medium underline underline-offset-4 hover:text-gray-800 transition"
+          >
+            View Details →
+          </Link>
+        </div>
       </div>
     </div>
-  )
+  );
 }

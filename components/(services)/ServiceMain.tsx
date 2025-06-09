@@ -101,9 +101,6 @@ export default function ServicesMain() {
         <p className="text-gray-300 mb-6">
           Let us plan your next unforgettable trip with <span className="font-bold text-white">Luwas</span> today.
         </p>
-        <button className="bg-white text-black font-semibold py-2 px-8 rounded-full hover:bg-gray-200 transition-all">
-          Plan Your Adventure
-        </button>
       </motion.div>
 
     </section>
