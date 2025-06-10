@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { collection, getDocs } from 'firebase/firestore';
@@ -34,7 +33,7 @@ export default function DestinationList({ searchTerm }: { searchTerm: string }) 
   }, []);
 
   const safeSearchTerm = (searchTerm ?? '').toLowerCase();
-  const filteredDestinations = destinations.filter((destination) => {
+  const filteredDestinations = destinations.filter(destination => {
     const nameMatch = destination.name.toLowerCase().includes(safeSearchTerm);
     const locationMatch = destination.location.toLowerCase().includes(safeSearchTerm);
     const tagsMatch = destination.tags.some(tag => tag.toLowerCase().includes(safeSearchTerm));
@@ -55,63 +54,54 @@ export default function DestinationList({ searchTerm }: { searchTerm: string }) 
     <section className="w-full py-20 px-6 bg-white">
       <div className="max-w-7xl mx-auto">
         {filteredDestinations.length === 0 ? (
-          <motion.div className="text-center text-gray-500 py-20" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7 }}>
+          <div className="text-center text-gray-500 py-20">
             <p className="text-3xl mb-4">😢 No Destinations Found</p>
             <p className="text-sm">Try searching for something else.</p>
-          </motion.div>
+          </div>
         ) : (
           <>
-            <motion.div
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              transition={{ staggerChildren: 0.2 }}
-            >
-              {currentDestinations.map((destination) => (
-                <Link href={`/destinations/${destination.id}`} key={destination.id}>
-                  <motion.div
-                    className="relative group rounded-2xl overflow-hidden shadow-lg transition-all duration-500 cursor-pointer"
-                    initial={{ opacity: 0, y: 40 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.7 }}
-                  >
-                    {/* Image */}
-                    <Image
-                      src={destination.imageUrl}
-                      alt={destination.name}
-                      width={500}
-                      height={300}
-                      className="object-cover w-full h-60"
-                    />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {currentDestinations.map(destination => (
+            <Link href={`/destinations/${destination.id}`} key={destination.id}>
+              <div className="relative group rounded-2xl overflow-hidden shadow-lg bg-white cursor-pointer transition-all duration-300 hover:brightness-75">
+                {/* Image */}
+                <Image
+                  src={destination.imageUrl}
+                  alt={destination.name}
+                  width={500}
+                  height={300}
+                  unoptimized
+                  className="object-cover w-full h-60 group-hover:scale-105 transition-transform duration-300"
+                />
 
-                    {/* Gradient overlay */}
-                    <div className="absolute bottom-0 left-0 right-0 h-2/3 bg-gradient-to-t from-black to-transparent z-10" />
+                {/* Darker Overlay on hover */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent z-10 transition-all duration-300 group-hover:from-black/80" />
 
-                    {/* Price */}
-                    <div className="absolute top-4 right-4 z-20 bg-white text-black text-sm font-bold px-3 py-1 rounded-full shadow-md">
-                      ₱{destination.price.toLocaleString()}
-                    </div>
+                {/* Price */}
+                <div className="absolute top-4 right-4 z-20 bg-white text-black text-sm font-bold px-3 py-1 rounded-full shadow-md">
+                  ₱{destination.price.toLocaleString()}
+                </div>
 
-                    {/* Content */}
-                    <div className="absolute bottom-4 left-4 right-4 z-20 text-white">
-                      <h3 className="text-xl font-bold drop-shadow-md">{destination.name}</h3>
-                      <p className="text-sm text-white/90 drop-shadow-sm">{destination.location}</p>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {destination.tags.map((tag, idx) => (
-                          <span
-                            key={idx}
-                            className="bg-white/30 text-white text-xs px-3 py-1 rounded-full backdrop-blur-sm"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </motion.div>
-                </Link>
-              ))}
-            </motion.div>
+                {/* Content */}
+                <div className="absolute bottom-4 left-4 right-4 z-20 text-white">
+                  <h3 className="text-xl font-bold drop-shadow-md">{destination.name}</h3>
+                  <p className="text-sm text-white/90 drop-shadow">{destination.location}</p>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {destination.tags.map((tag, idx) => (
+                      <span
+                        key={idx}
+                        className="bg-white/30 text-white text-xs px-3 py-1 rounded-full backdrop-blur-sm"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </Link>
+
+                          ))}
+            </div>
 
             {/* Pagination */}
             <div className="flex justify-center gap-2 mt-12">
