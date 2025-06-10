@@ -46,7 +46,7 @@ export default function ItineraryBookingForm({ slug, user }: Props) {
   const [loading, setLoading] = useState(true);
 
   const [formData, setFormData] = useState({
-    fullName: '',
+    name: '',
     email: '',
     phone: '',
     address: '',
@@ -119,7 +119,7 @@ export default function ItineraryBookingForm({ slug, user }: Props) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: formData.fullName,
+          name: formData.name,
           email: formData.email,
           amount: totalPrice,
           bookingId: bookingRef.id,
@@ -166,7 +166,7 @@ export default function ItineraryBookingForm({ slug, user }: Props) {
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <IconInput icon={UserIcon} name="fullName" value={formData.fullName} onChange={handleChange} placeholder="Full Name" required />
+          <IconInput icon={UserIcon} name="fullName" value={formData.name} onChange={handleChange} placeholder="Full Name" required />
           <IconInput icon={Mail} name="email" type="email" value={formData.email} onChange={handleChange} placeholder="Email" required />
           <IconInput icon={Phone} name="phone" value={formData.phone} onChange={handleChange} placeholder="Phone" required />
           <IconInput icon={Home} name="address" value={formData.address} onChange={handleChange} placeholder="Address" />
