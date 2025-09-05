@@ -2,15 +2,17 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { onAuthStateChanged, signOut } from "firebase/auth"
-import { auth } from "@/firebase/client" // ✅ Correct import
+import { auth } from "@/firebase/client"
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
   const router = useRouter()
+  const pathname = usePathname()
 
   const toggleMobileMenu = () => setIsMobileMenuOpen(prev => !prev)
 
@@ -19,6 +21,14 @@ const Navbar = () => {
       setIsAuthenticated(!!user)
     })
     return () => unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20)
+    }
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
   const handleLogout = async () => {
@@ -30,18 +40,23 @@ const Navbar = () => {
   }
 
   const navItems = [
-    { href: "/about", text: "ABOUT" },
+    { href: "/", text: "HOME" },
+    { href: "/itineraries", text: "ITINERARIES" },
     { href: "/services", text: "SERVICES" },
     { href: "/destinations", text: "DESTINATIONS" },
     { href: "/history", text: "TRAVEL HISTORY" },
   ]
 
   return (
-    <nav className="absolute top-0 left-0 w-full z-50 bg-transparent backdrop-blur-md">
-      <div className="container mx-auto px-6 py-6 flex items-center justify-between">
+    <nav
+      className={`fixed top-0 left-0 w-full z-50 transition-colors duration-500 ${
+        scrolled ? "bg-black/70 backdrop-blur-md shadow-md" : "bg-transparent"
+      }`}
+    >
+      <div className="container mx-auto px-6 py-5 flex items-center justify-between">
 
         {/* Left - Logo */}
-        <Link href="/" className="text-white text-2xl md:text-3xl font-bold tracking-wide animate-fade-in">
+        <Link href="/" className="text-white text-2xl md:text-3xl font-bold tracking-wide">
           LUWAS
         </Link>
 
@@ -51,9 +66,13 @@ const Navbar = () => {
             <Link
               key={item.href}
               href={item.href}
-              className="text-white font-semibold hover:underline underline-offset-8 transition duration-300 text-sm xl:text-base"
+              className={`relative font-semibold text-sm xl:text-base transition duration-300
+                ${pathname === item.href ? "text-white" : "text-gray-300 hover:text-white"}`}
             >
               {item.text}
+              {pathname === item.href && (
+                <span className="absolute left-0 -bottom-1 w-full h-[2px] bg-white rounded-full"></span>
+              )}
             </Link>
           ))}
         </div>
@@ -64,14 +83,14 @@ const Navbar = () => {
             <button
               onClick={handleLogout}
               disabled={loading}
-              className="text-white font-semibold hover:underline underline-offset-8 text-sm xl:text-base cursor-pointer"
+              className="text-gray-300 hover:text-white font-semibold transition-colors text-sm xl:text-base"
             >
               {loading ? "Logging out..." : "LOGOUT"}
             </button>
           ) : (
             <button
               onClick={() => router.push("/sign-in")}
-              className="bg-white text-black font-semibold px-4 py-2 rounded-full hover:bg-gray-200 text-sm xl:text-base"
+              className="bg-white text-black font-semibold px-4 py-2 rounded-full hover:bg-gray-200 transition text-sm xl:text-base"
             >
               LOGIN
             </button>
@@ -90,13 +109,15 @@ const Navbar = () => {
 
       {/* Mobile Menu Dropdown */}
       {isMobileMenuOpen && (
-        <div className="mt-4 bg-white rounded-lg shadow-lg p-4 space-y-4 animate-fade-in lg:hidden">
+        <div className="animate-slide-down bg-white/95 backdrop-blur-md shadow-lg rounded-lg p-4 space-y-4 lg:hidden">
           {navItems.map(item => (
             <Link
               key={item.href}
               href={item.href}
               onClick={toggleMobileMenu}
-              className="block text-center text-black font-semibold hover:text-gray-400"
+              className={`block text-center font-semibold text-base transition-colors ${
+                pathname === item.href ? "text-black" : "text-gray-700 hover:text-black"
+              }`}
             >
               {item.text}
             </Link>
@@ -107,7 +128,7 @@ const Navbar = () => {
                 toggleMobileMenu()
                 await handleLogout()
               }}
-              className="block w-full text-black font-semibold hover:text-gray-400 text-center"
+              className="block w-full text-gray-700 font-semibold hover:text-black text-center transition-colors"
             >
               {loading ? "Logging out..." : "LOGOUT"}
             </button>
@@ -117,7 +138,7 @@ const Navbar = () => {
                 toggleMobileMenu()
                 router.push("/sign-in")
               }}
-              className="block w-full text-black font-semibold hover:text-gray-400 text-center cursor-pointer"
+              className="block w-full bg-black text-white font-semibold py-2 rounded-lg hover:bg-gray-800 transition"
             >
               LOGIN
             </button>

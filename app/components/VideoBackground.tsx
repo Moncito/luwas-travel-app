@@ -1,8 +1,17 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
-import Image from 'next/image';
-import Link from 'next/link';
+import { motion } from "framer-motion";
+import Image from "next/image";
+import Link from "next/link";
+
+const textVariant = {
+  hidden: { opacity: 0, y: 30 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.8, delay: i * 0.3, ease: "easeOut" },
+  }),
+};
 
 const HeroSection = () => (
   <div className="relative w-full h-screen overflow-hidden">
@@ -15,47 +24,72 @@ const HeroSection = () => (
       className="object-cover"
     />
 
-    {/* Gradient Overlay */}
-    <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-black/30 to-black/10 z-10" />
+    {/* Subtle Overlay */}
+    <div className="absolute inset-0 bg-black/25 z-10" />
 
-    {/* Animated Text Overlay */}
-    <motion.div
-      initial={{ opacity: 0, y: 50 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 1, delay: 0.3 }}
-      className="absolute z-20 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 px-6 text-white text-center"
-    >
-      <h1 className="text-4xl md:text-6xl font-great-vibes font-semibold drop-shadow-xl tracking-wide">
-        YOUR PATH TO ADVENTURE
-      </h1>
-      <p className="mt-4 text-lg md:text-xl text-white drop-shadow-[0_2px_3px_rgba(0,0,0,0.75)]">
-        Discover your journey with us today...
-      </p>
+    {/* Hero Content */}
+    <div className="absolute z-20 top-1/2 transform -translate-y-1/2 px-6 md:px-18 w-full md:w-auto text-center md:text-left">
+      <motion.h1
+        variants={textVariant}
+        initial="hidden"
+        animate="visible"
+        custom={0}
+        className="text-3xl sm:text-5xl md:text-6xl font-bold leading-tight text-white drop-shadow-md max-w-2xl mx-auto md:mx-0"
+      >
+        Weaving Your Dreams into{" "}
+        <span className="bg-gradient-to-r from-teal-300 to-blue-400 bg-clip-text text-transparent drop-shadow-lg">
+          Unforgettable Adventures
+        </span>
+      </motion.h1>
 
-      {/* Buttons Container */}
-      <div className="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4">
+      <motion.p
+        variants={textVariant}
+        initial="hidden"
+        animate="visible"
+        custom={1}
+        className="mt-4 text-base sm:text-lg md:text-xl text-white/90 leading-relaxed max-w-md mx-auto md:mx-0 drop-shadow"
+      >
+        Discover breathtaking destinations, plan your dream trip, and travel
+        with ease — your next adventure starts here.
+      </motion.p>
+
+      {/* Buttons */}
+      <motion.div
+        variants={textVariant}
+        initial="hidden"
+        animate="visible"
+        custom={2}
+        className="mt-6 flex flex-col sm:flex-row gap-4 justify-center md:justify-start"
+      >
         <Link href="/destinations">
           <motion.button
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 1 }}
-            className="px-6 py-3 bg-white text-black hover:bg-gray-100 font-medium rounded-full shadow-md transition duration-300 cursor-pointer"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="cursor-pointer px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-full shadow-lg transition-all duration-300"
           >
-            Explore Destinations
+            Destinations
           </motion.button>
         </Link>
 
         <Link href="/itineraries">
           <motion.button
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 1.1 }}
-            className="px-6 py-3 bg-white text-black hover:bg-gray-100 font-medium rounded-full shadow-md transition duration-300 cursor-pointer "
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="cursor-pointer px-6 py-3 border border-white/70 text-white font-medium rounded-full bg-white/10 hover:bg-white hover:text-black transition-all duration-300 backdrop-blur-sm"
           >
-            Explore Itineraries
+            Itineraries
           </motion.button>
         </Link>
-      </div>
+      </motion.div>
+    </div>
+
+    {/* Scroll Indicator */}
+    <motion.div
+      animate={{ y: [0, 8, 0] }}
+      transition={{ repeat: Infinity, duration: 1.6, delay: 1.5 }}
+      className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white text-lg z-20 drop-shadow-lg"
+    >
+      ↓
     </motion.div>
   </div>
 );

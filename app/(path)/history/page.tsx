@@ -33,7 +33,8 @@ export default function TravelHistoryPage() {
       {user ? (
         <TravelTimeline userId={user.uid} />
       ) : (
-        <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-white text-center">
+        <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-gradient-to-br from-blue-500 via-teal-400 to-cyan-300 text-center text-white"
+>
           {/* ✅ Lottie Animation */}
           <Player
             autoplay

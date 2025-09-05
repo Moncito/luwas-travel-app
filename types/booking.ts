@@ -15,4 +15,11 @@ export interface Booking {
   travelers?: number;
   totalPrice: number;
   type: 'trip' | 'itinerary';
+  weather: {
+  condition: string,   // "Rain", "Cloudy", "Sunny"
+  temperature: number, // in Celsius
+  icon: string,        // weather API icon url/code
+  fetchedAt: string,   // ISO timestamp when fetched
+}
+
 }

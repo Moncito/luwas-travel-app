@@ -2,69 +2,106 @@ export const dynamic = "force-dynamic";
 
 import { fetchAdminMetrics } from "@/lib/admin/fetchMetrics";
 import BookingAnalyticsChart from "@/components/(admin)/BookingAnalyticsChart";
-import RecentBookingsPanel from '@/components/(admin)/RecentBookingsPanel'
+import RecentBookingsPanel from "@/components/(admin)/RecentBookingsPanel";
 import ItineraryBookingChart from "@/components/(admin)/ItineraryBookingChart";
 import TopPerformers from "@/components/(admin)/TopPerformers";
 import WeatherSummaryCards from "@/components/(admin)/WeatherSummaryCards";
 import WeatherAnalyticsChart from "@/components/(admin)/WeatherAnalyticsChart";
 import UserTripCharts from "@/components/(admin)/UserTripCharts";
 
+import { Users, MapPin, ClipboardList } from "lucide-react";
+
 export default async function AdminDashboardPage() {
   const { totalUsers, totalTrips, totalItineraries } = await fetchAdminMetrics();
   const greeting = getGreeting();
 
   return (
-    <div className="p-8 space-y-8 bg-gradient-to-br from-blue-50 via-white to-blue-100 min-h-screen">
+    <div className="p-8 space-y-10 bg-gradient-to-br from-blue-50 via-white to-blue-100 min-h-screen">
+      {/* Greeting */}
       <header>
-        <h1 className="text-3xl font-bold text-gray-800">{greeting}, Admin 👋</h1>
-        <p className="text-gray-600 mt-1">Here’s your dashboard summary today.</p>
+        <h1 className="text-3xl font-bold text-gray-800">
+          {greeting}, Admin 👋
+        </h1>
+        <p className="text-gray-600 mt-1">
+          Here’s your dashboard summary today.
+        </p>
       </header>
 
+      {/* Metrics Row */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        <DashboardCard title="Total Users" value={totalUsers} color="blue" />
-        <DashboardCard title="Total Trips" value={totalTrips} color="green" />
-        <DashboardCard title="Total Itineraries" value={totalItineraries} color="purple" />
+        <DashboardCard
+          title="Total Users"
+          value={totalUsers}
+          icon={<Users className="w-6 h-6 text-blue-600" />}
+        />
+        <DashboardCard
+          title="Total Trips"
+          value={totalTrips}
+          icon={<MapPin className="w-6 h-6 text-green-600" />}
+        />
+        <DashboardCard
+          title="Total Itineraries"
+          value={totalItineraries}
+          icon={<ClipboardList className="w-6 h-6 text-purple-600" />}
+        />
       </section>
 
-      <TopPerformers />
-      <WeatherSummaryCards />
-      <RecentBookingsPanel />
-      <WeatherAnalyticsChart/>
-      <UserTripCharts/>
-      <BookingAnalyticsChart />
-      <ItineraryBookingChart />
+      {/* Trends Overview */}
+      <section>
+        <h2 className="text-xl font-semibold text-gray-700 mb-4">
+          Trends Overview
+        </h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <UserTripCharts />
+          <BookingAnalyticsChart />
+          <ItineraryBookingChart />
+          <WeatherAnalyticsChart />
+        </div>
+      </section>
+
+      {/* Insights */}
+      <section>
+        <h2 className="text-xl font-semibold text-gray-700 mb-4">Insights</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TopPerformers />
+          <WeatherSummaryCards />
+        </div>
+      </section>
+
+      {/* Recent Bookings */}
+      <section>
+        <h2 className="text-xl font-semibold text-gray-700 mb-4">
+        </h2>
+        <RecentBookingsPanel />
+      </section>
     </div>
   );
 }
 
-// Reusable Card Component
-function DashboardCard({ title, value, color }: { title: string; value: number; color: string }) {
-  const colorMap: Record<string, string> = {
-    blue: "bg-blue-100 text-blue-800",
-    green: "bg-green-100 text-green-800",
-    orange: "bg-orange-100 text-orange-800",
-    purple: "bg-purple-100 text-purple-800", // Added purple style
-  };
-
-  const iconMap: Record<string, string> = {
-    "Total Users": "👤",
-    "Total Trips": "🧳",
-    "Total Itineraries": "📌",
-  };
-
+/* ------------------ Reusable Metric Card ------------------ */
+function DashboardCard({
+  title,
+  value,
+  icon,
+}: {
+  title: string;
+  value: number;
+  icon: React.ReactNode;
+}) {
   return (
-    <div
-      className={`p-6 rounded-xl shadow-sm border transition duration-300 hover:shadow-md ${colorMap[color]}`}
-    >
-      <h2 className="text-lg font-semibold flex items-center gap-2">
-        <span>{iconMap[title]}</span> {title}
-      </h2>
-      <p className="text-3xl font-bold mt-2">{value}</p>
+    <div className="flex items-center gap-4 p-6 rounded-xl bg-white shadow-sm border hover:shadow-md transition">
+      <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-gray-100">
+        {icon}
+      </div>
+      <div>
+        <h3 className="text-sm font-medium text-gray-600">{title}</h3>
+        <p className="text-2xl font-bold text-gray-900">{value}</p>
+      </div>
     </div>
   );
 }
 
-// Get Greeting based on time
+/* ------------------ Greeting Helper ------------------ */
 function getGreeting() {
   const hour = new Date().getHours();
   if (hour < 12) return "Good morning";

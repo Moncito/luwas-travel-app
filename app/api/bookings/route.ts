@@ -1,90 +1,72 @@
-import { db } from '@/firebase/admin';
-import { NextResponse } from 'next/server';
-import { Timestamp } from 'firebase-admin/firestore';
-import { fetchWeatherForecast } from '@/lib/weather'; // ✅ Real forecast helper
+import { db } from "@/firebase/admin";
+import { fetchWeather } from "@/lib/weather";
+import { NextResponse } from "next/server";
 
-// ==========================
-// 🔁 GET: Fetch all bookings
-// ==========================
+interface DestinationData {
+  name: string;
+  latitude: number;
+  longitude: number;
+  location?: string;
+  description?: string;
+  price?: number;
+  imageUrl?: string;
+}
+
+// ✅ Fetch all destination bookings
 export async function GET() {
   try {
-    const snapshot = await db
-      .collection('bookings')
-      .orderBy('createdAt', 'desc')
-      .get();
-
-    const bookings = snapshot.docs.map((doc) => {
-      const data = doc.data();
-
-      const createdAt =
-        data.createdAt instanceof Timestamp
-          ? data.createdAt.toDate()
-          : new Date();
-
-      return {
-        id: doc.id,
-        fullName: data.fullName || '',
-        email: data.email || '',
-        phone: data.phone || '',
-        destination: data.destination || '',
-        destinationId: data.destinationId || '',
-        departureDate: data.departureDate || '',
-        status: data.status || 'upcoming',
-        proofUrl: data.proofUrl || null,
-        totalPrice: Number(data.totalPrice) || 0,
-        createdAt,
-        weather: {
-          avgTemp: data.weather?.avgTemp ?? null,
-          condition: data.weather?.condition ?? null,
-        },
-      };
-    });
-
+    const snapshot = await db.collection("bookings").orderBy("createdAt", "desc").get();
+    const bookings = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
     return NextResponse.json(bookings);
   } catch (error) {
-    console.error('🔥 Error fetching bookings:', error);
-    return new NextResponse('Failed to fetch bookings', { status: 500 });
+    console.error("❌ Error fetching bookings:", error);
+    return NextResponse.json({ error: "Failed to fetch bookings" }, { status: 500 });
   }
 }
 
-// ===========================
-// ➕ POST: Create new booking
-// ===========================
+// ✅ Create a new destination booking
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const {
-      fullName,
-      email,
-      phone,
-      destination,
-      departureDate,
-      status,
-      proofUrl,
-      destinationId,
-    } = body;
+    const { destinationId, departureDate, fullName, email, travelers } = body;
 
-    // 🌤️ Fetch weather forecast based on destination + travel date
-    const weather = await fetchWeatherForecast(destination, departureDate);
+    if (!destinationId || !departureDate || !fullName || !email) {
+      return NextResponse.json({ error: "Missing required booking fields" }, { status: 400 });
+    }
+
+    // Fetch destination
+    const destDoc = await db.collection("destinations").doc(destinationId).get();
+    if (!destDoc.exists) return NextResponse.json({ error: "Destination not found" }, { status: 404 });
+
+    const destData = destDoc.data() as DestinationData | undefined;
+    if (!destData?.latitude || !destData?.longitude) {
+      return NextResponse.json({ error: "Destination missing lat/lon" }, { status: 400 });
+    }
+
+    // ✅ Fetch weather
+    const weather = await fetchWeather(destData.latitude, destData.longitude, departureDate);
 
     const newBooking = {
       fullName,
       email,
-      phone,
-      destination,
+      destination: destData.name ?? "Unknown Destination",
+      latitude: destData.latitude,
+      longitude: destData.longitude,
       departureDate,
+      travelers: travelers ?? 1,
+      status: "upcoming",
       createdAt: new Date(),
-      status: status || 'pending',
-      destinationId,
-      proofUrl: proofUrl || null,
       weather,
     };
 
-    const docRef = await db.collection('bookings').add(newBooking);
-
-    return NextResponse.json({ id: docRef.id, ...newBooking });
-  } catch (error) {
-    console.error('❌ Error creating booking:', error);
-    return new NextResponse('Failed to create booking', { status: 500 });
+    const docRef = await db.collection("bookings").add(newBooking);
+    return NextResponse.json({ id: docRef.id, ...newBooking }, { status: 201 });
+  } catch (err) {
+    console.error("❌ Error creating booking:", err);
+    return NextResponse.json({ error: "Failed to create booking" }, { status: 500 });
   }
 }
+  

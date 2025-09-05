@@ -1,30 +1,35 @@
-export async function fetchWeatherForecast(destination: string, date: string) {
-  try {
-    // Optional: Replace this when you get a new API key
-    throw new Error("Using fallback based on PH weather season.");
-  } catch (error) {
-    console.warn('⚠️ Weather API failed:', error.message);
+export async function fetchWeather(
+  lat: number,
+  lon: number,
+  departureDate: string
+) {
+  const apiKey = process.env.OPENWEATHER_API_KEY;
+  if (!apiKey) throw new Error("Missing OPENWEATHER_API_KEY");
 
-    const month = new Date(date).getMonth(); // 0 = Jan, 11 = Dec
+  const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
 
-    if ([2, 3, 4].includes(month)) {
-      // March to May
-      return {
-        avgTemp: 34,
-        condition: 'Hot and Dry',
-      };
-    } else if ([5, 6, 7, 8, 9, 10].includes(month)) {
-      // June to November
-      return {
-        avgTemp: 28,
-        condition: 'Rainy and Humid',
-      };
-    } else {
-      // December to February
-      return {
-        avgTemp: 26,
-        condition: 'Cool and Cloudy',
-      };
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Failed to fetch weather data");
+
+  const data = await res.json();
+
+  // Find forecast closest to departureDate
+  const target = new Date(departureDate).getTime();
+  let closest = data.list[0];
+  let minDiff = Math.abs(new Date(closest.dt_txt).getTime() - target);
+
+  for (const forecast of data.list) {
+    const diff = Math.abs(new Date(forecast.dt_txt).getTime() - target);
+    if (diff < minDiff) {
+      closest = forecast;
+      minDiff = diff;
     }
   }
+
+  return {
+    condition: closest.weather[0].main,
+    temperature: closest.main.temp,
+    icon: closest.weather[0].icon,
+    fetchedAt: new Date().toISOString(),
+  };
 }

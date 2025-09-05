@@ -5,12 +5,10 @@ import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
-  addDoc,
   collection,
   query,
   where,
   getDocs,
-  serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '@/firebase/client';
 import type { User } from 'firebase/auth';
@@ -26,6 +24,8 @@ interface Itinerary {
   title: string;
   slug: string;
   price: number;
+  latitude: number;
+  longitude: number;
 }
 
 function IconInput({ icon: Icon, ...props }: any) {
@@ -59,7 +59,7 @@ export default function ItineraryBookingForm({ slug, user }: Props) {
     if (user) {
       setFormData((prev) => ({
         ...prev,
-        fullName: user.displayName || '',
+        name: user.displayName || '',
         email: user.email || '',
       }));
     }
@@ -100,38 +100,44 @@ export default function ItineraryBookingForm({ slug, user }: Props) {
     setLoading(true);
 
     try {
-      const bookingRef = await addDoc(collection(db, 'itineraryBookings'), {
-        ...formData,
-        userId: user.uid,
-        itineraryId: itinerary.id,
-        title: itinerary.title,
-        slug,
-        people: Number(formData.people),
-        totalPrice,
-        status: 'upcoming',
-        paid: false,
-        createdAt: serverTimestamp(),
+      // ✅ Call API route
+      const res = await fetch('/api/itinerary-bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          userId: user.uid,
+          itineraryId: itinerary.id,
+          slug: itinerary.slug,
+          title: itinerary.title,
+          totalPrice,
+          paymentMethod: 'PayMongo',
+        }),
       });
+
+      if (!res.ok) throw new Error('Failed to create itinerary booking');
+      const data = await res.json();
 
       toast.success('Booking submitted! Redirecting to payment...');
 
-      const res = await fetch('/api/paymongo/checkout', {
+      // ✅ Trigger PayMongo checkout
+      const payRes = await fetch('/api/paymongo/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,
           amount: totalPrice,
-          bookingId: bookingRef.id,
+          bookingId: data.id, // comes from API
           itinerarySlug: slug,
           successType: 'itinerary',
         }),
       });
 
-      const data = await res.json();
-      if (data?.url) {
+      const payData = await payRes.json();
+      if (payData?.url) {
         setTimeout(() => {
-          window.location.href = data.url;
+          window.location.href = payData.url;
         }, 1000);
       } else {
         toast.error('❌ Payment session failed.');
@@ -166,7 +172,7 @@ export default function ItineraryBookingForm({ slug, user }: Props) {
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <IconInput icon={UserIcon} name="fullName" value={formData.name} onChange={handleChange} placeholder="Full Name" required />
+          <IconInput icon={UserIcon} name="name" value={formData.name} onChange={handleChange} placeholder="Full Name" required />
           <IconInput icon={Mail} name="email" type="email" value={formData.email} onChange={handleChange} placeholder="Email" required />
           <IconInput icon={Phone} name="phone" value={formData.phone} onChange={handleChange} placeholder="Phone" required />
           <IconInput icon={Home} name="address" value={formData.address} onChange={handleChange} placeholder="Address" />

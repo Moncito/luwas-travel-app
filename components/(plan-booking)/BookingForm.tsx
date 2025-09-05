@@ -4,13 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import Image from 'next/image';
-import {
-  doc,
-  getDoc,
-  addDoc,
-  collection,
-  serverTimestamp,
-} from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/client';
 import type { User } from 'firebase/auth';
 import { Mail, Phone, Calendar, Home, Users, User as UserIcon } from 'lucide-react';
@@ -23,6 +17,8 @@ interface Props {
 interface Destination {
   name: string;
   price: number;
+  latitude: number;
+  longitude: number;
 }
 
 function IconInput({ icon: Icon, ...props }: any) {
@@ -99,37 +95,42 @@ export default function BookingForm({ destinationId, user }: Props) {
     try {
       const totalPrice = formData.travelers * pricePerPerson;
 
-      const bookingRef = await addDoc(collection(db, 'bookings'), {
-        ...formData,
-        userId: user.uid,
-        destinationId,
-        destination: destination?.name,
-        travelers: Number(formData.travelers),
-        totalPrice,
-        status: 'upcoming',
-        paid: false,
-        createdAt: serverTimestamp(),
+      // ✅ Call API route instead of addDoc
+      const res = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          userId: user.uid,
+          destinationId,
+          totalPrice,
+          paymentMethod: 'PayMongo',
+        }),
       });
+
+      if (!res.ok) throw new Error('Failed to create booking');
+      const data = await res.json();
 
       toast.success('Booking submitted! Redirecting to payment...');
 
-      const res = await fetch('/api/paymongo/checkout', {
+      // ✅ Now continue with PayMongo checkout
+      const payRes = await fetch('/api/paymongo/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: formData.fullName,
           email: formData.email,
           amount: totalPrice,
-          bookingId: bookingRef.id,
+          bookingId: data.id, // returned from API
           destinationId,
           successType: 'destination',
         }),
       });
 
-      const data = await res.json();
-      if (data?.url) {
+      const payData = await payRes.json();
+      if (payData?.url) {
         setTimeout(() => {
-          window.location.href = data.url;
+          window.location.href = payData.url;
         }, 1200);
       } else {
         toast.error('❌ Payment failed. Try again.');
@@ -162,6 +163,7 @@ export default function BookingForm({ destinationId, user }: Props) {
           </h2>
         </div>
 
+        {/* Inputs */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <IconInput icon={UserIcon} name="fullName" value={formData.fullName} onChange={handleChange} placeholder="Full Name" required />
           <IconInput icon={Mail} type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Email" required />
