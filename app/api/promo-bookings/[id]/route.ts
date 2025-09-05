@@ -5,10 +5,13 @@ interface Params {
   params: { id: string };
 }
 
+// Get a single promo booking
 export async function GET(_: Request, { params }: Params) {
   try {
     const doc = await db.collection("promoBookings").doc(params.id).get();
-    if (!doc.exists) return new NextResponse("Promo booking not found", { status: 404 });
+    if (!doc.exists) {
+      return new NextResponse("Promo booking not found", { status: 404 });
+    }
     return NextResponse.json({ id: doc.id, ...doc.data() });
   } catch (err) {
     console.error("❌ Error fetching promo booking:", err);
@@ -16,6 +19,7 @@ export async function GET(_: Request, { params }: Params) {
   }
 }
 
+// Update a promo booking (full patch)
 export async function PATCH(req: Request, { params }: Params) {
   try {
     const body = await req.json();
@@ -29,6 +33,7 @@ export async function PATCH(req: Request, { params }: Params) {
   }
 }
 
+// Delete a promo booking
 export async function DELETE(_: Request, { params }: Params) {
   try {
     await db.collection("promoBookings").doc(params.id).delete();
