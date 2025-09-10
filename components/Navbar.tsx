@@ -5,16 +5,17 @@ import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
 import { onAuthStateChanged, signOut } from "firebase/auth"
 import { auth } from "@/firebase/client"
+import { UserCircle } from "lucide-react"
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loading, setLoading] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+
   const router = useRouter()
   const pathname = usePathname()
-
-  const toggleMobileMenu = () => setIsMobileMenuOpen(prev => !prev)
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -54,7 +55,6 @@ const Navbar = () => {
       }`}
     >
       <div className="container mx-auto px-6 py-5 flex items-center justify-between">
-
         {/* Left - Logo */}
         <Link href="/" className="text-white text-2xl md:text-3xl font-bold tracking-wide">
           LUWAS
@@ -62,7 +62,7 @@ const Navbar = () => {
 
         {/* Center - Nav Items */}
         <div className="hidden lg:flex space-x-8">
-          {navItems.map(item => (
+          {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -77,16 +77,42 @@ const Navbar = () => {
           ))}
         </div>
 
-        {/* Right - Auth Button */}
-        <div className="hidden lg:flex space-x-4">
+        {/* Right - Auth Section */}
+        <div className="hidden lg:flex items-center space-x-4 relative">
           {isAuthenticated ? (
-            <button
-              onClick={handleLogout}
-              disabled={loading}
-              className="text-gray-300 hover:text-white font-semibold transition-colors text-sm xl:text-base"
-            >
-              {loading ? "Logging out..." : "LOGOUT"}
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setProfileMenuOpen((prev) => !prev)}
+                className="flex items-center gap-2 text-white font-medium focus:outline-none"
+              >
+                <UserCircle className="w-7 h-7" />
+              </button>
+
+              {profileMenuOpen && (
+                <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg py-2">
+                  <Link
+                    href="/profile"
+                    onClick={() => setProfileMenuOpen(false)}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Profile
+                  </Link>
+                  <Link
+                    href="/history"
+                    onClick={() => setProfileMenuOpen(false)}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Travel History
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                  >
+                    {loading ? "Logging out..." : "Logout"}
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
             <button
               onClick={() => router.push("/sign-in")}
@@ -99,7 +125,7 @@ const Navbar = () => {
 
         {/* Mobile Menu Icon */}
         <div className="lg:hidden flex items-center">
-          <button onClick={toggleMobileMenu} className="text-white focus:outline-none">
+          <button onClick={() => setIsMobileMenuOpen((prev) => !prev)} className="text-white focus:outline-none">
             <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
@@ -110,11 +136,11 @@ const Navbar = () => {
       {/* Mobile Menu Dropdown */}
       {isMobileMenuOpen && (
         <div className="animate-slide-down bg-white/95 backdrop-blur-md shadow-lg rounded-lg p-4 space-y-4 lg:hidden">
-          {navItems.map(item => (
+          {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              onClick={toggleMobileMenu}
+              onClick={() => setIsMobileMenuOpen(false)}
               className={`block text-center font-semibold text-base transition-colors ${
                 pathname === item.href ? "text-black" : "text-gray-700 hover:text-black"
               }`}
@@ -123,19 +149,28 @@ const Navbar = () => {
             </Link>
           ))}
           {isAuthenticated ? (
-            <button
-              onClick={async () => {
-                toggleMobileMenu()
-                await handleLogout()
-              }}
-              className="block w-full text-gray-700 font-semibold hover:text-black text-center transition-colors"
-            >
-              {loading ? "Logging out..." : "LOGOUT"}
-            </button>
+            <>
+              <Link
+                href="/profile"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="block text-center font-semibold text-base text-gray-700 hover:text-black"
+              >
+                Profile
+              </Link>
+              <button
+                onClick={async () => {
+                  setIsMobileMenuOpen(false)
+                  await handleLogout()
+                }}
+                className="block w-full text-gray-700 font-semibold hover:text-black text-center transition-colors"
+              >
+                {loading ? "Logging out..." : "LOGOUT"}
+              </button>
+            </>
           ) : (
             <button
               onClick={() => {
-                toggleMobileMenu()
+                setIsMobileMenuOpen(false)
                 router.push("/sign-in")
               }}
               className="block w-full bg-black text-white font-semibold py-2 rounded-lg hover:bg-gray-800 transition"
