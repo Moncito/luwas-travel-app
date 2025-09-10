@@ -1,16 +1,16 @@
-// File: app/api/analytics/weather/route.ts
 import { db } from "@/firebase/admin";
 import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    // Fetch all 3 collections
+    // Fetch bookings, itineraries, promos
     const [bookingsSnap, itinerariesSnap, promosSnap] = await Promise.all([
       db.collection("bookings").get(),
       db.collection("itineraryBookings").get(),
       db.collection("promoBookings").get(),
     ]);
 
+    // Helper to process snapshots
     const processDocs = (
       docs: FirebaseFirestore.QuerySnapshot,
       type: "booking" | "itinerary" | "promo"
@@ -18,23 +18,14 @@ export async function GET() {
       return docs.docs
         .map((doc) => {
           const data = doc.data();
-          if (
-            !data?.createdAt ||
-            !data.weather?.temperature ||
-            !data.weather?.condition
-          ) {
-            console.warn("⛔ Skipping invalid doc:", { id: doc.id, ...data });
+          if (!data?.createdAt || !data.weather?.temperature || !data.weather?.condition) {
             return null;
           }
 
           let createdAt: Date;
-          if (data.createdAt?.toDate) {
-            createdAt = data.createdAt.toDate();
-          } else if (data.createdAt?.seconds) {
-            createdAt = new Date(data.createdAt.seconds * 1000);
-          } else {
-            createdAt = new Date(data.createdAt);
-          }
+          if (data.createdAt?.toDate) createdAt = data.createdAt.toDate();
+          else if (data.createdAt?.seconds) createdAt = new Date(data.createdAt.seconds * 1000);
+          else createdAt = new Date(data.createdAt);
 
           const month = createdAt.toLocaleString("default", { month: "long" });
 
@@ -96,7 +87,7 @@ export async function GET() {
       } else if (item.type === "itinerary") {
         grouped[item.month].itineraryTemps.push(item.temperature);
         grouped[item.month].itineraryCount++;
-      } else if (item.type === "promo") {
+      } else {
         grouped[item.month].promoTemps.push(item.temperature);
         grouped[item.month].promoCount++;
       }
@@ -120,10 +111,10 @@ export async function GET() {
         month,
         destinationsAvgTemp: avg(values.bookingTemps),
         itinerariesAvgTemp: avg(values.itineraryTemps),
-        promosAvgTemp: avg(values.promoTemps), // ✅ NEW
+        promosAvgTemp: avg(values.promoTemps),
         bookingCount: values.bookingCount,
         itineraryCount: values.itineraryCount,
-        promoCount: values.promoCount, // ✅ NEW
+        promoCount: values.promoCount,
         topCondition,
       };
     });

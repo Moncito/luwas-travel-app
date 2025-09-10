@@ -5,18 +5,19 @@ import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/firebase/client'
 import { toast } from 'sonner'
 import dynamic from 'next/dynamic'
+import { MapPin } from 'lucide-react'
 
 const MapPickerClient = dynamic(() => import('@/components/MapPickerClient'), { ssr: false })
 
 export default function AddItineraryForm({ onAdd }: { onAdd?: () => void }) {
   const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [duration, setDuration] = useState('')
-  const [highlights, setHighlights] = useState('')
-  const [price, setPrice] = useState('')
   const [slug, setSlug] = useState('')
   const [image, setImage] = useState('')
   const [location, setLocation] = useState('')
+  const [duration, setDuration] = useState('')
+  const [description, setDescription] = useState('')
+  const [highlights, setHighlights] = useState('')
+  const [price, setPrice] = useState('')
   const [latitude, setLatitude] = useState<number | null>(null)
   const [longitude, setLongitude] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
@@ -25,8 +26,19 @@ export default function AddItineraryForm({ onAdd }: { onAdd?: () => void }) {
     e.preventDefault()
     setLoading(true)
 
-    if (!title || !description || !duration || !highlights || !price || !slug || !image || latitude === null || longitude === null || !location) {
-      toast.error('Please fill out all fields and select a location.')
+    if (
+      !title ||
+      !slug ||
+      !image ||
+      !location ||
+      !duration ||
+      !description ||
+      !highlights ||
+      !price ||
+      latitude === null ||
+      longitude === null
+    ) {
+      toast.error('⚠️ Please fill out all fields and select a location.')
       setLoading(false)
       return
     }
@@ -34,35 +46,34 @@ export default function AddItineraryForm({ onAdd }: { onAdd?: () => void }) {
     try {
       await addDoc(collection(db, 'itineraries'), {
         title,
-        description,
-        duration,
-        highlights: highlights.split(',').map(h => h.trim()),
-        price: Number(price),
         slug,
         image,
         location,
+        duration,
+        description,
+        highlights: highlights.split(',').map(h => h.trim()),
+        price: Number(price),
         latitude,
         longitude,
         createdAt: serverTimestamp(),
       })
 
-      toast.success('Itinerary added!')
+      toast.success('✅ Itinerary added successfully!')
       if (onAdd) onAdd()
 
-      // Reset fields
+      // Reset
       setTitle('')
-      setDescription('')
-      setDuration('')
-      setHighlights('')
-      setPrice('')
       setSlug('')
       setImage('')
       setLocation('')
+      setDuration('')
+      setDescription('')
+      setHighlights('')
+      setPrice('')
       setLatitude(null)
       setLongitude(null)
-
     } catch (err) {
-      toast.error('Error saving itinerary.')
+      toast.error('❌ Error saving itinerary.')
       console.error(err)
     } finally {
       setLoading(false)
@@ -70,37 +81,158 @@ export default function AddItineraryForm({ onAdd }: { onAdd?: () => void }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-lg shadow-lg">
-      <h2 className="text-2xl font-bold text-blue-800 text-center">Add New Itinerary</h2>
+    <div className="bg-white p-8 rounded-2xl shadow-lg max-w-6xl mx-auto">
+      <h2 className="text-2xl font-bold text-blue-800 mb-8 flex items-center gap-2">
+        <MapPin className="h-6 w-6 text-blue-700" /> Add New Itinerary
+      </h2>
 
-      <input className="w-full border p-2 rounded" placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
-      <input className="w-full border p-2 rounded" placeholder="Slug (e.g. palawan-escape)" value={slug} onChange={(e) => setSlug(e.target.value)} required />
-      <input className="w-full border p-2 rounded" placeholder="Image URL" value={image} onChange={(e) => setImage(e.target.value)} required />
-      <input className="w-full border p-2 rounded" placeholder="Location (e.g. Palawan)" value={location} onChange={(e) => setLocation(e.target.value)} required />
-      <input className="w-full border p-2 rounded" placeholder="Duration (e.g. 3 days, 2 nights)" value={duration} onChange={(e) => setDuration(e.target.value)} required />
-      <textarea className="w-full border p-2 rounded" placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} required />
-      <input className="w-full border p-2 rounded" placeholder="Highlights (comma-separated)" value={highlights} onChange={(e) => setHighlights(e.target.value)} required />
-      <input className="w-full border p-2 rounded" type="number" placeholder="Price" value={price} onChange={(e) => setPrice(e.target.value)} required />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Left Column - Form Fields */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <input
+            className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500"
+            placeholder="Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+          />
+          <input
+            className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500"
+            placeholder="Slug (e.g. palawan-escape)"
+            value={slug}
+            onChange={(e) => setSlug(e.target.value)}
+            required
+          />
+          <input
+            className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500"
+            placeholder="Image URL"
+            value={image}
+            onChange={(e) => setImage(e.target.value)}
+            required
+          />
+          <input
+            className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500"
+            placeholder="Location (e.g. Palawan)"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            required
+          />
+          <input
+            className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500"
+            placeholder="Duration (e.g. 3 days, 2 nights)"
+            value={duration}
+            onChange={(e) => setDuration(e.target.value)}
+            required
+          />
+          <textarea
+            className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-500"
+            placeholder="Description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={3}
+            required
+          />
+          <input
+            className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500"
+            placeholder="Highlights (comma-separated)"
+            value={highlights}
+            onChange={(e) => setHighlights(e.target.value)}
+            required
+          />
+          <input
+            className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500"
+            type="number"
+            placeholder="Price"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            required
+          />
 
-      <MapPickerClient
-        onSelectLocation={({ lat, lng }: { lat: number; lng: number }) => {
-          setLatitude(lat)
-          setLongitude(lng)
-        }}
-      />
-      {latitude !== null && longitude !== null && (
-        <p className="text-green-600 text-sm">
-          Selected Location: {latitude.toFixed(4)}, {longitude.toFixed(4)}
-        </p>
-      )}
+          <div className="flex justify-end gap-4 pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                setTitle('')
+                setSlug('')
+                setImage('')
+                setLocation('')
+                setDuration('')
+                setDescription('')
+                setHighlights('')
+                setPrice('')
+                setLatitude(null)
+                setLongitude(null)
+              }}
+              className="bg-gray-200 px-6 py-3 rounded-lg hover:bg-gray-300 transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-blue-700 text-white px-8 py-3 rounded-lg hover:bg-blue-800 transition shadow"
+            >
+              {loading ? 'Submitting...' : 'Add Itinerary'}
+            </button>
+          </div>
+        </form>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full bg-blue-700 text-white py-2 rounded hover:bg-blue-800"
-      >
-        {loading ? 'Submitting...' : 'Add Itinerary'}
-      </button>
-    </form>
+        {/* Right Column - Map Picker */}
+        <div className="space-y-4">
+          <MapPickerClient
+            onSelectLocation={({ lat, lng }: { lat: number; lng: number }) => {
+              setLatitude(lat)
+              setLongitude(lng)
+            }}
+          />
+          {latitude === null || longitude === null ? (
+            <p className="text-red-600 text-sm">📌 Please select a location on the map.</p>
+          ) : (
+            <p className="text-green-600 text-sm">
+              📍 Selected: {latitude.toFixed(4)}, {longitude.toFixed(4)}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Live Preview Card */}
+      <div className="mt-10">
+        <h3 className="text-lg font-semibold mb-4 text-gray-700">Live Preview</h3>
+        <div className="border rounded-xl shadow-md overflow-hidden max-w-md">
+          {image ? (
+            <img src={image} alt={title} className="h-48 w-full object-cover" />
+          ) : (
+            <div className="h-48 w-full bg-gray-200 flex items-center justify-center text-gray-500">
+              No Image Preview
+            </div>
+          )}
+          <div className="p-4">
+            <h4 className="text-xl font-bold text-gray-800">{title || 'Itinerary Title'}</h4>
+            <p className="text-sm text-gray-500">{location || 'Location'}</p>
+            <p className="text-gray-600 text-sm mt-1">{duration || 'Duration'}</p>
+            <p className="mt-2 text-gray-600 line-clamp-3">
+              {description || 'Itinerary description will appear here.'}
+            </p>
+            <div className="flex justify-between items-center mt-4">
+              <span className="text-blue-700 font-semibold">
+                {price ? `₱${price}` : '₱0.00'}
+              </span>
+              <div className="flex gap-2 flex-wrap">
+                {highlights
+                  ? highlights.split(',').map((h, i) => (
+                      <span
+                        key={i}
+                        className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full"
+                      >
+                        {h.trim()}
+                      </span>
+                    ))
+                  : <span className="text-gray-400 text-xs">#highlights</span>}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }

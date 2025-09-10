@@ -22,6 +22,7 @@ interface Promo {
   imageUrl: string;
   latitude: number;
   longitude: number;
+  highlights?: string[];
 }
 
 interface Place {
@@ -57,6 +58,7 @@ export default async function PromoDetailPage({
     imageUrl: rawData.imageUrl || "/images/fallback.jpg",
     latitude: rawData.latitude || 0,
     longitude: rawData.longitude || 0,
+    highlights: rawData.highlights || [],
   };
 
   const isDev = process.env.NODE_ENV !== "production";
@@ -143,23 +145,44 @@ export default async function PromoDetailPage({
           </div>
         </section>
 
+        {/* Highlights */}
+        {Array.isArray(promo.highlights) && promo.highlights.length > 0 && (
+          <section className="max-w-4xl mx-auto px-6 pb-16">
+            <h2 className="text-xl font-bold text-center mb-4">
+              Promo Highlights
+            </h2>
+            <ul className="space-y-3 text-gray-800">
+              {promo.highlights.map((item: string, idx: number) => (
+                <li key={idx} className="flex items-start gap-2">
+                  <span className="h-2 w-2 mt-2 rounded-full bg-black" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         {/* Map */}
         {promo.latitude && promo.longitude ? (
           <section className="max-w-4xl mx-auto px-6 pb-20">
             <h2 className="text-xl font-bold text-center mb-4">Location</h2>
-            <DestinationMapClientWrapper lat={promo.latitude} lon={promo.longitude} />
+            <DestinationMapClientWrapper
+              lat={promo.latitude}
+              lon={promo.longitude}
+            />
           </section>
         ) : null}
 
         {/* Weather Insights */}
         <section className="max-w-4xl mx-auto px-6 pb-16">
-          <h2 className="text-xl font-bold text-center mb-4"></h2>
           <WeatherInsights title={promo.title} location={promo.location} />
         </section>
 
         {/* Recommended Places */}
         <section className="max-w-6xl mx-auto px-6 pb-20">
-          <h2 className="text-xl font-bold text-center mb-6">Recommended Nearby</h2>
+          <h2 className="text-xl font-bold text-center mb-6">
+            Recommended Nearby
+          </h2>
           <RecommendedPlacesForDestinations
             destination={promo.title}
             places={recommendedPlaces}
@@ -168,7 +191,9 @@ export default async function PromoDetailPage({
 
         {/* Yelp Summary */}
         <section className="max-w-6xl mx-auto px-6 pb-20">
-          <h2 className="text-xl font-bold text-center mb-6">Traveler Reviews</h2>
+          <h2 className="text-xl font-bold text-center mb-6">
+            Traveler Reviews
+          </h2>
           <YelpSummary
             name={promo.title.replace(/(Promo|Deal|Offer)/gi, "").trim()}
             location={promo.location}

@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import AddPromoForm from '@/components/(admin-promos)/AddPromoForm';
+import AddPromoForm from "@/components/(admin-promos)/AddPromoForm";
 
-export default function AddPromoPage() {
+export default function AdminPromosPage() {
   return (
-    <section className="min-h-screen bg-gray-50 py-12 px-6">
-      <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl font-extrabold text-blue-800 mb-8 text-center">
-        </h1>
+    <div className="flex-1 px-6 py-12">
+      <h1 className="text-3xl font-bold text-blue-800 text-center mb-10">
+        Manage Promos
+      </h1>
 
-        <AddPromoForm />
-      </div>
-    </section>
+      {/* Form only, same style as destinations */}
+      <AddPromoForm />
+    </div>
   );
 }
