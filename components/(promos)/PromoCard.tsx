@@ -1,63 +1,96 @@
-'use client';
+'use client'
 
-import Image from 'next/image';
-import Link from 'next/link';
+import Image from 'next/image'
+import Link from 'next/link'
 
 interface PromoProps {
-  id: string;
-  title: string;
-  description: string;
-  imageUrl?: string;
-  discount: number; // percentage
-  validUntil: string;
+  id: string
+  title: string
+  description: string
+  discountPercentage: number
+  price: number
+  finalPrice: number
+  startDate: string
+  endDate: string
+  location: string
+  imageUrl?: string
 }
 
 export default function PromoCard({
   id,
   title,
   description,
+  discountPercentage,
+  price,
+  finalPrice,
+  endDate,
+  location,
   imageUrl,
-  discount,
-  validUntil,
 }: PromoProps) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 flex flex-col">
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden">
       {/* Image */}
-      <div className="relative h-48 w-full">
+      <div className="relative h-52 w-full">
         <Image
           src={imageUrl || '/placeholder.jpg'}
           alt={title}
           fill
-          className="object-cover rounded-t-2xl"
+          priority
+          className="object-cover"
         />
-        <div className="absolute inset-0 bg-black/20 rounded-t-2xl" />
-
-        {/* Discount badge */}
+        {/* Discount Badge */}
         <span className="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow">
-          {discount}% OFF
+          {discountPercentage}% OFF
         </span>
       </div>
 
       {/* Content */}
-      <div className="p-6 flex flex-col flex-grow justify-between text-center">
-        <div className="space-y-3">
-          <h2 className="text-xl font-bold text-blue-900">{title}</h2>
-          <p className="text-sm text-gray-600 line-clamp-3">{description}</p>
-          <p className="text-xs text-gray-500">
-            Valid until: {new Date(validUntil).toLocaleDateString()}
+      <div className="p-6 flex flex-col flex-grow justify-between">
+        <div className="space-y-3 text-center">
+          {/* Title */}
+          <h2 className="text-lg font-extrabold text-black line-clamp-2">
+            {title}
+          </h2>
+
+          {/* Description */}
+          <p className="text-sm text-gray-700 font-medium line-clamp-3">
+            {description}
+          </p>
+
+          {/* Location */}
+          <p className="text-sm text-black font-semibold">{location}</p>
+
+          {/* Price Section */}
+          <div className="flex justify-center gap-3 items-center">
+            <p className="text-gray-500 line-through text-sm font-semibold">
+              ₱{price.toLocaleString()}
+            </p>
+            <p className="text-xl font-extrabold text-black">
+              ₱{finalPrice.toLocaleString()}
+            </p>
+          </div>
+
+          {/* Validity */}
+          <p className="text-xs text-black font-medium mt-1">
+            Valid until: {endDate ? new Date(endDate).toLocaleDateString() : 'N/A'}
           </p>
         </div>
 
-        {/* Button at bottom */}
-        <div className="pt-4">
-          <Link
-            href={`/promos/${id}`}
-            className="inline-block text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition"
-          >
-            View Details →
-          </Link>
+        {/* CTA Button */}
+        <div className="pt-6">
+         <Link
+  href={`/promos/${id}`}
+  className="block w-full text-center text-sm font-bold tracking-wide 
+             text-white bg-gradient-to-r from-blue-600 to-blue-800 
+             hover:from-blue-700 hover:to-blue-900 
+             px-5 py-3 rounded-xl shadow-lg 
+             transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+>
+  View Details →
+</Link>
+
         </div>
       </div>
     </div>
-  );
+  )
 }

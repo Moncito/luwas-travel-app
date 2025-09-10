@@ -10,6 +10,7 @@ import WeatherAnalyticsChart from "@/components/(admin)/WeatherAnalyticsChart";
 import UserTripCharts from "@/components/(admin)/UserTripCharts";
 
 import { Users, MapPin, ClipboardList } from "lucide-react";
+import PromoBookingsAnalyticsChart from "@/components/(admin)/PromoBookingsAnalyticsChart";
 
 export default async function AdminDashboardPage() {
   const { totalUsers, totalTrips, totalItineraries } = await fetchAdminMetrics();
@@ -56,6 +57,7 @@ export default async function AdminDashboardPage() {
           <BookingAnalyticsChart />
           <ItineraryBookingChart />
           <WeatherAnalyticsChart />
+          <PromoBookingsAnalyticsChart/>
         </div>
       </section>
 

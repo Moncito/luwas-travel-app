@@ -1,20 +1,28 @@
+// File: app/api/analytics/weather/route.ts
 import { db } from "@/firebase/admin";
 import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    // Fetch both bookings + itineraryBookings
-    const [bookingsSnap, itinerariesSnap] = await Promise.all([
+    // Fetch all 3 collections
+    const [bookingsSnap, itinerariesSnap, promosSnap] = await Promise.all([
       db.collection("bookings").get(),
       db.collection("itineraryBookings").get(),
+      db.collection("promoBookings").get(),
     ]);
 
-    // Helper to process snapshot
-    const processDocs = (docs: FirebaseFirestore.QuerySnapshot, type: "booking" | "itinerary") => {
+    const processDocs = (
+      docs: FirebaseFirestore.QuerySnapshot,
+      type: "booking" | "itinerary" | "promo"
+    ) => {
       return docs.docs
         .map((doc) => {
           const data = doc.data();
-          if (!data?.createdAt || !data.weather?.temperature || !data.weather?.condition) {
+          if (
+            !data?.createdAt ||
+            !data.weather?.temperature ||
+            !data.weather?.condition
+          ) {
             console.warn("⛔ Skipping invalid doc:", { id: doc.id, ...data });
             return null;
           }
@@ -39,18 +47,19 @@ export async function GET() {
           };
         })
         .filter(Boolean) as {
-          id: string;
-          type: "booking" | "itinerary";
-          month: string;
-          temperature: number;
-          condition: string;
-        }[];
+        id: string;
+        type: "booking" | "itinerary" | "promo";
+        month: string;
+        temperature: number;
+        condition: string;
+      }[];
     };
 
     const bookings = processDocs(bookingsSnap, "booking");
     const itineraries = processDocs(itinerariesSnap, "itinerary");
+    const promos = processDocs(promosSnap, "promo");
 
-    const all = [...bookings, ...itineraries];
+    const all = [...bookings, ...itineraries, ...promos];
 
     // Group by month
     const grouped: Record<
@@ -58,8 +67,10 @@ export async function GET() {
       {
         bookingTemps: number[];
         itineraryTemps: number[];
+        promoTemps: number[];
         bookingCount: number;
         itineraryCount: number;
+        promoCount: number;
         conditions: string[];
       }
     > = {};
@@ -69,8 +80,10 @@ export async function GET() {
         grouped[item.month] = {
           bookingTemps: [],
           itineraryTemps: [],
+          promoTemps: [],
           bookingCount: 0,
           itineraryCount: 0,
+          promoCount: 0,
           conditions: [],
         };
       }
@@ -80,9 +93,12 @@ export async function GET() {
       if (item.type === "booking") {
         grouped[item.month].bookingTemps.push(item.temperature);
         grouped[item.month].bookingCount++;
-      } else {
+      } else if (item.type === "itinerary") {
         grouped[item.month].itineraryTemps.push(item.temperature);
         grouped[item.month].itineraryCount++;
+      } else if (item.type === "promo") {
+        grouped[item.month].promoTemps.push(item.temperature);
+        grouped[item.month].promoCount++;
       }
     });
 
@@ -96,14 +112,18 @@ export async function GET() {
         return acc;
       }, {} as Record<string, number>);
 
-      const topCondition = Object.entries(conditionCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "N/A";
+      const topCondition =
+        Object.entries(conditionCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ??
+        "N/A";
 
       return {
         month,
         destinationsAvgTemp: avg(values.bookingTemps),
         itinerariesAvgTemp: avg(values.itineraryTemps),
+        promosAvgTemp: avg(values.promoTemps), // ✅ NEW
         bookingCount: values.bookingCount,
         itineraryCount: values.itineraryCount,
+        promoCount: values.promoCount, // ✅ NEW
         topCondition,
       };
     });

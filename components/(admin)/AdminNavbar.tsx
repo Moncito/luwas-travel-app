@@ -19,6 +19,7 @@ const navLinks = [
   { label: 'Users', href: '/admin/users', icon: Users },
   { label: 'Trips', href: '/admin/trips', icon: MapPin },
   { label: 'Destinations', href: '/admin/add-destination', icon: PlusCircle },
+  { label: 'Promo', href: '/admin/add-promo', icon: PlusCircle },
   { label: 'Itineraries', href: '/admin/itineraries', icon: CalendarCheck },
   { label: 'Bookings', href: '/admin/bookings', icon: BookOpen },
   { label: 'Chat Support', href: '/admin/chat-support', icon: MessageCircle },

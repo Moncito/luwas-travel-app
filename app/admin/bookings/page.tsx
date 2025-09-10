@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import type { Booking } from '@/types/booking';
 import type { ItineraryBooking } from '@/types/itineraryBooking';
+import type { PromoBooking } from '@/types/promoBooking';
 import type { EmailPayload, DestinationBooking } from '@/lib/mail';
 import { sendReceiptEmail } from '@/lib/mail';
 
 import DestinationBookingsTable from '@/components/(admin)/DestinationBookingsTable';
 import ItineraryBookingsTable from '@/components/(admin)/ItineraryBookingsTable';
+import PromoBookingsTable from '@/components/(admin)/PromoBookingsTable';
 import ConfirmActionModal from '@/components/(admin)/ConfirmActionModal';
 
 type BookingStatus =
@@ -34,80 +36,92 @@ function safeStatus(status: string): BookingStatus {
 
 export default function AdminBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [itineraryBookings, setItineraryBookings] = useState<
-    ItineraryBooking[]
-  >([]);
-  const [filter, setFilter] = useState<
-    'all' | 'upcoming' | 'completed' | 'cancelled'
-  >('all');
+  const [itineraryBookings, setItineraryBookings] = useState<ItineraryBooking[]>([]);
+  const [promoBookings, setPromoBookings] = useState<PromoBooking[]>([]);
+  const [filter, setFilter] = useState<'all' | 'upcoming' | 'completed' | 'cancelled'>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Confirm modal state
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [confirmType, setConfirmType] = useState<'delete' | 'send' | null>(
-    null
-  );
-  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(
-    null
-  );
-  const [selectedBookingType, setSelectedBookingType] = useState<
-    'destination' | 'itinerary' | null
-  >(null);
+  const [confirmType, setConfirmType] = useState<'delete' | 'send' | null>(null);
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
+  const [selectedBookingType, setSelectedBookingType] = useState<'destination' | 'itinerary' | 'promo' | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     fetchBookings();
     fetchItineraryBookings();
+    fetchPromoBookings();
   }, []);
 
-const fetchBookings = async () => {
-  try {
-    const res = await fetch('/api/bookings');
-    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-    const raw: Booking[] = await res.json();
+  // 🔹 Destination
+  const fetchBookings = async () => {
+    try {
+      const res = await fetch('/api/bookings');
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      const raw: Booking[] = await res.json();
 
-    const normalized = raw.map((b) => ({
-      ...b,
-      status: safeStatus(b.status),
-      createdAt: normalizeDate(b.createdAt),
-    }));
+      const normalized = raw.map((b) => ({
+        ...b,
+        status: safeStatus(b.status),
+        createdAt: normalizeDate(b.createdAt),
+      }));
 
-    setBookings(normalized);
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    setError(message);
-    toast.error('Failed to fetch bookings.');
-  } finally {
-    setLoading(false);
+      setBookings(normalized);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      setError(message);
+      toast.error('Failed to fetch bookings.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🔹 Itinerary
+  const fetchItineraryBookings = async () => {
+    try {
+      const res = await fetch('/api/itinerary-bookings');
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      const raw: ItineraryBooking[] = await res.json();
+
+      const normalized = raw.map((b) => ({
+        ...b,
+        createdAt: normalizeDate(b.createdAt),
+      }));
+
+      setItineraryBookings(normalized);
+    } catch (err) {
+      console.error('Error fetching itinerary bookings:', err);
+    }
+  };
+
+  // 🔹 Promos
+  const fetchPromoBookings = async () => {
+    try {
+      const res = await fetch('/api/promo-bookings');
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      const raw: PromoBooking[] = await res.json();
+
+      const normalized = raw.map((b) => ({
+        ...b,
+        createdAt: normalizeDate(b.createdAt),
+      }));
+
+      setPromoBookings(normalized);
+    } catch (err) {
+      console.error('Error fetching promo bookings:', err);
+    }
+  };
+
+  // 🔑 Date normalizer
+  function normalizeDate(date: unknown): Date {
+    if (!date) return new Date(0); // fallback to epoch
+    if (date instanceof Date) return date;
+    if (typeof (date as any)?.toDate === 'function') return (date as any).toDate(); // Firestore Timestamp
+    const parsed = new Date(date as string);
+    return isNaN(parsed.getTime()) ? new Date(0) : parsed;
   }
-};
-
-const fetchItineraryBookings = async () => {
-  try {
-    const res = await fetch('/api/itinerary-bookings');
-    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-    const raw: ItineraryBooking[] = await res.json();
-
-    const normalized = raw.map((b) => ({
-      ...b,
-      createdAt: normalizeDate(b.createdAt),
-    }));
-
-    setItineraryBookings(normalized);
-  } catch (err) {
-    console.error('Error fetching itinerary bookings:', err);
-  }
-};
-
-// 🔑 Date normalizer
-function normalizeDate(date: unknown): Date {
-  if (!date) return new Date(0); // fallback to epoch
-  if (date instanceof Date) return date;
-  if (typeof (date as any)?.toDate === 'function') return (date as any).toDate(); // Firestore Timestamp
-  const parsed = new Date(date as string);
-  return isNaN(parsed.getTime()) ? new Date(0) : parsed;
-}
 
   const handleSendReceipt = async ({ name, email, type, booking }: EmailPayload) => {
     const toastId = toast.loading('Sending receipt email...');
@@ -115,7 +129,6 @@ function normalizeDate(date: unknown): Date {
       await sendReceiptEmail({ name, email, type, booking });
       toast.success(`📧 Receipt sent to ${email}`, { id: toastId });
 
-      // Mark as paid for destinations
       if (type === 'destination') {
         await fetch(`/api/bookings/${booking.id}/mark-paid`, { method: 'PATCH' });
       }
@@ -134,16 +147,18 @@ function normalizeDate(date: unknown): Date {
         const url =
           selectedBookingType === 'destination'
             ? `/api/bookings/${selectedBookingId}`
-            : `/api/itinerary-bookings/${selectedBookingId}`;
+            : selectedBookingType === 'itinerary'
+            ? `/api/itinerary-bookings/${selectedBookingId}`
+            : `/api/promo-bookings/${selectedBookingId}`;
         const res = await fetch(url, { method: 'DELETE' });
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
         if (selectedBookingType === 'destination') {
           setBookings((prev) => prev.filter((b) => b.id !== selectedBookingId));
+        } else if (selectedBookingType === 'itinerary') {
+          setItineraryBookings((prev) => prev.filter((b) => b.id !== selectedBookingId));
         } else {
-          setItineraryBookings((prev) =>
-            prev.filter((b) => b.id !== selectedBookingId)
-          );
+          setPromoBookings((prev) => prev.filter((b) => b.id !== selectedBookingId));
         }
         toast.success('Booking deleted.');
       }
@@ -165,9 +180,7 @@ function normalizeDate(date: unknown): Date {
             } satisfies DestinationBooking,
           });
         } else if (selectedBookingType === 'itinerary') {
-          const itinerary = itineraryBookings.find(
-            (b) => b.id === selectedBookingId
-          );
+          const itinerary = itineraryBookings.find((b) => b.id === selectedBookingId);
           if (!itinerary) throw new Error('Itinerary not found');
           await handleSendReceipt({
             name: itinerary.name,
@@ -177,9 +190,23 @@ function normalizeDate(date: unknown): Date {
               id: itinerary.id,
               amount: itinerary.totalPrice,
               departureDate: itinerary.date,
-              itineraryTitle:
-                itinerary.slug?.replace(/-/g, ' ') ?? 'Untitled',
+              itineraryTitle: itinerary.slug?.replace(/-/g, ' ') ?? 'Untitled',
               type: 'itinerary',
+            },
+          });
+        } else if (selectedBookingType === 'promo') {
+          const promo = promoBookings.find((b) => b.id === selectedBookingId);
+          if (!promo) throw new Error('Promo booking not found');
+          await handleSendReceipt({
+            name: promo.fullName,
+            email: promo.email,
+            type: 'destination', // ✅ reuse modal/mail type
+            booking: {
+              id: promo.id,
+              amount: promo.finalPrice,
+              departureDate: promo.departureDate,
+              destinationName: promo.promoTitle,
+              type: 'destination',
             },
           });
         }
@@ -230,9 +257,7 @@ function normalizeDate(date: unknown): Date {
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            {status === 'all'
-              ? 'All'
-              : status.charAt(0).toUpperCase() + status.slice(1)}
+            {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
           </button>
         ))}
       </div>
@@ -253,13 +278,12 @@ function normalizeDate(date: unknown): Date {
           setConfirmOpen(true);
         }}
         onUpdateStatus={(id, status) =>
-        setBookings((prev) =>
-          prev.map((b) =>
-            b.id === id ? { ...b, status: status as Booking['status'] } : b
+          setBookings((prev) =>
+            prev.map((b) =>
+              b.id === id ? { ...b, status: status as Booking['status'] } : b
+            )
           )
-        )
-}
-
+        }
       />
 
       {/* Itinerary Bookings */}
@@ -278,13 +302,36 @@ function normalizeDate(date: unknown): Date {
           setConfirmOpen(true);
         }}
         onUpdateStatus={(id, status) =>
-        setItineraryBookings((prev) =>
-          prev.map((b) =>
-            b.id === id ? { ...b, status: status as ItineraryBooking['status'] } : b
+          setItineraryBookings((prev) =>
+            prev.map((b) =>
+              b.id === id ? { ...b, status: status as ItineraryBooking['status'] } : b
+            )
           )
-        )
-  }
+        }
+      />
 
+      {/* Promo Bookings */}
+      <PromoBookingsTable
+        bookings={promoBookings}
+        onDelete={(id) => {
+          setSelectedBookingId(id);
+          setSelectedBookingType('promo');
+          setConfirmType('delete');
+          setConfirmOpen(true);
+        }}
+        onSendReceipt={(id) => {
+          setSelectedBookingId(id);
+          setSelectedBookingType('promo');
+          setConfirmType('send');
+          setConfirmOpen(true);
+        }}
+        onUpdateStatus={(id, status) =>
+          setPromoBookings((prev) =>
+            prev.map((b) =>
+              b.id === id ? { ...b, status: status as PromoBooking['status'] } : b
+            )
+          )
+        }
       />
 
       {/* Confirm Modal */}
