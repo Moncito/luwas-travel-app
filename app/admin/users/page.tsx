@@ -1,30 +1,40 @@
-// app/admin/users/page.tsx
-export const dynamic = "force-dynamic"; 
+// app/admin/users/page.tsx (Server Component)
+export const dynamic = "force-dynamic";
 
+import UserRow from "@/components/(admin)/UserRow";
 import { fetchAllUsers } from "@/lib/admin/fetchUsers";
+
 
 export default async function AllUsersPage() {
   const users = await fetchAllUsers();
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6 text-gray-800">All Registered Users</h1>
-      <div className="bg-white shadow-md rounded-lg overflow-auto">
-        <table className="min-w-full">
-          <thead className="bg-blue-100 text-left">
+      <h1 className="text-3xl font-extrabold mb-8 text-blue-900">
+        All Registered Users
+      </h1>
+
+      <div className="bg-white shadow-lg rounded-xl overflow-hidden">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gradient-to-r from-blue-50 to-blue-100">
             <tr>
-              <th className="py-4 px-6 text-blue-600 font-semibold">Name</th>
-              <th className="py-4 px-6 text-blue-600 font-semibold">Email</th>
-              <th className="py-4 px-6 text-blue-600 font-semibold">User ID</th>
+              <th className="py-4 px-6 text-left text-blue-700 font-semibold">
+                Name
+              </th>
+              <th className="py-4 px-6 text-left text-blue-700 font-semibold">
+                Email
+              </th>
+              <th className="py-4 px-6 text-left text-blue-700 font-semibold">
+                UID
+              </th>
+              <th className="py-4 px-6 text-left text-blue-700 font-semibold">
+                Actions
+              </th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-gray-100">
             {users.map((user) => (
-              <tr key={user.id} className="border-t hover:bg-gray-50">
-                <td className="py-4 px-6 text-gray-800">{user.name || "—"}</td>
-                <td className="py-4 px-6 text-gray-600">{user.email}</td>
-                <td className="py-4 px-6 text-xs text-gray-400">{user.id}</td>
-              </tr>
+              <UserRow key={user.id} user={user} />
             ))}
           </tbody>
         </table>
