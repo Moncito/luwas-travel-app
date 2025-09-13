@@ -1,17 +1,19 @@
-import { Montserrat } from 'next/font/google';
-import './globals.css';
-import LayoutWithLoader from './components/LayoutWithLoader';
-import ChatWidgetWrapper from '@/components/ChatWidgetWrapper'; // ✅ new wrapper
+// File: app/layout.tsx
+import { Montserrat } from "next/font/google";
+import "./globals.css";
+import LayoutWithLoader from "./components/LayoutWithLoader";
+import ChatWidgetWrapper from "@/components/ChatWidgetWrapper";
+import PromoPopup from "@/components/PromoPopup"; // ✅ import popup
 
 const montserrat = Montserrat({
-  weight: '400',
-  subsets: ['latin'],
-  variable: '--font-montserrat',
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-montserrat",
 });
 
 export const metadata = {
-  title: 'Luwas',
-  description: 'Travel Agency for Filipinos',
+  title: "Luwas",
+  description: "Travel Agency for Filipinos",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -19,7 +21,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className="light">
       <body className={`${montserrat.className} antialiased pattern`}>
         <LayoutWithLoader>{children}</LayoutWithLoader>
-        <ChatWidgetWrapper /> {/* ✅ Now safely client-side */}
+
+        {/* Global widgets */}
+        <ChatWidgetWrapper />
+        <PromoPopup
+          images={["/images/back1.png", "/images/back2.png"]}
+          link="/promos"
+        />
       </body>
     </html>
   );
