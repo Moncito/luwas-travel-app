@@ -13,16 +13,13 @@ import {
 } from "firebase/firestore";
 import { db } from "@/firebase/client";
 import { format } from "date-fns";
-import { ArrowLeft } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface Message {
   id: string;
   sender: "user" | "admin";
   text: string;
-  createdAt: {
-    seconds: number;
-    nanoseconds: number;
-  };
+  createdAt: { seconds: number; nanoseconds: number };
 }
 
 export default function AdminChatPanel({ userId }: { userId: string }) {
@@ -87,19 +84,19 @@ export default function AdminChatPanel({ userId }: { userId: string }) {
     <div className="flex flex-col h-[75vh] rounded-2xl overflow-hidden shadow-xl border border-gray-200 bg-white">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b bg-white">
-        <div className="flex items-center gap-3">
-          <ArrowLeft className="w-5 h-5 text-gray-500 cursor-pointer" />
-          <div className="font-semibold text-gray-800 text-sm">
-            Chat with <span className="text-blue-600">{userName}</span>
-          </div>
+        <div className="font-semibold text-gray-800 text-sm">
+          Chat with <span className="text-blue-600">{userName}</span>
         </div>
       </div>
 
-      {/* Chat Messages */}
+      {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-gradient-to-b from-white to-gray-50">
         {messages.map((msg) => (
-          <div
+          <motion.div
             key={msg.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
             className={`max-w-[70%] px-4 py-2 rounded-2xl text-sm shadow-sm whitespace-pre-line relative ${
               msg.sender === "admin"
                 ? "bg-blue-100 ml-auto text-right"
@@ -111,7 +108,7 @@ export default function AdminChatPanel({ userId }: { userId: string }) {
               {msg.createdAt &&
                 format(new Date(msg.createdAt.seconds * 1000), "hh:mm a")}
             </div>
-          </div>
+          </motion.div>
         ))}
         <div ref={bottomRef} />
       </div>

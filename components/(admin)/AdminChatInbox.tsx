@@ -11,9 +11,11 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db } from "@/firebase/client";
+import { formatDistanceToNow } from "date-fns";
 
 interface Props {
   onSelectUser: (id: string) => void;
+  activeUserId?: string;
 }
 
 interface Conversation {
@@ -25,8 +27,9 @@ interface Conversation {
   userName?: string;
 }
 
-export default function AdminChatInbox({ onSelectUser }: Props) {
+export default function AdminChatInbox({ onSelectUser, activeUserId }: Props) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     const q = query(collection(db, "conversations"), orderBy("updatedAt", "desc"));
@@ -70,31 +73,48 @@ export default function AdminChatInbox({ onSelectUser }: Props) {
   };
 
   return (
-    <div className="bg-white p-4 rounded-xl shadow-md col-span-1 border border-gray-100">
-      <h2 className="text-xl font-semibold text-gray-800 mb-5 flex items-center gap-2">
-        📥 <span>Admin Inbox</span>
+    <div className="bg-white p-4 rounded-xl shadow-md col-span-1 border border-gray-100 flex flex-col">
+      <h2 className="text-xl font-semibold text-gray-800 mb-3 flex items-center gap-2">
+        📥 Admin Inbox
       </h2>
+
+      {/* Search Bar */}
+      <input
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search users..."
+        className="mb-4 px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500"
+      />
 
       {conversations.length === 0 ? (
         <p className="text-gray-400 italic">No conversations yet.</p>
       ) : (
-        <div className="space-y-2">
-          {conversations.map((c) => (
-            <div
-              key={c.id}
-              onClick={() => handleSelect(c)}
-              className="p-4 rounded-lg cursor-pointer transition-all hover:bg-blue-50 border border-gray-100 shadow-sm flex justify-between items-start"
-            >
-              <div className="flex flex-col">
-                <span className="font-medium text-blue-800 text-sm">{c.userName}</span>
-                <span className="text-xs text-gray-500 line-clamp-1">{c.lastMessage}</span>
+        <div className="space-y-2 overflow-y-auto max-h-[70vh]">
+          {conversations
+            .filter((c) =>
+              c.userName?.toLowerCase().includes(search.toLowerCase())
+            )
+            .map((c) => (
+              <div
+                key={c.id}
+                onClick={() => handleSelect(c)}
+                className={`p-4 rounded-lg cursor-pointer transition-all border flex justify-between items-start
+                  ${activeUserId === c.userId ? "bg-blue-50 border-blue-300" : "hover:bg-gray-50"}`}
+              >
+                <div className="flex flex-col">
+                  <span className="font-medium text-blue-800 text-sm">{c.userName}</span>
+                  <span className="text-xs text-gray-500 line-clamp-1">{c.lastMessage}</span>
+                </div>
+                <div className="flex flex-col items-end gap-1 text-xs text-gray-400">
+                  {c.unread && <span className="w-2 h-2 bg-red-500 rounded-full" />}
+                  <span>
+                    {c.updatedAt?.seconds
+                      ? formatDistanceToNow(new Date(c.updatedAt.seconds * 1000), { addSuffix: true })
+                      : ""}
+                  </span>
+                </div>
               </div>
-              <div className="flex flex-col items-end gap-1 text-xs text-gray-400">
-                {c.unread && <span className="w-2 h-2 bg-red-500 rounded-full" />}
-                <span>{new Date(c.updatedAt.seconds * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
-              </div>
-            </div>
-          ))}
+            ))}
         </div>
       )}
     </div>
