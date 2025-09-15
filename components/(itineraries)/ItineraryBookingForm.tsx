@@ -12,7 +12,15 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/firebase/client';
 import type { User } from 'firebase/auth';
-import { Mail, Phone, Calendar, Home, Users, User as UserIcon } from 'lucide-react';
+import {
+  Mail,
+  Phone,
+  Calendar,
+  Home,
+  Users,
+  User as UserIcon,
+  MapPin,
+} from 'lucide-react';
 
 interface Props {
   slug: string;
@@ -26,6 +34,7 @@ interface Itinerary {
   price: number;
   latitude: number;
   longitude: number;
+  imageUrl?: string;
 }
 
 function IconInput({ icon: Icon, ...props }: any) {
@@ -100,7 +109,6 @@ export default function ItineraryBookingForm({ slug, user }: Props) {
     setLoading(true);
 
     try {
-      // ✅ Call API route
       const res = await fetch('/api/itinerary-bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -120,7 +128,6 @@ export default function ItineraryBookingForm({ slug, user }: Props) {
 
       toast.success('Booking submitted! Redirecting to payment...');
 
-      // ✅ Trigger PayMongo checkout
       const payRes = await fetch('/api/paymongo/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -128,7 +135,7 @@ export default function ItineraryBookingForm({ slug, user }: Props) {
           name: formData.name,
           email: formData.email,
           amount: totalPrice,
-          bookingId: data.id, // comes from API
+          bookingId: data.id,
           itinerarySlug: slug,
           successType: 'itinerary',
         }),
@@ -156,57 +163,117 @@ export default function ItineraryBookingForm({ slug, user }: Props) {
   }
 
   return (
-    <div className="min-h-screen px-4 py-8 flex justify-center items-start bg-white">
-      <motion.form
-        onSubmit={handleSubmit}
-        className="w-full max-w-2xl px-6 py-8 sm:p-10 rounded-3xl shadow-xl bg-gradient-to-br from-white via-blue-50 to-orange-50 border border-orange-100 space-y-6"
-        initial={{ opacity: 0, y: 30 }}
+    <section className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-orange-50 flex items-center justify-center px-4 py-12">
+      <motion.div
+        className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-start"
+        initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <h2 className="text-3xl font-extrabold text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-700 via-blue-500 to-orange-500">
-          Reserve Your Journey
-        </h2>
-        <p className="text-center text-blue-600 font-medium">
-          {itinerary.title} — <span className="text-orange-600 font-semibold">₱{itinerary.price.toLocaleString()}</span> / person
-        </p>
+        {/* Left: Form */}
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white p-6 md:p-10 rounded-2xl shadow-2xl border border-orange-100 space-y-6"
+        >
+          <h2 className="text-2xl font-extrabold text-blue-800">Reserve This Journey</h2>
+          <p className="text-sm text-gray-600">Fill in your details to confirm your reservation</p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <IconInput icon={UserIcon} name="name" value={formData.name} onChange={handleChange} placeholder="Full Name" required />
-          <IconInput icon={Mail} name="email" type="email" value={formData.email} onChange={handleChange} placeholder="Email" required />
-          <IconInput icon={Phone} name="phone" value={formData.phone} onChange={handleChange} placeholder="Phone" required />
-          <IconInput icon={Home} name="address" value={formData.address} onChange={handleChange} placeholder="Address" />
-          <IconInput icon={Calendar} name="date" type="date" value={formData.date} onChange={handleChange} required />
-          <IconInput icon={Users} name="people" type="number" min="1" value={formData.people} onChange={handleChange} placeholder="No. of Travelers" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <IconInput icon={UserIcon} name="name" value={formData.name} onChange={handleChange} placeholder="Full Name" required />
+            <IconInput icon={Mail} type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Email" required />
+            <IconInput icon={Phone} name="phone" value={formData.phone} onChange={handleChange} placeholder="Phone Number" required />
+            <IconInput icon={Home} name="address" value={formData.address} onChange={handleChange} placeholder="Address" />
+            <IconInput
+              icon={Calendar}
+              type="date"
+              name="date"
+              value={formData.date}
+              min={new Date().toISOString().split('T')[0]}
+              onChange={handleChange}
+              required
+            />
+            <IconInput
+              icon={Users}
+              type="number"
+              min={1}
+              name="people"
+              value={formData.people}
+              onChange={handleChange}
+              placeholder="Travelers"
+              required
+            />
+          </div>
+
+          <textarea
+            name="notes"
+            value={formData.notes}
+            onChange={handleChange}
+            placeholder="Special requests or notes"
+            rows={3}
+            className="w-full p-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
+          />
+
+          <div className="text-center">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-orange-500 to-blue-600 text-white px-8 py-3 rounded-full font-bold hover:from-orange-600 hover:to-blue-700 transition disabled:opacity-50"
+            >
+              {loading ? 'Processing...' : 'Book Itinerary Now'}
+            </button>
+            <p className="text-xs text-gray-400 mt-2">Secure checkout via PayMongo</p>
+          </div>
+        </form>
+
+        {/* Right: Itinerary Card */}
+        <div className="bg-white rounded-2xl shadow-2xl border border-orange-100 overflow-hidden">
+          {itinerary.imageUrl && (
+            <div className="relative">
+              <img
+                src={itinerary.imageUrl}
+                alt={itinerary.title}
+                className="w-full h-72 object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
+              <div className="absolute bottom-4 left-4">
+                <h3 className="text-2xl font-bold text-white drop-shadow-md">
+                  {itinerary.title}
+                </h3>
+              </div>
+              <span className="absolute top-4 right-4 bg-orange-100/90 text-orange-800 px-3 py-1 rounded-full text-xs font-semibold shadow-md">
+                Itinerary
+              </span>
+            </div>
+          )}
+
+          <div className="p-6 space-y-4">
+            <div className="space-y-1 text-gray-700">
+              <p>
+                Price per person:{' '}
+                <span className="font-semibold">₱{itinerary.price.toLocaleString()}</span>
+              </p>
+              <p>
+                Travelers: <span className="font-semibold">{formData.people}</span>
+              </p>
+              <motion.p
+                initial={{ scale: 0.9 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.4 }}
+                className="text-lg font-bold bg-gradient-to-r from-orange-500 to-blue-600 bg-clip-text text-transparent"
+              >
+                Total Price: ₱{totalPrice.toLocaleString()}
+              </motion.p>
+            </div>
+
+            <div className="mt-4 p-3 rounded-lg bg-orange-50 flex items-center gap-3 text-sm text-orange-800">
+              <MapPin className="w-5 h-5" />
+              <span>
+                Coordinates: {itinerary.latitude}, {itinerary.longitude}
+              </span>
+            </div>
+          </div>
         </div>
-
-        <input
-          value={itinerary.title}
-          readOnly
-          className="w-full p-3 rounded-md bg-gray-100 text-center text-gray-500 font-medium cursor-not-allowed border border-gray-300"
-        />
-
-        <textarea
-          name="notes"
-          value={formData.notes}
-          onChange={handleChange}
-          placeholder="Special requests or notes"
-          className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-orange-400"
-        />
-
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-lg font-semibold text-blue-800 text-center sm:text-left">
-            Total: <span className="text-orange-600">₱{totalPrice.toLocaleString()}</span>
-          </p>
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-gradient-to-r from-orange-500 to-blue-600 hover:from-orange-600 hover:to-blue-700 transition text-white px-6 py-3 rounded-full font-bold w-full sm:w-auto disabled:opacity-50"
-          >
-            {loading ? 'Processing...' : 'Book & Proceed to Payment'}
-          </button>
-        </div>
-      </motion.form>
-    </div>
+      </motion.div>
+    </section>
   );
 }

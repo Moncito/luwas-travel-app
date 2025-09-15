@@ -7,7 +7,15 @@ import Image from 'next/image';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/client';
 import type { User } from 'firebase/auth';
-import { Mail, Phone, Calendar, Home, Users, User as UserIcon } from 'lucide-react';
+import {
+  Mail,
+  Phone,
+  Calendar,
+  Home,
+  Users,
+  User as UserIcon,
+  MapPin,
+} from 'lucide-react';
 
 interface Props {
   destinationId: string;
@@ -19,6 +27,7 @@ interface Destination {
   price: number;
   latitude: number;
   longitude: number;
+  imageUrl?: string;
 }
 
 function IconInput({ icon: Icon, ...props }: any) {
@@ -35,7 +44,6 @@ function IconInput({ icon: Icon, ...props }: any) {
 
 export default function BookingForm({ destinationId, user }: Props) {
   const [destination, setDestination] = useState<Destination | null>(null);
-  const [pricePerPerson, setPricePerPerson] = useState(0);
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -65,9 +73,7 @@ export default function BookingForm({ destinationId, user }: Props) {
         const docRef = doc(db, 'destinations', destinationId);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-          const data = docSnap.data() as Destination;
-          setDestination(data);
-          setPricePerPerson(data.price || 0);
+          setDestination(docSnap.data() as Destination);
         } else {
           toast.error('Destination not found.');
         }
@@ -90,12 +96,12 @@ export default function BookingForm({ destinationId, user }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!destination) return;
     setLoading(true);
 
     try {
-      const totalPrice = formData.travelers * pricePerPerson;
+      const totalPrice = formData.travelers * (destination.price || 0);
 
-      // ✅ Call API route instead of addDoc
       const res = await fetch('/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -113,7 +119,6 @@ export default function BookingForm({ destinationId, user }: Props) {
 
       toast.success('Booking submitted! Redirecting to payment...');
 
-      // ✅ Now continue with PayMongo checkout
       const payRes = await fetch('/api/paymongo/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -121,7 +126,7 @@ export default function BookingForm({ destinationId, user }: Props) {
           name: formData.fullName,
           email: formData.email,
           amount: totalPrice,
-          bookingId: data.id, // returned from API
+          bookingId: data.id,
           destinationId,
           successType: 'destination',
         }),
@@ -143,65 +148,114 @@ export default function BookingForm({ destinationId, user }: Props) {
     }
   };
 
-  const totalPrice = formData.travelers * pricePerPerson;
   if (!destination) return null;
 
+  const totalPrice = formData.travelers * (destination.price || 0);
+  const today = new Date().toISOString().split('T')[0];
+
   return (
-    <section className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-blue-50 to-orange-50 px-4 py-10">
-      <motion.form
-        onSubmit={handleSubmit}
-        className="w-full max-w-2xl bg-white p-6 md:p-10 rounded-2xl shadow-2xl space-y-6 border border-orange-100"
-        initial={{ opacity: 0, y: 50 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.8 }}
+    <section className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-orange-50 flex items-center justify-center px-4 py-12">
+      <motion.div
+        className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-start"
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
       >
-        <div className="text-center">
-          <Image src="/logo.png" alt="Luwas Logo" width={60} height={60} className="mx-auto mb-4" />
-          <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-800 to-orange-500 mb-2">
-            Let Us Craft Your Getaway
-          </h2>
-        </div>
+        {/* Left: Form */}
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white p-6 md:p-10 rounded-2xl shadow-2xl border border-orange-100 space-y-6"
+        >
+          <h2 className="text-2xl font-extrabold text-blue-800">Book Your Adventure</h2>
+          <p className="text-sm text-gray-600">Fill in your details to confirm your reservation</p>
 
-        {/* Inputs */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <IconInput icon={UserIcon} name="fullName" value={formData.fullName} onChange={handleChange} placeholder="Full Name" required />
-          <IconInput icon={Mail} type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Email" required />
-          <IconInput icon={Phone} name="phone" value={formData.phone} onChange={handleChange} placeholder="Phone Number" required />
-          <IconInput icon={Home} name="localAddress" value={formData.localAddress} onChange={handleChange} placeholder="Local Address" required />
-          <IconInput icon={Calendar} type="date" name="departureDate" value={formData.departureDate} onChange={handleChange} required />
-          <IconInput icon={Calendar} type="date" name="returnDate" value={formData.returnDate} onChange={handleChange} />
-          <IconInput icon={Users} type="number" min={1} name="travelers" value={formData.travelers} onChange={handleChange} placeholder="Travelers" required />
-          <input
-            value={destination.name}
-            disabled
-            className="w-full p-3 rounded-md bg-gray-100 border border-gray-300 text-gray-500 cursor-not-allowed"
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <IconInput icon={UserIcon} name="fullName" value={formData.fullName} onChange={handleChange} placeholder="Full Name" required />
+            <IconInput icon={Mail} type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Email" required />
+            <IconInput icon={Phone} name="phone" value={formData.phone} onChange={handleChange} placeholder="Phone Number" required />
+            <IconInput icon={Home} name="localAddress" value={formData.localAddress} onChange={handleChange} placeholder="Local Address" required />
+            <IconInput
+              icon={Calendar}
+              type="date"
+              name="departureDate"
+              value={formData.departureDate}
+              min={today}
+              onChange={handleChange}
+              required
+            />
+            <IconInput
+              icon={Calendar}
+              type="date"
+              name="returnDate"
+              value={formData.returnDate}
+              min={today}
+              onChange={handleChange}
+            />
+            <IconInput icon={Users} type="number" min={1} name="travelers" value={formData.travelers} onChange={handleChange} placeholder="Travelers" required />
+          </div>
+
+          <textarea
+            name="specialRequests"
+            value={formData.specialRequests}
+            onChange={handleChange}
+            placeholder="Special Requests"
+            rows={3}
+            className="w-full p-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
           />
-        </div>
 
-        <textarea
-          name="specialRequests"
-          value={formData.specialRequests}
-          onChange={handleChange}
-          placeholder="Special Requests"
-          rows={3}
-          className="w-full p-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
-        />
+          <div className="text-center">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-orange-500 to-blue-700 text-white px-8 py-3 rounded-full font-bold hover:from-orange-600 hover:to-blue-800 transition disabled:opacity-50"
+            >
+              {loading ? 'Processing...' : 'Book Destination Now'}
+            </button>
+            <p className="text-xs text-gray-400 mt-2">Secure checkout via PayMongo</p>
+          </div>
+        </form>
 
-        <div className="text-right text-base text-blue-900 font-semibold">
-          Total Price: <span className="text-orange-600">₱{totalPrice.toLocaleString()}</span>
-        </div>
+        {/* Right: Destination Card */}
+        <div className="bg-white rounded-2xl shadow-2xl border border-orange-100 overflow-hidden">
+          {destination.imageUrl && (
+            <Image
+              src={destination.imageUrl}
+              alt={destination.name}
+              width={800}
+              height={400}
+              className="w-full h-56 object-cover"
+            />
+          )}
+          <div className="p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold text-blue-900">{destination.name}</h3>
+              <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">
+                Destination
+              </span>
+            </div>
 
-        <div className="text-center">
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-gradient-to-r from-orange-500 to-blue-700 text-white px-8 py-3 rounded-full font-bold hover:from-orange-600 hover:to-blue-800 transition disabled:opacity-50"
-          >
-            {loading ? 'Processing...' : 'Book My Adventure'}
-          </button>
+            <div className="space-y-1 text-gray-700">
+              <p>Price per person: <span className="font-semibold">₱{destination.price.toLocaleString()}</span></p>
+              <p>Travelers: <span className="font-semibold">{formData.travelers}</span></p>
+              <motion.p
+                initial={{ scale: 0.9 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.4 }}
+                className="text-lg font-bold text-blue-900"
+              >
+                Total Price: ₱{totalPrice.toLocaleString()}
+              </motion.p>
+            </div>
+
+            <div className="mt-4 p-3 rounded-lg bg-blue-50 flex items-center gap-3 text-sm text-blue-800">
+              <MapPin className="w-5 h-5" />
+              <span>
+                Coordinates: {destination.latitude}, {destination.longitude}
+              </span>
+            </div>
+          </div>
         </div>
-      </motion.form>
+      </motion.div>
     </section>
   );
 }
