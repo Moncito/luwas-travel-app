@@ -108,96 +108,104 @@ export default async function PromoDetailPage({
           </div>
         </section>
 
-        {/* Description + Pricing */}
-        <section className="max-w-4xl mx-auto px-6 py-16 text-center">
-          <p className="text-lg leading-relaxed">{promo.description}</p>
+        {/* Grid Layout */}
+        <section className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-3 gap-10">
+          {/* LEFT COLUMN */}
+          <div className="lg:col-span-2 space-y-10">
+            {/* Description & Pricing */}
+            <div className="text-center lg:text-left">
+              <p className="text-lg leading-relaxed text-gray-700">
+                {promo.description}
+              </p>
 
-          {/* Pricing */}
-          <div className="mt-10 flex justify-center items-center gap-4">
-            {promo.price > promo.finalPrice && (
-              <span className="text-xl font-medium line-through text-gray-500">
-                ₱{promo.price.toLocaleString()}
-              </span>
+              <div className="mt-6 flex flex-wrap justify-center lg:justify-start items-center gap-4">
+                {promo.price > promo.finalPrice && (
+                  <span className="text-xl font-medium line-through text-gray-500">
+                    ₱{promo.price.toLocaleString()}
+                  </span>
+                )}
+                <span className="text-3xl font-bold text-blue-800">
+                  ₱{promo.finalPrice.toLocaleString()}
+                </span>
+                {promo.discountPercentage > 0 && (
+                  <span className="text-base font-semibold text-red-600">
+                    -{promo.discountPercentage}%
+                  </span>
+                )}
+              </div>
+
+              {promo.endDate && (
+                <p className="mt-3 text-sm text-gray-600">
+                  Valid until {new Date(promo.endDate).toLocaleDateString()}
+                </p>
+              )}
+
+              <div className="mt-6">
+                <Link
+                  href={`/promos/${promoId}/book`}
+                  className="inline-block bg-blue-700 text-white px-6 py-3 rounded-full hover:bg-white hover:text-blue-700 border border-blue-700 transition"
+                >
+                  Book This Promo
+                </Link>
+              </div>
+            </div>
+
+            {/* Highlights Timeline */}
+            {Array.isArray(promo.highlights) && promo.highlights.length > 0 && (
+              <div>
+                <h2 className="text-xl font-bold mb-6">Promo Highlights</h2>
+                <div className="relative border-l-2 border-blue-500 pl-8 space-y-8">
+                  {promo.highlights.map((item, idx) => (
+                    <div key={idx} className="relative pl-4">
+                      <span className="absolute -left-[1.05rem] top-2 h-4 w-4 rounded-full bg-blue-600 border-2 border-white shadow-md" />
+                      <h3 className="text-blue-700 font-bold text-lg mb-1">
+                        Highlight {idx + 1}
+                      </h3>
+                      <p className="text-gray-700 text-sm leading-relaxed">
+                        {item}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
-            <span className="text-3xl font-bold text-black">
-              ₱{promo.finalPrice.toLocaleString()}
-            </span>
-            {promo.discountPercentage > 0 && (
-              <span className="text-base font-semibold text-red-600">
-                -{promo.discountPercentage}%
-              </span>
-            )}
+
+            {/* Traveler Reviews */}
+            <div>
+              <h2 className="text-xl font-bold mb-4">Traveler Reviews</h2>
+              <YelpSummary
+                name={promo.title.replace(/(Promo|Deal|Offer)/gi, "").trim()}
+                location={promo.location}
+              />
+            </div>
+
+            {/* Nearby Spots */}
+            <div className="bg-gray-50 p-4 rounded-lg shadow-md">
+              <h2 className="text-lg font-bold mb-3">Nearby Spots</h2>
+              <RecommendedPlacesForDestinations
+                destination={promo.title}
+                places={recommendedPlaces}
+              />
+            </div>
           </div>
 
-          {promo.endDate && (
-            <p className="mt-4 text-sm text-black">
-              Valid until {new Date(promo.endDate).toLocaleDateString()}
-            </p>
-          )}
+          {/* RIGHT SIDEBAR */}
+          <aside className="space-y-8 lg:sticky lg:top-20 self-start">
+            {promo.latitude && promo.longitude && (
+              <div className="bg-gray-50 p-4 rounded-lg shadow-md">
+                <h2 className="text-lg font-bold mb-3">Location</h2>
+                <DestinationMapClientWrapper
+                  lat={promo.latitude}
+                  lon={promo.longitude}
+                />
+              </div>
+            )}
 
-          <div className="mt-8">
-            <Link
-              href={`/promos/${promoId}/book`}
-              className="inline-block bg-black text-white px-8 py-3 rounded-full font-semibold hover:bg-white hover:text-black border border-black transition"
-            >
-              Book This Promo
-            </Link>
-          </div>
-        </section>
-
-        {/* Highlights */}
-        {Array.isArray(promo.highlights) && promo.highlights.length > 0 && (
-          <section className="max-w-4xl mx-auto px-6 pb-16">
-            <h2 className="text-xl font-bold text-center mb-4">
-              Promo Highlights
-            </h2>
-            <ul className="space-y-3 text-gray-800">
-              {promo.highlights.map((item: string, idx: number) => (
-                <li key={idx} className="flex items-start gap-2">
-                  <span className="h-2 w-2 mt-2 rounded-full bg-black" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        {/* Map */}
-        {promo.latitude && promo.longitude ? (
-          <section className="max-w-4xl mx-auto px-6 pb-20">
-            <h2 className="text-xl font-bold text-center mb-4">Location</h2>
-            <DestinationMapClientWrapper
-              lat={promo.latitude}
-              lon={promo.longitude}
-            />
-          </section>
-        ) : null}
-
-        {/* Weather Insights */}
-        <section className="max-w-4xl mx-auto px-6 pb-16">
-          <WeatherInsights title={promo.title} location={promo.location} />
-        </section>
-
-        {/* Recommended Places */}
-        <section className="max-w-6xl mx-auto px-6 pb-20">
-          <h2 className="text-xl font-bold text-center mb-6">
-            Recommended Nearby
-          </h2>
-          <RecommendedPlacesForDestinations
-            destination={promo.title}
-            places={recommendedPlaces}
-          />
-        </section>
-
-        {/* Yelp Summary */}
-        <section className="max-w-6xl mx-auto px-6 pb-20">
-          <h2 className="text-xl font-bold text-center mb-6">
-            Traveler Reviews
-          </h2>
-          <YelpSummary
-            name={promo.title.replace(/(Promo|Deal|Offer)/gi, "").trim()}
-            location={promo.location}
-          />
+            <div className="bg-gray-50 p-4 rounded-lg shadow-md">
+              <h2 className="text-lg font-bold mb-3">Weather Insights</h2>
+              <WeatherInsights title={promo.title} location={promo.location} />
+            </div>
+          </aside>
         </section>
       </main>
 

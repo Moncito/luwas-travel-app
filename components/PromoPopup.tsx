@@ -19,25 +19,26 @@ export default function PromoPopup({
   const [current, setCurrent] = useState(0);
   const pathname = usePathname();
 
-  if (pathname !== "/") return null; // ✅ only homepage
-
+  // Run hooks normally
   useEffect(() => {
+    if (pathname !== "/") return; // ✅ Only run on homepage
     const timer = setTimeout(() => {
       setShow(true);
       setTimeout(() => setAnimate(true), 50);
-    }, 5000); // show after 5s
+    }, 5000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
-    if (!show) return;
+    if (!show || pathname !== "/") return;
     const interval = setInterval(() => {
       setCurrent((prev) => (prev + 1) % images.length);
-    }, 6000); // auto-slide every 6s
+    }, 6000);
     return () => clearInterval(interval);
-  }, [show, images.length]);
+  }, [show, pathname, images.length]);
 
-  if (!show) return null;
+  // ✅ Safe conditional render
+  if (!show || pathname !== "/") return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
@@ -54,7 +55,7 @@ export default function PromoPopup({
           ✕
         </button>
 
-        {/* Image wrapper with fixed 16:9 aspect ratio */}
+        {/* Image wrapper with fixed 16:9 ratio */}
         <Link href={link} className="block w-full aspect-video relative">
           {images.map((img, index) => (
             <Image
@@ -70,7 +71,7 @@ export default function PromoPopup({
           ))}
         </Link>
 
-        {/* Navigation dots on image */}
+        {/* Navigation dots */}
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-2 z-20">
           {images.map((_, index) => (
             <button
