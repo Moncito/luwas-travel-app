@@ -16,6 +16,9 @@ export async function fetchAllUsers() {
       updatedAt: data.updatedAt?.toDate
         ? data.updatedAt.toDate().toISOString()
         : null,
+      lastLoginAt: data.lastLoginAt?.toDate
+        ? data.lastLoginAt.toDate().toISOString()
+        : null, // ✅ added this line
     };
   });
 }
