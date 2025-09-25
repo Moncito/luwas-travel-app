@@ -5,8 +5,7 @@ import { toast } from 'sonner';
 import type { Booking } from '@/types/booking';
 import type { ItineraryBooking } from '@/types/itineraryBooking';
 import type { PromoBooking } from '@/types/promoBooking';
-import type { EmailPayload, DestinationBooking } from '@/lib/mail';
-import { sendReceiptEmail } from '@/lib/mail';
+import type { DestinationBooking } from '@/lib/mail';
 
 import DestinationBookingsTable from '@/components/(admin)/DestinationBookingsTable';
 import ItineraryBookingsTable from '@/components/(admin)/ItineraryBookingsTable';
@@ -123,20 +122,31 @@ export default function AdminBookingsPage() {
     return isNaN(parsed.getTime()) ? new Date(0) : parsed;
   }
 
-  const handleSendReceipt = async ({ name, email, type, booking }: EmailPayload) => {
-    const toastId = toast.loading('Sending receipt email...');
-    try {
-      await sendReceiptEmail({ name, email, type, booking });
-      toast.success(`📧 Receipt sent to ${email}`, { id: toastId });
+  // 📧 Send receipt via secure API
+const handleSendReceipt = async ({ name, email, type, booking }: EmailPayload) => {
+  const toastId = toast.loading("Sending receipt email...");
+  try {
+    const res = await fetch("/api/admin/send-receipt", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include", // ✅ ensures cookies are sent
+      body: JSON.stringify({ name, email, type, booking }),
+    });
 
-      if (type === 'destination') {
-        await fetch(`/api/bookings/${booking.id}/mark-paid`, { method: 'PATCH' });
-      }
-    } catch (err) {
-      console.error('❌ Email send error:', err);
-      toast.error('Failed to send receipt', { id: toastId });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Email failed");
+
+    toast.success(`📧 Receipt sent to ${email}`, { id: toastId });
+
+    if (type === "destination") {
+      await fetch(`/api/bookings/${booking.id}/mark-paid`, { method: "PATCH" });
     }
-  };
+  } catch (err) {
+    console.error("❌ Email send error:", err);
+    toast.error("Failed to send receipt", { id: toastId });
+  }
+};
+
 
   const handleConfirm = async () => {
     if (!selectedBookingId || !confirmType || !selectedBookingType) return;
@@ -200,17 +210,16 @@ export default function AdminBookingsPage() {
           await handleSendReceipt({
             name: promo.fullName,
             email: promo.email,
-            type: 'destination', // ✅ reuse modal/mail type
+            type: 'promo',
             booking: {
               id: promo.id,
               amount: promo.finalPrice,
               departureDate: promo.departureDate,
-              destinationName: promo.promoTitle,
-              type: 'destination',
+              promoTitle: promo.promoTitle,
+              type: 'promo',
             },
           });
         }
-        toast.success('Receipt sent.');
       }
     } catch (err) {
       toast.error('Action failed.');
@@ -262,7 +271,7 @@ export default function AdminBookingsPage() {
         ))}
       </div>
 
-      {/* Destination Bookings */}
+      {/* Tables */}
       <DestinationBookingsTable
         bookings={filteredBookings}
         onDelete={(id) => {
@@ -286,7 +295,6 @@ export default function AdminBookingsPage() {
         }
       />
 
-      {/* Itinerary Bookings */}
       <ItineraryBookingsTable
         bookings={itineraryBookings}
         onDelete={(id) => {
@@ -310,7 +318,6 @@ export default function AdminBookingsPage() {
         }
       />
 
-      {/* Promo Bookings */}
       <PromoBookingsTable
         bookings={promoBookings}
         onDelete={(id) => {
