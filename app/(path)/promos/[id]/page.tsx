@@ -9,6 +9,8 @@ import DestinationMapClientWrapper from "@/components/(map-reviews)/DestinationM
 import WeatherInsights from "@/components/(map-reviews)/WeatherInsights";
 import RecommendedPlacesForDestinations from "@/components/(map-reviews)/RecommendedPlacesForDestinations";
 import YelpSummary from "@/components/(map-reviews)/YelpSummary";
+import { extractYelpName, extractYelpLocation } from "@/lib/utils/yelpHelper";
+
 
 interface Promo {
   title: string;
@@ -171,11 +173,12 @@ export default async function PromoDetailPage({
             )}
 
             {/* Traveler Reviews */}
-            <div>
-              <h2 className="text-xl font-bold mb-4">Traveler Reviews</h2>
+            {/* Traveler Reviews */}
+            <div className="bg-gray-50 p-4 rounded-lg shadow-md">
+              <h2 className="text-lg font-bold mb-3">Traveler Reviews</h2>
               <YelpSummary
-                name={promo.title.replace(/(Promo|Deal|Offer)/gi, "").trim()}
-                location={promo.location}
+                name={extractYelpName(promo.title, promo.location)}
+                location={extractYelpLocation(promo.location)}
               />
             </div>
 

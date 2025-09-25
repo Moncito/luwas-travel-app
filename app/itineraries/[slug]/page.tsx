@@ -11,6 +11,7 @@ import DestinationMapClientWrapper from "@/components/(map-reviews)/DestinationM
 import WeatherInsights from "@/components/(map-reviews)/WeatherInsights";
 import AnimatedHero from "@/components/(itineraries)/AnimatedHero";
 import AnimatedHighlights from "@/components/(itineraries)/AnimatedHighlights";
+import { extractYelpName, extractYelpLocation } from "@/lib/utils/yelpHelper";
 
 
 interface Itinerary {
@@ -32,16 +33,6 @@ interface Place {
   link: string;
 }
 
-function extractYelpFriendlyName(title: string): string {
-  return title
-    .replace(/(Trip|Itinerary|Tour|Days|Nights|at|in|Package|Plan)/gi, "")
-    .replace(/[^\w\s]/g, "")
-    .trim()
-    .split(" ")
-    .filter((word) => word.length > 2)
-    .slice(0, 3)
-    .join(" ");
-}
 
 export default async function ItineraryPage({
   params,
@@ -119,17 +110,16 @@ export default async function ItineraryPage({
               )}
 
             {/* Traveler Reviews */}
-            <div>
-              <h2 className="text-xl font-bold mb-4">Traveler Reviews</h2>
-              <YelpSummary
-                name={extractYelpFriendlyName(itinerary.title)}
-                location={
-                  itinerary.location?.includes("Manila")
-                    ? "Manila"
-                    : itinerary.location || "Philippines"
-                }
-              />
-            </div>
+            <div className="bg-gray-50 p-4 rounded-lg shadow-md">
+          <h2 className="text-lg font-bold mb-3">Traveler Reviews</h2>
+          <div>
+            <YelpSummary
+              name={extractYelpName(itinerary.title, itinerary.location)}
+              location={extractYelpLocation(itinerary.location)}
+            />
+          </div>
+        </div>
+
 
             {/* Nearby Spots */}
             <div className="bg-gray-50 p-4 rounded-lg shadow-md">

@@ -9,6 +9,8 @@ import DestinationMapClientWrapper from "@/components/(map-reviews)/DestinationM
 import WeatherInsights from "@/components/(map-reviews)/WeatherInsights";
 import RecommendedPlacesForDestinations from "@/components/(map-reviews)/RecommendedPlacesForDestinations";
 import AnimatedHero from "@/components/(itineraries)/AnimatedHero";
+import { extractYelpName } from "@/lib/utils/yelpHelper";
+
 
 
 interface Destination {
@@ -126,14 +128,17 @@ export default async function DestinationPage({
               </div>
             </div>
 
-            {/* Traveler Reviews */}
-            <div>
-              <h2 className="text-xl font-bold mb-4">Traveler Reviews</h2>
+          {/* Traveler Reviews */}
+          <div className="bg-gray-50 p-6 rounded-lg shadow-md">
+            <h2 className="text-xl font-bold mb-6">Traveler Reviews</h2>
+            <div className="space-y-6">
               <YelpSummary
-                name={destination.name.replace(/(Trip|Itinerary|Tour)/gi, "").trim()}
-                location={destination.location}
+                name={extractYelpName(destination.name, destination.location ?? "")}
+                location={destination.location ?? "Philippines"}
               />
             </div>
+          </div>
+
 
             {/* Recommended Places */}
             <div className="bg-gray-50 p-4 rounded-lg shadow-md">
