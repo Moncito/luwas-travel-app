@@ -17,14 +17,14 @@ type BookingStatus =
   | 'completed'
   | 'cancelled'
   | 'paid'
-  | 'waiting_payment';
+  | 'pending_payment';
 
 const allowedStatuses = [
   'upcoming',
   'completed',
   'cancelled',
   'paid',
-  'waiting_payment',
+  'pending_payment',
 ] as const;
 
 function safeStatus(status: string): BookingStatus {

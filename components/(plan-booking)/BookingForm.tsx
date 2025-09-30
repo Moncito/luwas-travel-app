@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import Image from 'next/image';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/firebase/client';
+import { useRouter } from 'next/navigation';
 import type { User } from 'firebase/auth';
 import {
   Mail,
@@ -43,6 +44,7 @@ function IconInput({ icon: Icon, ...props }: any) {
 }
 
 export default function BookingForm({ destinationId, user }: Props) {
+  const router = useRouter();
   const [destination, setDestination] = useState<Destination | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -102,45 +104,21 @@ export default function BookingForm({ destinationId, user }: Props) {
     try {
       const totalPrice = formData.travelers * (destination.price || 0);
 
-      const res = await fetch('/api/bookings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          userId: user.uid,
-          destinationId,
-          totalPrice,
-          paymentMethod: 'PayMongo',
-        }),
+      // ✅ Save booking in Firestore
+      const bookingRef = await addDoc(collection(db, 'bookings'), {
+        ...formData,
+        userId: user.uid,
+        destinationId,
+        totalPrice,
+        status: 'pending_payment', // ⏳ Waiting for payment
+        createdAt: serverTimestamp(),
+        type: 'destination',
       });
 
-      if (!res.ok) throw new Error('Failed to create booking');
-      const data = await res.json();
+      toast.success('Booking created! Redirecting to payment page...');
 
-      toast.success('Booking submitted! Redirecting to payment...');
-
-      const payRes = await fetch('/api/paymongo/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formData.fullName,
-          email: formData.email,
-          amount: totalPrice,
-          bookingId: data.id,
-          destinationId,
-          successType: 'destination',
-        }),
-      });
-
-      const payData = await payRes.json();
-      if (payData?.url) {
-        setTimeout(() => {
-          window.location.href = payData.url;
-        }, 1200);
-      } else {
-        toast.error('❌ Payment failed. Try again.');
-        setLoading(false);
-      }
+      // ✅ Redirect to /destinations/[id]/pay
+      router.push(`/destinations/${destinationId}/pay?bookingId=${bookingRef.id}`);
     } catch (err) {
       console.error('Booking error:', err);
       toast.error('Something went wrong.');
@@ -174,23 +152,8 @@ export default function BookingForm({ destinationId, user }: Props) {
             <IconInput icon={Mail} type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Email" required />
             <IconInput icon={Phone} name="phone" value={formData.phone} onChange={handleChange} placeholder="Phone Number" required />
             <IconInput icon={Home} name="localAddress" value={formData.localAddress} onChange={handleChange} placeholder="Local Address" required />
-            <IconInput
-              icon={Calendar}
-              type="date"
-              name="departureDate"
-              value={formData.departureDate}
-              min={today}
-              onChange={handleChange}
-              required
-            />
-            <IconInput
-              icon={Calendar}
-              type="date"
-              name="returnDate"
-              value={formData.returnDate}
-              min={today}
-              onChange={handleChange}
-            />
+            <IconInput icon={Calendar} type="date" name="departureDate" value={formData.departureDate} min={today} onChange={handleChange} required />
+            <IconInput icon={Calendar} type="date" name="returnDate" value={formData.returnDate} min={today} onChange={handleChange} />
             <IconInput icon={Users} type="number" min={1} name="travelers" value={formData.travelers} onChange={handleChange} placeholder="Travelers" required />
           </div>
 
@@ -211,7 +174,7 @@ export default function BookingForm({ destinationId, user }: Props) {
             >
               {loading ? 'Processing...' : 'Book Destination Now'}
             </button>
-            <p className="text-xs text-gray-400 mt-2">Secure checkout via PayMongo</p>
+            <p className="text-xs text-gray-400 mt-2">You’ll pay via GCash on the next step</p>
           </div>
         </form>
 
@@ -229,9 +192,7 @@ export default function BookingForm({ destinationId, user }: Props) {
           <div className="p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-xl font-bold text-blue-900">{destination.name}</h3>
-              <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">
-                Destination
-              </span>
+              <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">Destination</span>
             </div>
 
             <div className="space-y-1 text-gray-700">
@@ -249,9 +210,7 @@ export default function BookingForm({ destinationId, user }: Props) {
 
             <div className="mt-4 p-3 rounded-lg bg-blue-50 flex items-center gap-3 text-sm text-blue-800">
               <MapPin className="w-5 h-5" />
-              <span>
-                Coordinates: {destination.latitude}, {destination.longitude}
-              </span>
+              <span>Coordinates: {destination.latitude}, {destination.longitude}</span>
             </div>
           </div>
         </div>

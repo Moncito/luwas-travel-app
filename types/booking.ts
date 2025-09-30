@@ -8,7 +8,7 @@ export interface Booking {
   title?: string;
   departureDate: string;
   createdAt: string | Date; // accept both Date and ISO string
-  status: 'upcoming' | 'completed' | 'cancelled' | 'paid' | 'waiting_payment';
+  status: 'upcoming' | 'completed' | 'cancelled' | 'paid' | 'pending_payment';
   proofUrl?: string;
   specialRequests?: string;
   location?: string;
