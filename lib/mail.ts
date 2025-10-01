@@ -12,7 +12,7 @@ const resend = new Resend(process.env.RESEND_API_KEY as string);
 interface BaseBooking {
   id: string;
   departureDate: string;
-  amount?: number; // optional because promos use finalPrice
+  amount?: number; // promos may override
 }
 
 // 🔹 Destination booking
@@ -49,11 +49,11 @@ export interface EmailPayload {
 /**
  * Generate a branded PDF invoice/receipt
  */
-async function generateReceiptPDF({ name, email, type, booking }: EmailPayload): Promise<string> {
+async function generateReceiptPDF({ name, booking }: EmailPayload): Promise<string> {
   const pdfDoc = await PDFDocument.create();
   pdfDoc.registerFontkit(fontkit);
 
-  // ✅ Load font (for ₱ support)
+  // ✅ Load font (₱ support)
   const fontBytes = fs.readFileSync(path.join(process.cwd(), "public/fonts/Roboto-Regular.ttf"));
   const font = await pdfDoc.embedFont(fontBytes);
 
@@ -83,7 +83,7 @@ async function generateReceiptPDF({ name, email, type, booking }: EmailPayload):
 
   y -= 100;
 
-  // ✅ Table header background
+  // ✅ Table Header
   page.drawRectangle({
     x: 50,
     y: y - 5,
@@ -92,17 +92,10 @@ async function generateReceiptPDF({ name, email, type, booking }: EmailPayload):
     color: rgb(0.1, 0.2, 0.6),
   });
 
-  // ✅ Headers
   const headers = ["QTY", "Description", "Unit Price", "Amount"];
   const colX = [60, 120, 360, 460];
   headers.forEach((h, i) => {
-    page.drawText(h, {
-      x: colX[i],
-      y,
-      size: 12,
-      font,
-      color: rgb(1, 1, 1),
-    });
+    page.drawText(h, { x: colX[i], y, size: 12, font, color: rgb(1, 1, 1) });
   });
 
   y -= 30;
@@ -122,18 +115,8 @@ async function generateReceiptPDF({ name, email, type, booking }: EmailPayload):
 
   page.drawText("1", { x: colX[0], y, size: 12, font });
   page.drawText(tripName, { x: colX[1], y, size: 12, font });
-  page.drawText(`₱${Number(amount).toLocaleString()}`, {
-    x: colX[2],
-    y,
-    size: 12,
-    font,
-  });
-  page.drawText(`₱${Number(amount).toLocaleString()}`, {
-    x: colX[3],
-    y,
-    size: 12,
-    font,
-  });
+  page.drawText(`₱${Number(amount).toLocaleString()}`, { x: colX[2], y, size: 12, font });
+  page.drawText(`₱${Number(amount).toLocaleString()}`, { x: colX[3], y, size: 12, font });
 
   y -= 50;
 
@@ -150,16 +133,18 @@ async function generateReceiptPDF({ name, email, type, booking }: EmailPayload):
   if (booking.type === "promo" && (booking as PromoBooking).discountApplied) {
     y -= 20;
     page.drawText("Discount Applied:", { x: 360, y, size: 12, font });
-    page.drawText(
-      `₱${Number((booking as PromoBooking).discountApplied).toLocaleString()}`,
-      { x: 460, y, size: 12, font }
-    );
+    page.drawText(`₱${Number((booking as PromoBooking).discountApplied).toLocaleString()}`, {
+      x: 460,
+      y,
+      size: 12,
+      font,
+    });
   }
 
-  // ✅ Footer
+  page.drawText(`Booked By: ${name}`, { x: 60, y: 80, size: 10, font });
   page.drawText("Thank you for booking with MDCC Travel & Tours.", {
     x: 60,
-    y: 80,
+    y: 65,
     size: 10,
     font,
     color: rgb(0.4, 0.4, 0.4),
@@ -170,11 +155,10 @@ async function generateReceiptPDF({ name, email, type, booking }: EmailPayload):
 }
 
 /**
- * Send Email with HTML + PDF Receipt
+ * Send Email with HTML + PDF
  */
 export async function sendReceiptEmail(payload: EmailPayload) {
   const { name, email, type, booking } = payload;
-
   const base64PDF = await generateReceiptPDF(payload);
 
   const tripName =
@@ -189,7 +173,6 @@ export async function sendReceiptEmail(payload: EmailPayload) {
       ? (booking as PromoBooking).finalPrice
       : booking.amount ?? 0;
 
-  // ✅ Email HTML
   const html = `
     <div style="max-width:600px;margin:auto;font-family:Arial,sans-serif;padding:24px;border:1px solid #eee;border-radius:10px;background:#fff;">
       <div style="text-align:center;margin-bottom:20px;">
@@ -223,17 +206,13 @@ export async function sendReceiptEmail(payload: EmailPayload) {
         </tr>
         ${
           booking.type === "promo" && (booking as PromoBooking).discountApplied
-            ? `
-          <tr>
-            <td style="padding:10px;font-weight:bold;">Discount</td>
-            <td style="padding:10px;">₱${Number((booking as PromoBooking).discountApplied).toLocaleString()}</td>
-          </tr>`
+            ? `<tr><td style="padding:10px;font-weight:bold;">Discount</td>
+               <td style="padding:10px;">₱${Number((booking as PromoBooking).discountApplied).toLocaleString()}</td></tr>`
             : ""
         }
       </table>
 
       <p>If you have any questions, reply to this email and we’ll be happy to help.</p>
-
       <p style="margin-top:20px;">Bon voyage!<br/>– MDCC Travel & Tours</p>
 
       <hr style="margin-top:30px;" />
@@ -241,7 +220,6 @@ export async function sendReceiptEmail(payload: EmailPayload) {
     </div>
   `;
 
-  // ✅ Send via Resend
   await resend.emails.send({
     from: "MDCC Travel <onboarding@resend.dev>",
     to: email,
@@ -255,5 +233,5 @@ export async function sendReceiptEmail(payload: EmailPayload) {
     ],
   });
 
-  console.log(`✅ Receipt (email + PDF) sent to ${email}`);
+  console.log(`✅ Receipt sent to ${email} (${type})`);
 }
