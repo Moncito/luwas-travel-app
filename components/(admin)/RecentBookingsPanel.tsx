@@ -1,19 +1,27 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Calendar, MapPin, User } from 'lucide-react'
+import { Calendar, MapPin, User, Tag } from 'lucide-react'
 
 interface Booking {
   id: string
   fullName: string
   destination: string
   status: string
-  createdAt: string
-  type: 'trip' | 'itinerary'
+  createdAt: string | { seconds: number }
+  type: 'trip' | 'itinerary' | 'promo'
 }
 
-function formatDate(dateStr: string) {
-  const date = new Date(dateStr)
+function formatDate(dateInput: Booking['createdAt']) {
+  let date: Date
+  if (typeof dateInput === 'string') {
+    date = new Date(dateInput)
+  } else if (typeof dateInput === 'object' && 'seconds' in dateInput) {
+    date = new Date(dateInput.seconds * 1000)
+  } else {
+    return 'N/A'
+  }
+
   return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -29,8 +37,24 @@ function statusStyle(status: string) {
       return 'bg-green-100 text-green-700 border border-green-200'
     case 'cancelled':
       return 'bg-red-100 text-red-700 border border-red-200'
+    case 'awaiting_approval':
+    case 'waiting_payment':
+      return 'bg-yellow-100 text-yellow-700 border border-yellow-200'
     default:
       return 'bg-gray-100 text-gray-700 border border-gray-200'
+  }
+}
+
+function typeLabel(type: Booking['type']) {
+  switch (type) {
+    case 'trip':
+      return 'Trip'
+    case 'itinerary':
+      return 'Itinerary'
+    case 'promo':
+      return 'Promo'
+    default:
+      return 'Booking'
   }
 }
 
@@ -87,12 +111,18 @@ export default function RecentBookingsPanel() {
               {/* Left section */}
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
-                  <User className="w-5 h-5 text-blue-600" />
+                  {b.type === 'promo' ? (
+                    <Tag className="w-5 h-5 text-orange-500" />
+                  ) : (
+                    <User className="w-5 h-5 text-blue-600" />
+                  )}
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-gray-800 flex items-center gap-1">
                     {b.fullName}
-                    <span className="ml-2 text-xs text-gray-500">[{b.type}]</span>
+                    <span className="ml-2 text-xs text-gray-500">
+                      [{typeLabel(b.type)}]
+                    </span>
                   </p>
                   <p className="text-xs text-gray-500 flex items-center gap-1">
                     <MapPin className="w-3 h-3 text-gray-400" />

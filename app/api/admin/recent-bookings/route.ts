@@ -4,45 +4,40 @@ import { NextResponse } from 'next/server'
 
 export async function GET() {
   try {
-    const tripSnap = await db
-      .collection('bookings')
-      .orderBy('createdAt', 'desc')
-      .limit(5)
-      .get()
+    // fetch the latest docs from all 3 collections
+    const [tripSnap, itinSnap, promoSnap] = await Promise.all([
+      db.collection('bookings').orderBy('createdAt', 'desc').limit(5).get(),
+      db.collection('itineraryBookings').orderBy('createdAt', 'desc').limit(5).get(),
+      db.collection('promoBookings').orderBy('createdAt', 'desc').limit(5).get(),
+    ])
 
-    const itinSnap = await db
-      .collection('itineraryBookings')
-      .orderBy('createdAt', 'desc')
-      .limit(5)
-      .get()
+    const normalize = (
+      docs: FirebaseFirestore.QuerySnapshot,
+      type: 'trip' | 'itinerary' | 'promo'
+    ) =>
+      docs.docs.map(doc => {
+        const data = doc.data()
+        return {
+          id: doc.id,
+          fullName: data.fullName || data.name || '[unknown]',
+          destination:
+            data.destination || data.title || data.promoTitle || '[no destination]',
+          status: data.status || 'upcoming',
+          createdAt:
+            data.createdAt?.toDate?.() ||
+            (data.createdAt?.seconds ? new Date(data.createdAt.seconds * 1000) : new Date()),
+          type,
+        }
+      })
 
-    const tripResults = tripSnap.docs.map(doc => {
-      const data = doc.data()
-      return {
-        id: doc.id,
-        fullName: data.fullName,
-        destination: data.destination,
-        status: data.status || 'upcoming',
-        createdAt: data.createdAt?.toDate?.() || new Date(data.createdAt),
-        type: 'trip',
-      }
-    })
+    const trips = normalize(tripSnap, 'trip')
+    const itins = normalize(itinSnap, 'itinerary')
+    const promos = normalize(promoSnap, 'promo')
 
-    const itinResults = itinSnap.docs.map(doc => {
-      const data = doc.data()
-      return {
-        id: doc.id,
-        fullName: data.fullName || data.name || '[unknown]',
-        destination: data.destination || data.title || '[itinerary]',
-        status: data.status || 'upcoming',
-        createdAt: data.createdAt?.toDate?.() || new Date(data.createdAt),
-        type: 'itinerary',
-      }
-    })
-
-    const combined = [...tripResults, ...itinResults]
+    // combine & sort by most recent
+    const combined = [...trips, ...itins, ...promos]
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      .slice(0, 5)
+      .slice(0, 10) // latest 10 across all
 
     return NextResponse.json(combined)
   } catch (err) {
