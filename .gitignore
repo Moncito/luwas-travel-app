@@ -52,3 +52,5 @@ setAdmin.ts
 serviceAccountKey.jsonsecret/firebase-service-account.json
 
 serviceAccountKey.json
+
+.env.mongo

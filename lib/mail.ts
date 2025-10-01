@@ -8,28 +8,41 @@ import path from "path";
 
 const resend = new Resend(process.env.RESEND_API_KEY as string);
 
+// 🔹 Base booking type
 interface BaseBooking {
   id: string;
-  amount: number;
   departureDate: string;
+  amount?: number; // optional because promos use finalPrice
 }
 
+// 🔹 Destination booking
 export interface DestinationBooking extends BaseBooking {
   type: "destination";
   destinationName: string;
+  amount: number;
 }
 
+// 🔹 Itinerary booking
 export interface ItineraryBooking extends BaseBooking {
   type: "itinerary";
   itineraryTitle: string;
+  amount: number;
 }
 
-export type Booking = DestinationBooking | ItineraryBooking;
+// 🔹 Promo booking
+export interface PromoBooking extends BaseBooking {
+  type: "promo";
+  promoTitle: string;
+  discountApplied?: number;
+  finalPrice: number;
+}
+
+export type Booking = DestinationBooking | ItineraryBooking | PromoBooking;
 
 export interface EmailPayload {
   name: string;
   email: string;
-  type: "destination" | "itinerary";
+  type: "destination" | "itinerary" | "promo";
   booking: Booking;
 }
 
@@ -96,19 +109,26 @@ async function generateReceiptPDF({ name, email, type, booking }: EmailPayload):
 
   // ✅ Booking row
   const tripName =
-    type === "destination"
+    booking.type === "destination"
       ? (booking as DestinationBooking).destinationName
-      : (booking as ItineraryBooking).itineraryTitle;
+      : booking.type === "itinerary"
+      ? (booking as ItineraryBooking).itineraryTitle
+      : (booking as PromoBooking).promoTitle || "Promo Booking";
+
+  const amount =
+    booking.type === "promo"
+      ? (booking as PromoBooking).finalPrice
+      : booking.amount ?? 0;
 
   page.drawText("1", { x: colX[0], y, size: 12, font });
   page.drawText(tripName, { x: colX[1], y, size: 12, font });
-  page.drawText(`₱${Number(booking.amount).toLocaleString()}`, {
+  page.drawText(`₱${Number(amount).toLocaleString()}`, {
     x: colX[2],
     y,
     size: 12,
     font,
   });
-  page.drawText(`₱${Number(booking.amount).toLocaleString()}`, {
+  page.drawText(`₱${Number(amount).toLocaleString()}`, {
     x: colX[3],
     y,
     size: 12,
@@ -119,13 +139,22 @@ async function generateReceiptPDF({ name, email, type, booking }: EmailPayload):
 
   // ✅ Totals
   page.drawText("Total Paid:", { x: 360, y, size: 12, font });
-  page.drawText(`₱${Number(booking.amount).toLocaleString()}`, {
+  page.drawText(`₱${Number(amount).toLocaleString()}`, {
     x: 460,
     y,
     size: 12,
     font,
     color: rgb(0.1, 0.2, 0.6),
   });
+
+  if (booking.type === "promo" && (booking as PromoBooking).discountApplied) {
+    y -= 20;
+    page.drawText("Discount Applied:", { x: 360, y, size: 12, font });
+    page.drawText(
+      `₱${Number((booking as PromoBooking).discountApplied).toLocaleString()}`,
+      { x: 460, y, size: 12, font }
+    );
+  }
 
   // ✅ Footer
   page.drawText("Thank you for booking with MDCC Travel & Tours.", {
@@ -149,9 +178,16 @@ export async function sendReceiptEmail(payload: EmailPayload) {
   const base64PDF = await generateReceiptPDF(payload);
 
   const tripName =
-    type === "destination"
+    booking.type === "destination"
       ? (booking as DestinationBooking).destinationName
-      : (booking as ItineraryBooking).itineraryTitle;
+      : booking.type === "itinerary"
+      ? (booking as ItineraryBooking).itineraryTitle
+      : (booking as PromoBooking).promoTitle || "Promo Booking";
+
+  const amount =
+    booking.type === "promo"
+      ? (booking as PromoBooking).finalPrice
+      : booking.amount ?? 0;
 
   // ✅ Email HTML
   const html = `
@@ -183,10 +219,17 @@ export async function sendReceiptEmail(payload: EmailPayload) {
         </tr>
         <tr style="background:#f4f6f8;">
           <td style="padding:10px;font-weight:bold;">Amount Paid</td>
-          <td style="padding:10px;color:#0d47a1;font-weight:bold;">₱${Number(
-            booking.amount ?? 0
-          ).toLocaleString()}</td>
+          <td style="padding:10px;color:#0d47a1;font-weight:bold;">₱${Number(amount).toLocaleString()}</td>
         </tr>
+        ${
+          booking.type === "promo" && (booking as PromoBooking).discountApplied
+            ? `
+          <tr>
+            <td style="padding:10px;font-weight:bold;">Discount</td>
+            <td style="padding:10px;">₱${Number((booking as PromoBooking).discountApplied).toLocaleString()}</td>
+          </tr>`
+            : ""
+        }
       </table>
 
       <p>If you have any questions, reply to this email and we’ll be happy to help.</p>

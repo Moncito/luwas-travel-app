@@ -1,4 +1,4 @@
-"use client";
+'use client'
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
@@ -26,7 +26,6 @@ interface Promo {
   title: string;
   price: number;
   discountPercentage: number;
-  finalPrice: number;
   latitude: number;
   longitude: number;
   imageUrl?: string;
@@ -65,6 +64,7 @@ export default function PromoBookingForm({ promoId, user }: Props) {
     specialRequests: "",
   });
 
+  // Prefill user
   useEffect(() => {
     if (user) {
       setFormData((prev) => ({
@@ -75,25 +75,23 @@ export default function PromoBookingForm({ promoId, user }: Props) {
     }
   }, [user]);
 
+  // Fetch promo
   useEffect(() => {
     const fetchPromo = async () => {
       try {
         const docRef = doc(db, "promos", promoId);
         const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setPromo(docSnap.data() as Promo);
-        } else {
-          toast.error("Promo not found.");
-        }
+        if (docSnap.exists()) setPromo(docSnap.data() as Promo);
+        else toast.error("Promo not found.");
       } catch (error) {
-        toast.error("Failed to fetch promo.");
         console.error(error);
+        toast.error("Failed to fetch promo.");
       }
     };
-
     fetchPromo();
   }, [promoId]);
 
+  // Fetch weather
   useEffect(() => {
     const fetchWeather = async () => {
       if (promo?.latitude && promo?.longitude && formData.departureDate) {
@@ -111,9 +109,7 @@ export default function PromoBookingForm({ promoId, user }: Props) {
     fetchWeather();
   }, [promo, formData.departureDate]);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
@@ -127,10 +123,7 @@ export default function PromoBookingForm({ promoId, user }: Props) {
     setLoading(true);
 
     try {
-      const totalPrice = formData.travelers * promo.price;
-      const discountApplied = totalPrice * (promo.discountPercentage / 100);
-      const finalPrice = totalPrice - discountApplied;
-
+      // ✅ Only send user input, backend calculates prices
       const res = await fetch("/api/promo-bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -138,39 +131,16 @@ export default function PromoBookingForm({ promoId, user }: Props) {
           ...formData,
           userId: user.uid,
           promoId,
-          totalPrice,
-          finalPrice,
-          paymentMethod: "PayMongo",
         }),
       });
 
       if (!res.ok) throw new Error("Failed to create promo booking");
       const data = await res.json();
 
-      toast.success("Booking submitted! Redirecting to payment...");
+      toast.success("Booking created! Redirecting to payment...");
 
-      const payRes = await fetch("/api/paymongo/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.fullName,
-          email: formData.email,
-          amount: finalPrice,
-          bookingId: data.id,
-          promoId,
-          successType: "promo",
-        }),
-      });
-
-      const payData = await payRes.json();
-      if (payData?.url) {
-        setTimeout(() => {
-          window.location.href = payData.url;
-        }, 1200);
-      } else {
-        toast.error("❌ Payment failed. Try again.");
-        setLoading(false);
-      }
+      // ✅ Redirect to Pay page
+      window.location.href = `/promos/${promoId}/pay?bookingId=${data.id}&type=promo&title=${encodeURIComponent(promo.title)}`;
     } catch (err) {
       console.error("Promo booking error:", err);
       toast.error("Something went wrong.");
@@ -180,6 +150,7 @@ export default function PromoBookingForm({ promoId, user }: Props) {
 
   if (!promo) return null;
 
+  // UI price calculation (frontend only, not stored in Firestore)
   const totalPrice = formData.travelers * promo.price;
   const discountApplied = totalPrice * (promo.discountPercentage / 100);
   const finalPrice = totalPrice - discountApplied;
@@ -193,70 +164,19 @@ export default function PromoBookingForm({ promoId, user }: Props) {
         transition={{ duration: 0.6 }}
       >
         {/* Left: Form */}
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white p-8 md:p-10 rounded-2xl shadow-2xl border border-gray-200 space-y-6"
-        >
+        <form onSubmit={handleSubmit} className="bg-white p-8 md:p-10 rounded-2xl shadow-2xl border border-gray-200 space-y-6">
           <h2 className="text-3xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-700 bg-clip-text text-transparent">
             Book This Promo
           </h2>
-          <p className="text-sm text-gray-600">
-            Fill in your details to confirm your reservation
-          </p>
+          <p className="text-sm text-gray-600">Fill in your details to confirm your reservation</p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <IconInput
-              icon={UserIcon}
-              name="fullName"
-              value={formData.fullName}
-              onChange={handleChange}
-              placeholder="Full Name"
-              required
-            />
-            <IconInput
-              icon={Mail}
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Email"
-              required
-            />
-            <IconInput
-              icon={Phone}
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              placeholder="Phone Number"
-              required
-            />
-            <IconInput
-              icon={Home}
-              name="localAddress"
-              value={formData.localAddress}
-              onChange={handleChange}
-              placeholder="Local Address"
-              required
-            />
-            <IconInput
-              icon={Calendar}
-              type="date"
-              name="departureDate"
-              value={formData.departureDate}
-              min={new Date().toISOString().split("T")[0]} // ⛔ prevent past dates
-              onChange={handleChange}
-              required
-            />
-            <IconInput
-              icon={Users}
-              type="number"
-              min={1}
-              name="travelers"
-              value={formData.travelers}
-              onChange={handleChange}
-              placeholder="Travelers"
-              required
-            />
+            <IconInput icon={UserIcon} name="fullName" value={formData.fullName} onChange={handleChange} placeholder="Full Name" required />
+            <IconInput icon={Mail} type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Email" required />
+            <IconInput icon={Phone} name="phone" value={formData.phone} onChange={handleChange} placeholder="Phone Number" required />
+            <IconInput icon={Home} name="localAddress" value={formData.localAddress} onChange={handleChange} placeholder="Local Address" required />
+            <IconInput icon={Calendar} type="date" name="departureDate" value={formData.departureDate} min={new Date().toISOString().split("T")[0]} onChange={handleChange} required />
+            <IconInput icon={Users} type="number" min={1} name="travelers" value={formData.travelers} onChange={handleChange} placeholder="Travelers" required />
           </div>
 
           <textarea
@@ -276,52 +196,26 @@ export default function PromoBookingForm({ promoId, user }: Props) {
             >
               {loading ? "Processing..." : "Book Promo Now"}
             </button>
-            <p className="text-xs text-gray-400 mt-2">
-              Secure checkout via PayMongo
-            </p>
+            <p className="text-xs text-gray-400 mt-2">You’ll pay via GCash on the next step</p>
           </div>
         </form>
 
         {/* Right: Promo Card */}
         <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
           {promo.imageUrl && (
-            <Image
-              src={promo.imageUrl}
-              alt={promo.title}
-              width={800}
-              height={400}
-              className="w-full h-56 object-cover"
-            />
+            <Image src={promo.imageUrl} alt={promo.title} width={800} height={400} className="w-full h-56 object-cover" />
           )}
           <div className="p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold text-indigo-700">
-                {promo.title}
-              </h3>
+              <h3 className="text-xl font-bold text-indigo-700">{promo.title}</h3>
               <span className="bg-gradient-to-r from-green-400 to-emerald-600 text-white px-3 py-1 rounded-full text-xs font-semibold shadow">
                 -{promo.discountPercentage}%
               </span>
             </div>
 
             <div className="space-y-1 text-gray-700">
-              <p>
-                Price per person:{" "}
-                <span className="font-semibold text-blue-700">
-                  ₱{promo.price.toLocaleString()}
-                </span>
-              </p>
-              <p>
-                Discount:{" "}
-                <span className="font-semibold text-green-600">
-                  {promo.discountPercentage}%
-                </span>
-              </p>
-              <p>
-                Total Price:{" "}
-                <span className="font-semibold">
-                  ₱{totalPrice.toLocaleString()}
-                </span>
-              </p>
+              <p>Price per person: <span className="font-semibold text-blue-700">₱{promo.price.toLocaleString()}</span></p>
+              <p>Total Price: <span className="font-semibold">₱{totalPrice.toLocaleString()}</span></p>
               <motion.p
                 initial={{ scale: 0.9 }}
                 animate={{ scale: 1 }}
@@ -332,13 +226,10 @@ export default function PromoBookingForm({ promoId, user }: Props) {
               </motion.p>
             </div>
 
-            {/* Weather Card */}
             {weather && (
               <div className="mt-4 p-3 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 flex items-center gap-3 text-sm text-indigo-700 border border-indigo-100">
                 <CloudSun className="w-5 h-5" />
-                <span>
-                  {weather.summary} • {weather.temperature}°C
-                </span>
+                <span>{weather.summary} • {weather.temperature}°C</span>
               </div>
             )}
           </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { CalendarDays, PlaneTakeoff, MapPin, User as UserIcon } from 'lucide-react'
 import Image from 'next/image'
@@ -35,10 +35,7 @@ type TravelRecord = {
   finalPrice?: number | null
 }
 
-const statusConfig: Record<
-  string,
-  { color: string; icon: JSX.Element }
-> = {
+const statusConfig: Record<string, { color: string; icon: JSX.Element }> = {
   upcoming: { color: 'bg-blue-100 text-blue-800', icon: <PlaneTakeoff className="w-4 h-4" /> },
   completed: { color: 'bg-green-100 text-green-800', icon: <span>✅</span> },
   cancelled: { color: 'bg-red-100 text-red-700', icon: <span>❌</span> },
@@ -50,6 +47,15 @@ const statusConfig: Record<
 
 interface Props {
   userId: string
+}
+
+function safeLower(s?: string | null) {
+  return (s || '').toLowerCase()
+}
+
+function formatPeso(n?: number | null) {
+  const v = Number.isFinite(Number(n)) ? Number(n) : 0
+  return v.toLocaleString()
 }
 
 export default function TravelTimeline({ userId }: Props) {
@@ -66,7 +72,9 @@ export default function TravelTimeline({ userId }: Props) {
       setLoading(true)
       setError(null)
       try {
-        const res = await fetch(`/api/travel-history?userId=${encodeURIComponent(userId)}`, { cache: 'no-store' })
+        const res = await fetch(`/api/travel-history?userId=${encodeURIComponent(userId)}`, {
+          cache: 'no-store',
+        })
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const data: TravelRecord[] = await res.json()
         if (!cancelled) setTrips(data)
@@ -77,21 +85,20 @@ export default function TravelTimeline({ userId }: Props) {
       }
     }
     fetchTrips()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [userId])
 
-  // normalize statuses for filtering
+  // merge upcoming-like statuses
   const isUpcomingish = (status?: string) => {
-    if (!status) return false
-    const s = status.toLowerCase()
+    const s = safeLower(status)
     return ['upcoming', 'pending_payment', 'waiting_payment', 'paid', 'awaiting_approval'].includes(s)
   }
 
   const filteredTrips = useMemo(() => {
-    if (filter === 'upcoming') {
-      return trips.filter(t => isUpcomingish(t.status))
-    }
-    return trips.filter(t => t.status?.toLowerCase() === filter)
+    if (filter === 'upcoming') return trips.filter(t => isUpcomingish(t.status))
+    return trips.filter(t => safeLower(t.status) === filter)
   }, [trips, filter])
 
   return (
@@ -114,10 +121,10 @@ export default function TravelTimeline({ userId }: Props) {
 
       {/* Filters */}
       <div className="flex flex-wrap justify-center gap-4 mb-12">
-        {['upcoming', 'completed', 'cancelled'].map(status => (
+        {(['upcoming', 'completed', 'cancelled'] as const).map(status => (
           <button
             key={status}
-            onClick={() => setFilter(status as typeof filter)}
+            onClick={() => setFilter(status)}
             className={`px-6 py-2 font-semibold rounded-full transition-all ${
               filter === status ? 'bg-white text-black shadow-md' : 'bg-white/30 text-white hover:bg-white/50'
             }`}
@@ -137,8 +144,15 @@ export default function TravelTimeline({ userId }: Props) {
           <p className="col-span-full text-center text-white/70">No records found for “{filter}”.</p>
         ) : (
           filteredTrips.map((trip, i) => {
-            const badgeStyle = statusConfig[trip.status?.toLowerCase()]?.color || 'bg-gray-200 text-gray-800'
-            const badgeIcon = statusConfig[trip.status?.toLowerCase()]?.icon
+            const s = safeLower(trip.status)
+            const badgeStyle = statusConfig[s]?.color || 'bg-gray-200 text-gray-800'
+            const badgeIcon = statusConfig[s]?.icon
+
+            // 🔑 Correct price for promos: use finalPrice if present
+            const displayPrice =
+              trip.type === 'promo'
+                ? trip.finalPrice ?? trip.totalPrice
+                : trip.totalPrice
 
             return (
               <motion.div
@@ -151,7 +165,9 @@ export default function TravelTimeline({ userId }: Props) {
               >
                 {/* Title + Status */}
                 <div className="flex justify-between items-center mb-3">
-                  <h3 className="text-xl font-bold text-white line-clamp-1">{trip.destination}</h3>
+                  <h3 className="text-xl font-bold text-white line-clamp-1">
+                    {trip.destination || (trip.type === 'promo' ? 'Promo Booking' : 'Booking')}
+                  </h3>
                   {trip.status && (
                     <span className={`flex items-center gap-1 text-xs font-medium px-3 py-1 rounded-full ${badgeStyle}`}>
                       {badgeIcon}
@@ -186,7 +202,7 @@ export default function TravelTimeline({ userId }: Props) {
 
                 {/* Price */}
                 <div className="text-sm text-white/70">
-                  👥 {trip.people} traveler(s) – ₱{trip.totalPrice.toLocaleString()}
+                  👥 {trip.people ?? 1} traveler(s) – ₱{formatPeso(displayPrice)}
                 </div>
               </motion.div>
             )

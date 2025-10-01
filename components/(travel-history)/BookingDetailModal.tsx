@@ -4,7 +4,18 @@ import { useState } from 'react'
 import { Dialog } from '@headlessui/react'
 import type { TravelRecord } from '@/types/travel'
 import Image from 'next/image'
-import { Mail, Phone, CalendarDays, MapPin, CloudSun, FileText, X } from 'lucide-react'
+import {
+  Mail,
+  Phone,
+  CalendarDays,
+  MapPin,
+  CloudSun,
+  FileText,
+  X,
+  User as UserIcon,
+  Home,
+  CreditCard,
+} from 'lucide-react'
 
 interface Props {
   booking: TravelRecord | null
@@ -27,23 +38,31 @@ export default function BookingDetailModal({ booking, isOpen, onClose }: Props) 
 
   if (!booking) return null
 
+  // Pricing logic
+  const isPromo = booking.type === 'promo'
+  const originalPrice = booking.totalPrice ?? booking.finalPrice ?? 0
+  const finalPrice = booking.finalPrice ?? booking.totalPrice ?? 0
+  const hasDiscount =
+    isPromo && booking.finalPrice != null && booking.finalPrice < (booking.totalPrice ?? 0)
+
   return (
     <>
-      {/* Main Modal */}
       <Dialog open={isOpen} onClose={onClose} className="relative z-50">
-        <div className="fixed inset-0 bg-black/50" aria-hidden="true" />
+        {/* Overlay */}
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" aria-hidden="true" />
 
+        {/* Modal */}
         <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Panel className="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-6 space-y-6">
+          <Dialog.Panel className="bg-white rounded-2xl shadow-xl w-full max-w-lg md:max-w-2xl p-6 space-y-6 overflow-y-auto max-h-[90vh]">
             {/* Header */}
-            <Dialog.Title className="text-xl font-bold text-blue-700 flex items-center justify-between">
+            <Dialog.Title className="text-xl md:text-2xl font-bold text-blue-700 flex items-center justify-between">
               {booking.type === 'trip' && booking.destination}
               {booking.type === 'itinerary' && (booking.title || booking.slug || 'Itinerary Booking')}
               {booking.type === 'promo' && (booking.promoTitle || 'Promo Booking')}
 
               {booking.status && (
                 <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold capitalize ${
+                  className={`ml-2 px-3 py-1 rounded-full text-xs font-semibold capitalize ${
                     statusColors[booking.status] || 'bg-gray-100 text-gray-600'
                   }`}
                 >
@@ -52,71 +71,88 @@ export default function BookingDetailModal({ booking, isOpen, onClose }: Props) 
               )}
             </Dialog.Title>
 
-            {/* Content */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Left Info */}
-              <div className="space-y-3 text-sm text-gray-700">
+              <div className="space-y-4 text-sm text-gray-700">
+                <h3 className="font-semibold text-blue-800">Traveler Info</h3>
+                <p className="flex items-center gap-2">
+                  <UserIcon className="w-4 h-4 text-blue-500" /> {booking.fullName}
+                </p>
                 {booking.email && (
                   <p className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-blue-500" />
-                    {booking.email}
+                    <Mail className="w-4 h-4 text-blue-500" /> {booking.email}
                   </p>
                 )}
-
                 {booking.phone && (
                   <p className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-blue-500" />
-                    {booking.phone}
+                    <Phone className="w-4 h-4 text-blue-500" /> {booking.phone}
                   </p>
                 )}
-
-                {booking.departureDate && (
-                  <p className="flex items-center gap-2">
-                    <CalendarDays className="w-4 h-4 text-blue-500" />
-                    {booking.departureDate}
-                  </p>
-                )}
-
                 {booking.location && (
                   <p className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-blue-500" />
-                    {booking.location}
+                    <Home className="w-4 h-4 text-blue-500" /> {booking.location}
                   </p>
                 )}
 
-                {booking.travelers != null && (
-                  <p><strong>Travelers:</strong> {booking.travelers}</p>
-                )}
-
-                {booking.people != null && (
-                  <p><strong>People:</strong> {booking.people}</p>
-                )}
-
-                {booking.totalPrice != null && (
-                  <p className="font-semibold text-emerald-600">
-                    Total Price: ₱{Number(booking.totalPrice).toLocaleString()}
+                <h3 className="font-semibold text-blue-800 pt-2">Booking Info</h3>
+                {booking.departureDate && (
+                  <p className="flex items-center gap-2">
+                    <CalendarDays className="w-4 h-4 text-blue-500" /> {booking.departureDate}
                   </p>
                 )}
+                {booking.people != null && <p>People: {booking.people}</p>}
+                {booking.travelers != null && <p>Travelers: {booking.travelers}</p>}
+                {booking.specialRequests && <p>📝 {booking.specialRequests}</p>}
               </div>
 
               {/* Right Side */}
               <div className="space-y-4">
+                <h3 className="font-semibold text-blue-800">Payment</h3>
+                {hasDiscount ? (
+                  <div>
+                    <p className="text-gray-600 line-through">
+                      Original: ₱{originalPrice.toLocaleString()}
+                    </p>
+                    <p className="font-semibold text-emerald-600">
+                      Discounted Price: ₱{finalPrice.toLocaleString()}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="font-semibold text-emerald-600">
+                    Total Price: ₱{finalPrice.toLocaleString()}
+                  </p>
+                )}
+
+                {booking.paidAt && (
+                  <p className="text-sm text-gray-600">
+                    Paid At: {new Date(booking.paidAt).toLocaleString()}
+                  </p>
+                )}
+                {booking.paidBy?.name && (
+                  <p className="text-sm text-gray-600 flex items-center gap-2">
+                    <CreditCard className="w-4 h-4 text-blue-500" /> Paid By: {booking.paidBy.name} (
+                    {booking.paidBy.email})
+                  </p>
+                )}
+
                 {/* Receipt */}
                 {booking.proofUrl && (
-                  <div className="p-3 border rounded-lg bg-gray-50 shadow-sm">
-                    <p className="font-semibold text-sm mb-2 flex items-center gap-2">
+                  <div className="p-3 border rounded-lg bg-gray-50 shadow-sm text-center">
+                    <p className="font-semibold text-sm mb-2 flex items-center justify-center gap-2">
                       <FileText className="w-4 h-4 text-blue-500" /> Receipt
                     </p>
-                    <Image
-                      src={booking.proofUrl}
-                      alt="Receipt Preview"
-                      width={200}
-                      height={120}
-                      className="rounded-lg border cursor-pointer object-contain hover:shadow-md transition"
-                      onClick={() => setShowFullReceipt(true)}
-                    />
+                    <div className="flex justify-center">
+                      <Image
+                        src={booking.proofUrl}
+                        alt="Receipt Preview"
+                        width={200}
+                        height={140}
+                        className="rounded-lg border object-contain cursor-pointer max-h-[180px] hover:shadow-md transition"
+                        onClick={() => setShowFullReceipt(true)}
+                      />
+                    </div>
                     <p
-                      className="text-xs text-blue-600 mt-1 text-center hover:underline cursor-pointer"
+                      className="text-xs text-blue-600 mt-1 hover:underline cursor-pointer"
                       onClick={() => setShowFullReceipt(true)}
                     >
                       View full receipt
@@ -139,9 +175,7 @@ export default function BookingDetailModal({ booking, isOpen, onClose }: Props) 
                     <div>
                       <p className="font-medium">{booking.weather.condition || 'Unknown'}</p>
                       {booking.weather.temperature != null && (
-                        <p className="text-sm text-gray-600">
-                          {booking.weather.temperature}°C
-                        </p>
+                        <p className="text-sm text-gray-600">{booking.weather.temperature}°C</p>
                       )}
                     </div>
                   </div>
@@ -150,10 +184,10 @@ export default function BookingDetailModal({ booking, isOpen, onClose }: Props) 
             </div>
 
             {/* Footer */}
-            <div className="flex justify-center mt-6">
+            <div className="flex justify-center pt-4">
               <button
                 onClick={onClose}
-                className="px-5 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition"
+                className="px-5 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition cursor-pointer"
               >
                 Close
               </button>
@@ -163,14 +197,18 @@ export default function BookingDetailModal({ booking, isOpen, onClose }: Props) 
       </Dialog>
 
       {/* Full Receipt Lightbox */}
-      <Dialog open={showFullReceipt} onClose={() => setShowFullReceipt(false)} className="relative z-[60]">
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center">
+      <Dialog
+        open={showFullReceipt}
+        onClose={() => setShowFullReceipt(false)}
+        className="relative z-[60]"
+      >
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4">
           <div className="relative max-w-4xl w-full">
             <button
               onClick={() => setShowFullReceipt(false)}
-              className="absolute top-4 right-4 bg-white rounded-full p-2 shadow hover:bg-gray-200"
+              className="absolute top-4 right-4 bg-white rounded-full p-2 shadow hover:bg-gray-200 cursor-pointer"
             >
-              <X className="w-5 h-5 text-gray-700" />
+              <X className="w-5 h-5 text-gray-700 cursor-pointer" />
             </button>
             <Image
               src={booking?.proofUrl || ''}
