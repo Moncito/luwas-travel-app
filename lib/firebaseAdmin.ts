@@ -1,19 +1,19 @@
-// lib/firebaseAdmin.ts
+import { initializeApp, getApps, cert, App } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
+import { getFirestore } from "firebase-admin/firestore";
 
-import admin from "firebase-admin";
-
-if (!admin.apps.length) {
-  const key = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-  if (!key) throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY is missing.");
-
+let app: App;
+if (!getApps().length) {
   const serviceAccount = JSON.parse(
-    Buffer.from(key, "base64").toString("utf8")
+    Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_KEY!, "base64").toString("utf8")
   );
-
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
+  app = initializeApp({
+    credential: cert(serviceAccount),
   });
+} else {
+  app = getApps()[0];
 }
 
-export const adminAuth = admin.auth();
-export const adminDb = admin.firestore();
+// ✅ Exports
+export const adminAuth = getAuth(app);
+export const adminDb = getFirestore(app); // 🔥 use adminDb to avoid confusion with client db

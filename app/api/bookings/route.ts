@@ -1,6 +1,7 @@
 import { db } from "@/firebase/admin";
 import { fetchWeather } from "@/lib/weather";
 import { NextResponse } from "next/server";
+import { FieldValue } from "firebase-admin/firestore";
 
 interface DestinationData {
   name: string;
@@ -12,7 +13,7 @@ interface DestinationData {
   imageUrl?: string;
 }
 
-// ✅ Fetch all destination bookings
+// ✅ Fetch all bookings
 export async function GET() {
   try {
     const snapshot = await db.collection("bookings").orderBy("createdAt", "desc").get();
@@ -27,7 +28,7 @@ export async function GET() {
   }
 }
 
-// ✅ Create a new destination booking
+// ✅ Create a new booking
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -46,7 +47,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Destination missing lat/lon" }, { status: 400 });
     }
 
-    // ✅ Fetch weather
+    // Fetch weather for departure date
     const weather = await fetchWeather(destData.latitude, destData.longitude, departureDate);
 
     const newBooking = {
@@ -57,8 +58,9 @@ export async function POST(req: Request) {
       longitude: destData.longitude,
       departureDate,
       travelers: travelers ?? 1,
-      status: "upcoming",
-      createdAt: new Date(),
+      status: "upcoming", // default status
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
       weather,
     };
 
@@ -69,4 +71,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Failed to create booking" }, { status: 500 });
   }
 }
-  

@@ -5,13 +5,17 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { db, storage } from '@/lib/firebase'; // ✅ make sure storage is exported
+import { db, storage } from '@/lib/firebase';
 import { Loader2, Upload, CreditCard } from 'lucide-react';
 
 export default function PayPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // ✅ Grab params from URL (booking button should pass these)
   const bookingId = searchParams.get('bookingId');
+  const type = searchParams.get('type') || 'destination'; // destination | itinerary | promo
+  const title = searchParams.get('title') || ''; // ex: "Siargao" or "7 Days in Palawan"
 
   const [user, setUser] = useState<User | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -53,8 +57,10 @@ export default function PayPage() {
         },
       });
 
-      // Redirect after success
-      router.push('/travel-history'); // or /success page
+      // ✅ Redirect to Success Page with params
+      router.push(
+        `/booking-success?type=${encodeURIComponent(type)}&title=${encodeURIComponent(title)}`
+      );
     } catch (err) {
       console.error('Upload failed:', err);
       alert('❌ Failed to submit payment. Try again.');
@@ -89,7 +95,8 @@ export default function PayPage() {
             />
           </div>
           <p className="mt-3 text-sm text-gray-700">
-            Send payment to: <span className="font-semibold text-blue-800">0977-698-0768</span>
+            Send payment to:{' '}
+            <span className="font-semibold text-blue-800">0977-698-0768</span>
           </p>
         </div>
 
@@ -115,13 +122,17 @@ export default function PayPage() {
           className="w-full flex items-center justify-center gap-2 bg-blue-700 text-white font-semibold py-3 rounded-lg shadow-md 
                      hover:bg-blue-800 transition disabled:opacity-50 cursor-pointer"
         >
-          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
+          {loading ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <Upload className="w-5 h-5" />
+          )}
           {loading ? 'Submitting...' : 'Submit Payment'}
         </button>
 
         {/* Note */}
         <p className="text-xs text-gray-500 text-center mt-6">
-          Once submitted, your booking will be reviewed.  
+          Once submitted, your booking will be reviewed.
           After approval, you’ll get a receipt via email.
         </p>
       </div>

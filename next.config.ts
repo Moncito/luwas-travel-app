@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-const NextConfig: NextConfig = {
+const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -18,6 +18,7 @@ const NextConfig: NextConfig = {
       's3-media1.fl.yelpcdn.com',
       's3-media2.fl.yelpcdn.com',
       's3-media3.fl.yelpcdn.com',
+      'firebasestorage.googleapis.com', // ✅ added Firebase Storage
     ],
   },
   experimental: {
@@ -27,4 +28,5 @@ const NextConfig: NextConfig = {
     },
   },
 };
-export default NextConfig;
+
+export default nextConfig;

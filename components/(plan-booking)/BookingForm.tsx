@@ -1,13 +1,13 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { toast } from 'sonner';
-import Image from 'next/image';
-import { doc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/firebase/client';
-import { useRouter } from 'next/navigation';
-import type { User } from 'firebase/auth';
+import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
+import { toast } from 'sonner'
+import Image from 'next/image'
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from '@/firebase/client'
+import { useRouter } from 'next/navigation'
+import type { User } from 'firebase/auth'
 import {
   Mail,
   Phone,
@@ -16,19 +16,19 @@ import {
   Users,
   User as UserIcon,
   MapPin,
-} from 'lucide-react';
+} from 'lucide-react'
 
 interface Props {
-  destinationId: string;
-  user: User;
+  destinationId: string
+  user: User
 }
 
 interface Destination {
-  name: string;
-  price: number;
-  latitude: number;
-  longitude: number;
-  imageUrl?: string;
+  name: string
+  price: number
+  latitude: number
+  longitude: number
+  imageUrl?: string
 }
 
 function IconInput({ icon: Icon, ...props }: any) {
@@ -40,13 +40,13 @@ function IconInput({ icon: Icon, ...props }: any) {
         className="pl-10 pr-4 py-3 w-full rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
       />
     </div>
-  );
+  )
 }
 
 export default function BookingForm({ destinationId, user }: Props) {
-  const router = useRouter();
-  const [destination, setDestination] = useState<Destination | null>(null);
-  const [loading, setLoading] = useState(false);
+  const router = useRouter()
+  const [destination, setDestination] = useState<Destination | null>(null)
+  const [loading, setLoading] = useState(false)
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -57,79 +57,91 @@ export default function BookingForm({ destinationId, user }: Props) {
     returnDate: '',
     travelers: 1,
     specialRequests: '',
-  });
+  })
 
+  // Prefill user info
   useEffect(() => {
     if (user) {
       setFormData((prev) => ({
         ...prev,
         fullName: user.displayName || '',
         email: user.email || '',
-      }));
+      }))
     }
-  }, [user]);
+  }, [user])
 
+  // Fetch destination details
   useEffect(() => {
     const fetchDestination = async () => {
       try {
-        const docRef = doc(db, 'destinations', destinationId);
-        const docSnap = await getDoc(docRef);
+        const docRef = doc(db, 'destinations', destinationId)
+        const docSnap = await getDoc(docRef)
         if (docSnap.exists()) {
-          setDestination(docSnap.data() as Destination);
+          setDestination(docSnap.data() as Destination)
         } else {
-          toast.error('Destination not found.');
+          toast.error('Destination not found.')
         }
       } catch (error) {
-        toast.error('Failed to fetch destination.');
-        console.error(error);
+        toast.error('Failed to fetch destination.')
+        console.error(error)
       }
-    };
+    }
 
-    fetchDestination();
-  }, [destinationId]);
+    fetchDestination()
+  }, [destinationId])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
+    const { name, value } = e.target
     setFormData({
       ...formData,
       [name]: name === 'travelers' ? Number(value) : value,
-    });
-  };
+    })
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!destination) return;
-    setLoading(true);
+    e.preventDefault()
+    if (!destination) return
+    setLoading(true)
 
     try {
-      const totalPrice = formData.travelers * (destination.price || 0);
+      const totalPrice = formData.travelers * (destination.price || 0)
 
-      // ✅ Save booking in Firestore
-      const bookingRef = await addDoc(collection(db, 'bookings'), {
-        ...formData,
-        userId: user.uid,
-        destinationId,
-        totalPrice,
-        status: 'pending_payment', // ⏳ Waiting for payment
-        createdAt: serverTimestamp(),
-        type: 'destination',
-      });
+      // ✅ Save booking via API with totalPrice
+      const res = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          userId: user.uid,
+          destinationId,
+          totalPrice, // ✅ now included
+          status: 'pending_payment',
+        }),
+      })
 
-      toast.success('Booking created! Redirecting to payment page...');
+      if (!res.ok) throw new Error('Failed to create booking')
 
-      // ✅ Redirect to /destinations/[id]/pay
-      router.push(`/destinations/${destinationId}/pay?bookingId=${bookingRef.id}`);
+      const booking = await res.json()
+
+      toast.success('Booking created! Redirecting to payment page...')
+
+      // ✅ Redirect to payment page with booking reference
+      router.push(
+        `/destinations/${destinationId}/pay?bookingId=${booking.id}&title=${encodeURIComponent(
+          destination.name
+        )}&type=destination`
+      )
     } catch (err) {
-      console.error('Booking error:', err);
-      toast.error('Something went wrong.');
-      setLoading(false);
+      console.error('Booking error:', err)
+      toast.error('Something went wrong.')
+      setLoading(false)
     }
-  };
+  }
 
-  if (!destination) return null;
+  if (!destination) return null
 
-  const totalPrice = formData.travelers * (destination.price || 0);
-  const today = new Date().toISOString().split('T')[0];
+  const totalPrice = formData.travelers * (destination.price || 0)
+  const today = new Date().toISOString().split('T')[0]
 
   return (
     <section className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-orange-50 flex items-center justify-center px-4 py-12">
@@ -166,16 +178,32 @@ export default function BookingForm({ destinationId, user }: Props) {
             className="w-full p-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
           />
 
-          <div className="text-center">
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-orange-500 to-blue-700 text-white px-8 py-3 rounded-full font-bold hover:from-orange-600 hover:to-blue-800 transition disabled:opacity-50"
+          {/* ✅ Price Preview */}
+          <div className="bg-blue-50 text-blue-900 p-3 rounded-lg text-center">
+            <p className="text-sm">
+              Price per traveler: <strong>₱{destination.price.toLocaleString()}</strong>
+            </p>
+            <p className="text-sm">
+              Travelers: <strong>{formData.travelers}</strong>
+            </p>
+            <motion.p
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.4 }}
+              className="text-lg font-bold text-blue-900"
             >
-              {loading ? 'Processing...' : 'Book Destination Now'}
-            </button>
-            <p className="text-xs text-gray-400 mt-2">You’ll pay via GCash on the next step</p>
+              Total Price: ₱{totalPrice.toLocaleString()}
+            </motion.p>
           </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-orange-500 to-blue-700 text-white px-8 py-3 rounded-full font-bold hover:from-orange-600 hover:to-blue-800 transition disabled:opacity-50"
+          >
+            {loading ? 'Processing...' : 'Book Destination Now'}
+          </button>
+          <p className="text-xs text-gray-400 mt-2">You’ll pay via GCash on the next step</p>
         </form>
 
         {/* Right: Destination Card */}
@@ -196,7 +224,7 @@ export default function BookingForm({ destinationId, user }: Props) {
             </div>
 
             <div className="space-y-1 text-gray-700">
-              <p>Price per person: <span className="font-semibold">₱{destination.price.toLocaleString()}</span></p>
+              <p>Base Price: <span className="font-semibold">₱{destination.price.toLocaleString()}</span></p>
               <p>Travelers: <span className="font-semibold">{formData.travelers}</span></p>
               <motion.p
                 initial={{ scale: 0.9 }}
@@ -204,7 +232,7 @@ export default function BookingForm({ destinationId, user }: Props) {
                 transition={{ duration: 0.4 }}
                 className="text-lg font-bold text-blue-900"
               >
-                Total Price: ₱{totalPrice.toLocaleString()}
+                Total: ₱{totalPrice.toLocaleString()}
               </motion.p>
             </div>
 
@@ -216,5 +244,5 @@ export default function BookingForm({ destinationId, user }: Props) {
         </div>
       </motion.div>
     </section>
-  );
+  )
 }

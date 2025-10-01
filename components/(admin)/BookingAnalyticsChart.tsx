@@ -45,7 +45,6 @@ export default function BookingsAnalyticsChart() {
         setLoading(false)
       }
     }
-
     fetchData()
   }, [])
 
@@ -87,7 +86,6 @@ export default function BookingsAnalyticsChart() {
   if (loading) return <p className="text-center text-gray-600 mt-10">Loading booking chart...</p>
   if (error) return <p className="text-center text-red-500 mt-10">{error}</p>
 
-  // Chart.js config
   const chartData = {
     labels: filteredData.map(d =>
       new Date(d.date).toLocaleDateString('en-US', {
@@ -98,22 +96,22 @@ export default function BookingsAnalyticsChart() {
     datasets: [
       {
         label: 'Confirmed',
-        data: filteredData.map(d => d.confirmed),
-        backgroundColor: 'rgba(16, 185, 129, 0.8)', // green
+        data: filteredData.map(d => d.confirmed ?? 0),
+        backgroundColor: 'rgba(16, 185, 129, 0.8)',
         stack: 'bookings',
         borderRadius: 6,
       },
       {
         label: 'Cancelled',
         data: filteredData.map(d => d.cancelled ?? 0),
-        backgroundColor: 'rgba(239, 68, 68, 0.8)', // red
+        backgroundColor: 'rgba(239, 68, 68, 0.8)',
         stack: 'bookings',
         borderRadius: 6,
       },
       {
         label: 'Pending',
         data: filteredData.map(d => d.pending ?? 0),
-        backgroundColor: 'rgba(234, 179, 8, 0.8)', // yellow
+        backgroundColor: 'rgba(234, 179, 8, 0.8)',
         stack: 'bookings',
         borderRadius: 6,
       },
@@ -134,11 +132,12 @@ export default function BookingsAnalyticsChart() {
   }
 
   const getPercentage = (value: number) =>
-    bookingStats.total ? ((value / bookingStats.total) * 100).toFixed(1) : '0.0'
+    bookingStats.total && !isNaN(value)
+      ? ((value / bookingStats.total) * 100).toFixed(1)
+      : '0.0'
 
   return (
     <div className="mt-10 p-8 rounded-xl bg-gradient-to-br from-green-50 via-white to-green-100 shadow-lg">
-      {/* Header + Filter */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-green-800">Booking Trends</h2>
         <select
@@ -155,7 +154,6 @@ export default function BookingsAnalyticsChart() {
         </select>
       </div>
 
-      {/* Descriptive Summary */}
       <div className="bg-white border border-green-100 rounded-md px-4 py-2 mb-4 shadow-sm text-sm text-gray-700">
         {selectedMonth !== 'All' ? (
           <p>
@@ -165,9 +163,11 @@ export default function BookingsAnalyticsChart() {
             <span className="text-red-600">{bookingStats.totalCancelled} cancelled</span>,{' '}
             <span className="text-yellow-600">{bookingStats.totalPending} pending</span>). Compared
             to the previous period,{' '}
-            {bookingStats.growth >= 0
-              ? `bookings increased by ${bookingStats.growth}%`
-              : `bookings decreased by ${Math.abs(bookingStats.growth)}%`}.
+            {typeof bookingStats.growth === 'number' && !isNaN(bookingStats.growth)
+              ? bookingStats.growth >= 0
+                ? `bookings increased by ${bookingStats.growth}%`
+                : `bookings decreased by ${Math.abs(bookingStats.growth)}%`
+              : 'no valid growth data'}.
           </p>
         ) : (
           <p>
@@ -177,58 +177,45 @@ export default function BookingsAnalyticsChart() {
         )}
       </div>
 
-      {/* Chart */}
       <div className="w-full h-[350px] bg-white rounded-lg p-4 shadow">
         <Bar data={chartData} options={chartOptions} />
       </div>
 
-      {/* Growth Summary Cards with Progress Bars */}
       <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-gray-700">
         <div className="p-4 bg-white rounded-lg shadow-sm border">
           <p className="font-semibold text-gray-600">Total Bookings</p>
-          <p className="text-xl font-bold text-green-700">{bookingStats.total}</p>
+          <p className="text-xl font-bold text-green-700">
+            {typeof bookingStats.total === 'number' && !isNaN(bookingStats.total)
+              ? bookingStats.total
+              : 0}
+          </p>
         </div>
 
-        {/* Confirmed */}
         <div className="p-4 bg-white rounded-lg shadow-sm border">
           <p className="font-semibold text-gray-600">Confirmed</p>
           <p className="text-lg font-bold text-green-600">
-            {bookingStats.totalConfirmed} ({getPercentage(bookingStats.totalConfirmed)}%)
+            {typeof bookingStats.totalConfirmed === 'number' && !isNaN(bookingStats.totalConfirmed)
+              ? `${bookingStats.totalConfirmed} (${getPercentage(bookingStats.totalConfirmed)}%)`
+              : '0 (0.0%)'}
           </p>
-          <div className="w-full bg-gray-100 rounded-full h-2 mt-2">
-            <div
-              className="bg-green-500 h-2 rounded-full"
-              style={{ width: `${getPercentage(bookingStats.totalConfirmed)}%` }}
-            ></div>
-          </div>
         </div>
 
-        {/* Cancelled */}
         <div className="p-4 bg-white rounded-lg shadow-sm border">
           <p className="font-semibold text-gray-600">Cancelled</p>
           <p className="text-lg font-bold text-red-600">
-            {bookingStats.totalCancelled} ({getPercentage(bookingStats.totalCancelled)}%)
+            {typeof bookingStats.totalCancelled === 'number' && !isNaN(bookingStats.totalCancelled)
+              ? `${bookingStats.totalCancelled} (${getPercentage(bookingStats.totalCancelled)}%)`
+              : '0 (0.0%)'}
           </p>
-          <div className="w-full bg-gray-100 rounded-full h-2 mt-2">
-            <div
-              className="bg-red-500 h-2 rounded-full"
-              style={{ width: `${getPercentage(bookingStats.totalCancelled)}%` }}
-            ></div>
-          </div>
         </div>
 
-        {/* Pending */}
         <div className="p-4 bg-white rounded-lg shadow-sm border">
           <p className="font-semibold text-gray-600">Pending</p>
           <p className="text-lg font-bold text-yellow-600">
-            {bookingStats.totalPending} ({getPercentage(bookingStats.totalPending)}%)
+            {typeof bookingStats.totalPending === 'number' && !isNaN(bookingStats.totalPending)
+              ? `${bookingStats.totalPending} (${getPercentage(bookingStats.totalPending)}%)`
+              : '0 (0.0%)'}
           </p>
-          <div className="w-full bg-gray-100 rounded-full h-2 mt-2">
-            <div
-              className="bg-yellow-500 h-2 rounded-full"
-              style={{ width: `${getPercentage(bookingStats.totalPending)}%` }}
-            ></div>
-          </div>
         </div>
       </div>
     </div>

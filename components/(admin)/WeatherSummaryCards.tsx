@@ -24,13 +24,12 @@ export default function WeatherSummaryCards() {
         if (!res.ok) throw new Error(`Status: ${res.status}`)
         const json: Trend[] = await res.json()
 
-        // Enrich data with safe totals and avg temps
         const enriched = json.map(d => {
           const totalBookings = (d.bookingCount ?? 0) + (d.itineraryCount ?? 0)
 
           const temps: number[] = []
-          if (typeof d.destinationsAvgTemp === 'number') temps.push(d.destinationsAvgTemp)
-          if (typeof d.itinerariesAvgTemp === 'number') temps.push(d.itinerariesAvgTemp)
+          if (typeof d.destinationsAvgTemp === 'number' && !isNaN(d.destinationsAvgTemp)) temps.push(d.destinationsAvgTemp)
+          if (typeof d.itinerariesAvgTemp === 'number' && !isNaN(d.itinerariesAvgTemp)) temps.push(d.itinerariesAvgTemp)
 
           const combinedAvgTemp =
             temps.length > 0 ? temps.reduce((sum, t) => sum + t, 0) / temps.length : null
@@ -70,7 +69,6 @@ export default function WeatherSummaryCards() {
     )
   }
 
-  // Pick insights
   const mostBooked = data.reduce((max, d) => d.totalBookings > max.totalBookings ? d : max, data[0])
   const hottest = data.reduce(
     (max, d) =>
@@ -95,18 +93,18 @@ export default function WeatherSummaryCards() {
         <p className="text-xs font-semibold uppercase tracking-wide text-gray-600">
           {label}
         </p>
-        <h2 className="text-xl font-bold mt-1">{stat.month}</h2>
+        <h2 className="text-xl font-bold mt-1">{stat.month || "N/A"}</h2>
 
         <div className="mt-3 space-y-1 text-sm">
           <p className="flex items-center gap-2">
             <Package className="w-4 h-4" />
-            {typeof stat.totalBookings === 'number'
+            {typeof stat.totalBookings === 'number' && !isNaN(stat.totalBookings)
               ? `${stat.totalBookings} total bookings`
               : 'No data'}
           </p>
           <p className="flex items-center gap-2">
             <Thermometer className="w-4 h-4" />
-            {typeof stat.combinedAvgTemp === 'number'
+            {typeof stat.combinedAvgTemp === 'number' && !isNaN(stat.combinedAvgTemp)
               ? `${stat.combinedAvgTemp.toFixed(1)}°C avg temp`
               : 'No data'}
           </p>
