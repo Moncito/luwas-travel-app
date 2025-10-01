@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth';
 import { useRouter, useParams } from 'next/navigation';
 import { Calendar } from 'lucide-react';
-import PromoBookingForm from '@/components/(plan-booking)/PromoBookingForm';
+import PromoBookingForm from '@/components/(promos)/PromoBookingForm'
+
 
 export default function PromoBookingPage() {
   const router = useRouter();
