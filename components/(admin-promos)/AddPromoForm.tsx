@@ -5,8 +5,10 @@ import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/firebase/client";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
-import { MapPin, Percent, Calendar } from "lucide-react";
+import { MapPin, Percent, UploadCloud } from "lucide-react";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
+const storage = getStorage();
 const MapPickerClient = dynamic(() => import("@/components/MapPickerClient"), { ssr: false });
 
 export default function AddPromoForm({ onAdd }: { onAdd?: () => void }) {
@@ -22,11 +24,29 @@ export default function AddPromoForm({ onAdd }: { onAdd?: () => void }) {
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const finalPrice =
     price && discountPercentage
       ? (Number(price) - Number(price) * (Number(discountPercentage) / 100)).toFixed(2)
       : "0.00";
+
+  // 🔼 File upload to Firebase Storage (promos folder)
+  const handleFileUpload = async (file: File) => {
+    try {
+      setUploading(true);
+      const fileRef = ref(storage, `promos/${Date.now()}-${file.name}`);
+      await uploadBytes(fileRef, file);
+      const url = await getDownloadURL(fileRef);
+      setImageUrl(url);
+      toast.success("✅ Image uploaded successfully!");
+    } catch (err) {
+      console.error("Upload error:", err);
+      toast.error("❌ Failed to upload image.");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,13 +134,44 @@ export default function AddPromoForm({ onAdd }: { onAdd?: () => void }) {
             onChange={(e) => setLocation(e.target.value)}
             required
           />
-          <input
-            className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500"
-            placeholder="Image URL"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            required
-          />
+
+          {/* Drag & Drop Upload */}
+          <div
+            className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 transition"
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              if (e.dataTransfer.files.length > 0) {
+                handleFileUpload(e.dataTransfer.files[0]);
+              }
+            }}
+          >
+            {uploading ? (
+              <p className="text-blue-600">Uploading...</p>
+            ) : imageUrl ? (
+              <img src={imageUrl} alt="Uploaded preview" className="h-40 w-full object-cover rounded-md" />
+            ) : (
+              <div className="flex flex-col items-center gap-2 text-gray-500">
+                <UploadCloud className="h-8 w-8" />
+                <p>Drag & drop image here, or click to select</p>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  id="promoUpload"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      handleFileUpload(e.target.files[0]);
+                    }
+                  }}
+                />
+                <label htmlFor="promoUpload" className="text-blue-600 text-sm cursor-pointer hover:underline">
+                  Browse files
+                </label>
+              </div>
+            )}
+          </div>
+
           <textarea
             className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-500"
             placeholder="Description"
