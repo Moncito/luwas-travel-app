@@ -1,100 +1,156 @@
-'use client'
+// File: app/itineraries/[slug]/page.tsx
+import { notFound } from "next/navigation";
+import { db } from "@/firebase/admin";
+import Image from "next/image";
+import Link from "next/link";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import YelpSummary from "@/components/(map-reviews)/YelpSummary";
+import RecommendedPlaces from "@/components/(map-reviews)/RecommendedPlaces";
+import DestinationMapClientWrapper from "@/components/(map-reviews)/DestinationMapClientWrapper";
+import WeatherInsights from "@/components/(map-reviews)/WeatherInsights";
+import AnimatedHero from "@/components/(itineraries)/AnimatedHero";
+import AnimatedHighlights from "@/components/(itineraries)/AnimatedHighlights";
+import { extractYelpName, extractYelpLocation } from "@/lib/utils/yelpHelper";
 
-import { useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'
-import { db, storage } from '@/lib/firebase'
-import { Loader2, Upload, CreditCard } from 'lucide-react'
+interface Itinerary {
+  title: string;
+  location: string;
+  description: string;
+  image: string;
+  price: number;
+  highlights: string[];
+  latitude: number;
+  longitude: number;
+  slug: string;
+}
 
-export default function ItineraryPayPage() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
+interface Place {
+  title: string;
+  description: string;
+  image: string;
+  link: string;
+}
 
-  const bookingId = searchParams.get('bookingId')
-  const title = searchParams.get('title') || 'Itinerary'
+export default async function ItineraryPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
 
-  const [user, setUser] = useState<User | null>(null)
-  const [file, setFile] = useState<File | null>(null)
-  const [loading, setLoading] = useState(false)
+  // 🔍 Fetch itinerary by slug
+  const snapshot = await db
+    .collection("itineraries")
+    .where("slug", "==", slug)
+    .limit(1)
+    .get();
 
-  useEffect(() => {
-    const auth = getAuth()
-    return onAuthStateChanged(auth, (currentUser) => {
-      if (!currentUser) router.push('/sign-in')
-      else setUser(currentUser)
-    })
-  }, [router])
+  if (snapshot.empty) return notFound();
 
-  const handleUpload = async () => {
-    if (!file || !bookingId || !user) return
-    setLoading(true)
-    try {
-      const proofRef = ref(storage, `proofs/${bookingId}/${file.name}`)
-      await uploadBytes(proofRef, file)
-      const proofUrl = await getDownloadURL(proofRef)
+  const itinerary = snapshot.docs[0].data() as Itinerary;
 
-      const bookingRef = doc(db, 'itineraryBookings', bookingId)
-      await updateDoc(bookingRef, {
-        proofUrl,
-        status: 'awaiting_approval',
-        paidAt: serverTimestamp(),
-        paidBy: {
-          uid: user.uid,
-          name: user.displayName || 'Guest',
-          email: user.email || '',
-        },
-      })
+  // 🌍 Fetch recommended places
+  const isDev = process.env.NODE_ENV !== "production";
+  const baseUrl = isDev
+    ? "http://localhost:3000"
+    : process.env.NEXT_PUBLIC_SITE_URL || "https://luwas-travel.vercel.app";
 
-      router.push(`/booking-success?type=itinerary&title=${encodeURIComponent(title)}`)
-    } catch (err) {
-      console.error('Upload failed:', err)
-      alert('❌ Failed to submit payment. Try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (!bookingId) {
-    return <p className="text-center mt-20">⚠️ Invalid booking reference.</p>
+  let recommendedPlaces: Place[] = [];
+  try {
+    const recRes = await fetch(
+      `${baseUrl}/api/recommendations?lat=${itinerary.latitude}&lon=${itinerary.longitude}`,
+      { cache: "no-store" }
+    );
+    const recData = await recRes.json();
+    recommendedPlaces = Array.isArray(recData.places) ? recData.places : [];
+  } catch (err) {
+    console.error("🌐 Error fetching recommended places:", err);
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-100 px-4 py-12">
-      <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-lg">
-        <div className="text-center mb-8">
-          <CreditCard className="w-12 h-12 text-indigo-700 mx-auto mb-3" />
-          <h1 className="text-2xl font-extrabold text-indigo-900">Complete Itinerary Payment</h1>
-          <p className="text-gray-600 text-sm mt-1">
-            Pay via GCash and upload your proof of payment for this itinerary.
-          </p>
-        </div>
-        <div className="flex flex-col items-center mb-6">
-          <div className="p-3 border rounded-lg shadow-sm bg-gray-50">
-            <img src="/images/gcash-qr.jpeg" alt="GCash QR" className="w-48 h-48 object-contain" />
+    <>
+      <Navbar />
+      <main className="min-h-screen bg-white text-black">
+        {/* Hero with animation */}
+        <AnimatedHero
+          image={itinerary.image}
+          title={itinerary.title}
+          location={itinerary.location}
+        />
+
+        {/* Content Grid */}
+        <section className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-3 gap-10">
+          {/* LEFT COLUMN */}
+          <div className="lg:col-span-2 space-y-12">
+            {/* Description */}
+            <div className="text-center lg:text-left">
+              <p className="text-lg text-gray-700 leading-relaxed">
+                {itinerary.description}
+              </p>
+              <p className="mt-4 text-2xl font-semibold text-blue-800">
+                ₱{itinerary.price?.toLocaleString()} per person
+              </p>
+              <div className="mt-6">
+                <Link
+                  href={`/itineraries/${slug}/book`}
+                  className="inline-block bg-blue-700 text-white px-6 py-3 rounded-full hover:bg-white hover:text-blue-700 border border-blue-700 transition"
+                >
+                  Book This Itinerary
+                </Link>
+              </div>
+            </div>
+
+            {/* Timeline Highlights with animation */}
+            {Array.isArray(itinerary.highlights) &&
+              itinerary.highlights.length > 0 && (
+                <AnimatedHighlights highlights={itinerary.highlights} />
+              )}
+
+            {/* Traveler Reviews */}
+            <div className="bg-gray-50 p-4 rounded-lg shadow-md">
+              <h2 className="text-lg font-bold mb-3">Traveler Reviews</h2>
+              <YelpSummary
+                name={extractYelpName(itinerary.title, itinerary.location)}
+                location={extractYelpLocation(itinerary.location)}
+              />
+            </div>
+
+            {/* Nearby Spots */}
+            <div className="bg-gray-50 p-4 rounded-lg shadow-md">
+              <h2 className="text-lg font-bold mb-3">Nearby Spots</h2>
+              <RecommendedPlaces
+                destination={itinerary.title}
+                places={recommendedPlaces}
+              />
+            </div>
           </div>
-          <p className="mt-3 text-sm text-gray-700">
-            Send payment to: <span className="font-semibold text-indigo-800">0977-698-0768</span>
-          </p>
-        </div>
-        <div className="mb-6">
-          <label className="block text-gray-800 font-medium mb-2">Upload Proof of Payment</label>
-          <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)}
-            className="block w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg 
-              file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-          />
-        </div>
-        <button
-          onClick={handleUpload}
-          disabled={loading || !file}
-          className="w-full flex items-center justify-center gap-2 bg-indigo-700 text-white font-semibold py-3 rounded-lg shadow-md 
-            hover:bg-indigo-800 transition disabled:opacity-50 cursor-pointer"
-        >
-          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
-          {loading ? 'Submitting...' : 'Submit Payment'}
-        </button>
-      </div>
-    </div>
-  )
+
+          {/* RIGHT SIDEBAR */}
+          <aside className="space-y-8 lg:sticky lg:top-20 self-start">
+            {/* Map */}
+            {itinerary.latitude && itinerary.longitude && (
+              <div className="bg-gray-50 p-4 rounded-lg shadow-md">
+                <h2 className="text-lg font-bold mb-3">Location</h2>
+                <DestinationMapClientWrapper
+                  lat={itinerary.latitude}
+                  lon={itinerary.longitude}
+                />
+              </div>
+            )}
+
+            {/* Weather */}
+            <div className="bg-gray-50 p-4 rounded-lg shadow-md">
+              <h2 className="text-lg font-bold mb-3">Weather Insights</h2>
+              <WeatherInsights
+                title={itinerary.title}
+                location={itinerary.location}
+              />
+            </div>
+          </aside>
+        </section>
+      </main>
+      <Footer />
+    </>
+  );
 }
