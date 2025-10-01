@@ -4,10 +4,12 @@ import { Timestamp } from "firebase-admin/firestore";
 
 export async function GET() {
   try {
-    const bookingsSnap = await db.collection("bookings").get();
-    const itinerariesSnap = await db.collection("itineraryBookings").get();
+    const [bookingsSnap, itinerariesSnap, promosSnap] = await Promise.all([
+      db.collection("bookings").get(),
+      db.collection("itineraryBookings").get(),
+      db.collection("promoBookings").get(),   // ✅ fetch promos
+    ]);
 
-    // Helper: normalize month
     const toMonth = (date: any) => {
       let d: Date | null = null;
       if (date instanceof Timestamp) d = date.toDate();
@@ -18,18 +20,17 @@ export async function GET() {
       return d ? d.toLocaleString("default", { month: "long" }) : null;
     };
 
-    const monthly: Record<
-      string,
-      {
-        destinationsTemps: number[];
-        itinerariesTemps: number[];
-        bookingCount: number;
-        itineraryCount: number;
-        conditions: string[];
-      }
-    > = {};
+    const monthly: Record<string, {
+      destinationsTemps: number[];
+      itinerariesTemps: number[];
+      promosTemps: number[];
+      bookingCount: number;
+      itineraryCount: number;
+      promoCount: number;
+      conditions: string[];
+    }> = {};
 
-    // Process bookings
+    // Process destinations
     bookingsSnap.forEach((doc) => {
       const data = doc.data();
       const month = toMonth(data.createdAt);
@@ -39,19 +40,17 @@ export async function GET() {
         monthly[month] = {
           destinationsTemps: [],
           itinerariesTemps: [],
+          promosTemps: [],
           bookingCount: 0,
           itineraryCount: 0,
+          promoCount: 0,
           conditions: [],
         };
       }
 
       monthly[month].bookingCount++;
-      if (data.weather?.temperature) {
-        monthly[month].destinationsTemps.push(data.weather.temperature);
-      }
-      if (data.weather?.condition) {
-        monthly[month].conditions.push(data.weather.condition);
-      }
+      if (data.weather?.temperature) monthly[month].destinationsTemps.push(data.weather.temperature);
+      if (data.weather?.condition) monthly[month].conditions.push(data.weather.condition);
     });
 
     // Process itineraries
@@ -64,27 +63,46 @@ export async function GET() {
         monthly[month] = {
           destinationsTemps: [],
           itinerariesTemps: [],
+          promosTemps: [],
           bookingCount: 0,
           itineraryCount: 0,
+          promoCount: 0,
           conditions: [],
         };
       }
 
       monthly[month].itineraryCount++;
-      if (data.weather?.temperature) {
-        monthly[month].itinerariesTemps.push(data.weather.temperature);
-      }
-      if (data.weather?.condition) {
-        monthly[month].conditions.push(data.weather.condition);
-      }
+      if (data.weather?.temperature) monthly[month].itinerariesTemps.push(data.weather.temperature);
+      if (data.weather?.condition) monthly[month].conditions.push(data.weather.condition);
     });
 
-    // Build final array
-    const results = Object.entries(monthly).map(([month, d]) => {
-      const avg = (arr: number[]) =>
-        arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+    // ✅ Process promos
+    promosSnap.forEach((doc) => {
+      const data = doc.data();
+      const month = toMonth(data.createdAt);
+      if (!month) return;
 
-      // Find most common condition
+      if (!monthly[month]) {
+        monthly[month] = {
+          destinationsTemps: [],
+          itinerariesTemps: [],
+          promosTemps: [],
+          bookingCount: 0,
+          itineraryCount: 0,
+          promoCount: 0,
+          conditions: [],
+        };
+      }
+
+      monthly[month].promoCount++;
+      if (data.weather?.temperature) monthly[month].promosTemps.push(data.weather.temperature);
+      if (data.weather?.condition) monthly[month].conditions.push(data.weather.condition);
+    });
+
+    const avg = (arr: number[]) =>
+      arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+
+    const results = Object.entries(monthly).map(([month, d]) => {
       const topCondition =
         d.conditions.length > 0
           ? d.conditions
@@ -99,8 +117,10 @@ export async function GET() {
         month,
         destinationsAvgTemp: avg(d.destinationsTemps),
         itinerariesAvgTemp: avg(d.itinerariesTemps),
+        promosAvgTemp: avg(d.promosTemps),   // ✅ include promos
         bookingCount: d.bookingCount,
         itineraryCount: d.itineraryCount,
+        promoCount: d.promoCount,           // ✅ include promos
         topCondition,
       };
     });
