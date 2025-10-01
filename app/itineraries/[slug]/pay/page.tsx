@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams, useParams } from 'next/navigation'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'
@@ -10,6 +10,7 @@ import { Loader2, Upload, CreditCard } from 'lucide-react'
 
 export default function ItineraryPayPage() {
   const router = useRouter()
+  const { slug } = useParams()
   const searchParams = useSearchParams()
 
   const bookingId = searchParams.get('bookingId')
@@ -19,6 +20,7 @@ export default function ItineraryPayPage() {
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
 
+  // 🔑 Auth check
   useEffect(() => {
     const auth = getAuth()
     return onAuthStateChanged(auth, (currentUser) => {
@@ -27,6 +29,7 @@ export default function ItineraryPayPage() {
     })
   }, [router])
 
+  // 📤 Upload proof
   const handleUpload = async () => {
     if (!file || !bookingId || !user) return
     setLoading(true)
@@ -70,6 +73,7 @@ export default function ItineraryPayPage() {
             Pay via GCash and upload your proof of payment for this itinerary.
           </p>
         </div>
+
         <div className="flex flex-col items-center mb-6">
           <div className="p-3 border rounded-lg shadow-sm bg-gray-50">
             <img src="/images/gcash-qr.jpeg" alt="GCash QR" className="w-48 h-48 object-contain" />
@@ -78,13 +82,18 @@ export default function ItineraryPayPage() {
             Send payment to: <span className="font-semibold text-indigo-800">0977-698-0768</span>
           </p>
         </div>
+
         <div className="mb-6">
           <label className="block text-gray-800 font-medium mb-2">Upload Proof of Payment</label>
-          <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setFile(e.target.files?.[0] || null)}
             className="block w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg 
               file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
           />
         </div>
+
         <button
           onClick={handleUpload}
           disabled={loading || !file}
