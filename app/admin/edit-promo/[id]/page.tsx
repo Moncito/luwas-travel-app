@@ -1,4 +1,3 @@
-// File: app/admin/edit-promo/[id]/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -6,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/firebase/client";
 import { toast } from "sonner";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 interface Promo {
   title: string;
@@ -24,6 +24,8 @@ export default function EditPromoPage() {
   const { id } = useParams();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+
   const [form, setForm] = useState<Promo>({
     title: "",
     description: "",
@@ -71,6 +73,31 @@ export default function EditPromoPage() {
   ) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // 🔹 Drag & Drop Image Upload
+  const handleImageUpload = async (file: File) => {
+    if (!file) return;
+    try {
+      setUploading(true);
+      const storage = getStorage();
+      const storageRef = ref(storage, `promos/${id}-${Date.now()}-${file.name}`);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      setForm((prev) => ({ ...prev, imageUrl: url }));
+      toast.success("✅ Image uploaded successfully!");
+    } catch (err) {
+      console.error(err);
+      toast.error("❌ Failed to upload image");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) handleImageUpload(file);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -121,14 +148,28 @@ export default function EditPromoPage() {
             onChange={handleChange}
             placeholder="Location (optional)"
           />
-          <input
-            className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500"
-            name="imageUrl"
-            value={form.imageUrl}
-            onChange={handleChange}
-            placeholder="Image URL"
-            required
-          />
+
+          {/* Drag & Drop Zone */}
+          <div
+            className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer ${
+              uploading ? "opacity-50" : "hover:bg-gray-50"
+            }`}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleDrop}
+          >
+            {uploading ? (
+              <p className="text-blue-600">Uploading...</p>
+            ) : form.imageUrl ? (
+              <img
+                src={form.imageUrl}
+                alt="Promo"
+                className="mx-auto h-40 object-cover rounded-lg"
+              />
+            ) : (
+              <p className="text-gray-500">Drag & drop an image here</p>
+            )}
+          </div>
+
           <textarea
             className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-500"
             name="description"

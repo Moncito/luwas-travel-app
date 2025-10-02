@@ -1,86 +1,115 @@
-'use client'
+"use client";
 
-import { db } from '@/firebase/client'
-import { doc, getDoc, updateDoc } from 'firebase/firestore'
-import { notFound } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import { toast } from 'sonner'
+import { db } from "@/firebase/client";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { notFound, useRouter, useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export default function EditItineraryPage() {
-  const router = useRouter()
-  const { id } = useParams() as { id: string }
+  const router = useRouter();
+  const { id } = useParams() as { id: string };
 
   const [form, setForm] = useState({
-    title: '',
-    duration: '',
-    image: '',
-    price: '',
-    highlights: [''],
-  })
-  const [loading, setLoading] = useState(true)
+    title: "",
+    duration: "",
+    image: "",
+    price: "",
+    highlights: [""],
+  });
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const fetchItinerary = async () => {
       try {
-        const docRef = doc(db, 'itineraries', id)
-        const snap = await getDoc(docRef)
+        const docRef = doc(db, "itineraries", id);
+        const snap = await getDoc(docRef);
 
         if (!snap.exists()) {
-          notFound()
+          notFound();
         }
 
-        const data = snap.data()
+        const data = snap.data();
         setForm({
-          title: data.title || '',
-          duration: data.duration || '',
-          image: data.image || '',
-          price: String(data.price || ''),
-          highlights: data.highlights || [''],
-        })
-        setLoading(false)
+          title: data.title || "",
+          duration: data.duration || "",
+          image: data.image || "",
+          price: String(data.price || ""),
+          highlights: data.highlights || [""],
+        });
+        setLoading(false);
       } catch (err) {
-        console.error('Failed to load itinerary', err)
-        toast.error('Itinerary not found')
-        router.push('/admin/itineraries')
+        console.error("Failed to load itinerary", err);
+        toast.error("Itinerary not found");
+        router.push("/admin/itineraries");
       }
-    }
+    };
 
-    fetchItinerary()
-  }, [id, router])
+    fetchItinerary();
+  }, [id, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setForm(prev => ({ ...prev, [name]: value }))
-  }
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleHighlightChange = (index: number, value: string) => {
-    const newHighlights = [...form.highlights]
-    newHighlights[index] = value
-    setForm(prev => ({ ...prev, highlights: newHighlights }))
-  }
+    const newHighlights = [...form.highlights];
+    newHighlights[index] = value;
+    setForm((prev) => ({ ...prev, highlights: newHighlights }));
+  };
 
   const addHighlight = () => {
-    setForm(prev => ({ ...prev, highlights: [...prev.highlights, ''] }))
-  }
+    setForm((prev) => ({ ...prev, highlights: [...prev.highlights, ""] }));
+  };
+
+  // 🔹 Upload image to Firebase Storage (itineraries folder)
+  const handleImageUpload = async (file: File) => {
+    if (!file) return;
+    try {
+      setUploading(true);
+      const storage = getStorage();
+      const storageRef = ref(
+        storage,
+        `itineraries/${id}-${Date.now()}-${file.name}`
+      );
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      setForm((prev) => ({ ...prev, image: url }));
+      toast.success("✅ Image uploaded successfully!");
+    } catch (err) {
+      console.error(err);
+      toast.error("❌ Failed to upload image");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) handleImageUpload(file);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     try {
-      await updateDoc(doc(db, 'itineraries', id), {
+      await updateDoc(doc(db, "itineraries", id), {
         ...form,
         price: Number(form.price),
-        highlights: form.highlights.filter(h => h.trim() !== ''),
-      })
-      toast.success('✅ Itinerary updated!')
-      router.push('/admin/itineraries')
+        highlights: form.highlights.filter((h) => h.trim() !== ""),
+      });
+      toast.success("✅ Itinerary updated!");
+      router.push("/admin/itineraries");
     } catch (err) {
-      console.error(err)
-      toast.error('❌ Failed to update itinerary')
+      console.error(err);
+      toast.error("❌ Failed to update itinerary");
     }
-  }
+  };
 
-  if (loading) return <p className="p-6">Loading itinerary...</p>
+  if (loading) return <p className="p-6">Loading itinerary...</p>;
 
   return (
     <div className="bg-white p-8 rounded-2xl shadow-lg max-w-6xl mx-auto mt-10">
@@ -104,14 +133,28 @@ export default function EditItineraryPage() {
             placeholder="Duration (e.g. 3 Days)"
             className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
           />
-          <input
-            name="image"
-            value={form.image}
-            onChange={handleChange}
-            placeholder="Image URL"
-            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
-            required
-          />
+
+          {/* Drag & Drop Upload */}
+          <div
+            className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer ${
+              uploading ? "opacity-50" : "hover:bg-gray-50"
+            }`}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleDrop}
+          >
+            {uploading ? (
+              <p className="text-blue-600">Uploading...</p>
+            ) : form.image ? (
+              <img
+                src={form.image}
+                alt="Preview"
+                className="mx-auto h-40 object-cover rounded-lg"
+              />
+            ) : (
+              <p className="text-gray-500">Drag & drop an image here</p>
+            )}
+          </div>
+
           <input
             name="price"
             value={form.price}
@@ -146,7 +189,7 @@ export default function EditItineraryPage() {
           <div className="flex justify-end gap-4 pt-2">
             <button
               type="button"
-              onClick={() => router.push('/admin/itineraries')}
+              onClick={() => router.push("/admin/itineraries")}
               className="bg-gray-200 px-6 py-3 rounded-lg hover:bg-gray-300 transition"
             >
               Cancel
@@ -162,7 +205,9 @@ export default function EditItineraryPage() {
 
         {/* Right Column - Live Preview */}
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold mb-2 text-gray-700">Live Preview</h3>
+          <h3 className="text-lg font-semibold mb-2 text-gray-700">
+            Live Preview
+          </h3>
           <div className="border rounded-xl shadow-md overflow-hidden max-w-md">
             {form.image ? (
               <img
@@ -206,5 +251,5 @@ export default function EditItineraryPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
