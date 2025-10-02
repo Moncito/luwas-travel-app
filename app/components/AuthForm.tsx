@@ -22,6 +22,8 @@ import FormField from "@/components/FormField";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 
+type FormType = "sign-in" | "sign-up";
+
 // ------------------- SCHEMA -------------------
 const authFormSchema = (type: FormType) =>
   z.object({
@@ -58,6 +60,12 @@ const AuthForm = ({ type }: { type: FormType }) => {
   const handleGoogleLogin = async () => {
     try {
       const provider = new GoogleAuthProvider();
+
+      // ✅ Explicitly set clientId for consistency (localhost + Vercel)
+      provider.setCustomParameters({
+        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
+      });
+
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
       const idToken = await user.getIdToken();
