@@ -189,7 +189,7 @@ export default function EditItineraryPage() {
           <div className="flex justify-end gap-4 pt-2">
             <button
               type="button"
-              onClick={() => router.push("/admin/itineraries")}
+              onClick={() => router.push("/admin/trips")}
               className="bg-gray-200 px-6 py-3 rounded-lg hover:bg-gray-300 transition"
             >
               Cancel
