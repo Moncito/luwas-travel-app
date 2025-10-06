@@ -17,10 +17,27 @@ interface DestinationData {
 export async function GET() {
   try {
     const snapshot = await db.collection("bookings").orderBy("createdAt", "desc").get();
-    const bookings = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+
+    const bookings = snapshot.docs.map((doc) => {
+      const data = doc.data();
+
+      return {
+        id: doc.id,
+        ...data,
+        // ✅ Ensure proper ISO date format for frontend
+        createdAt: data.createdAt?.toDate
+          ? data.createdAt.toDate().toISOString()
+          : data.createdAt?.seconds
+          ? new Date(data.createdAt.seconds * 1000).toISOString()
+          : null,
+        updatedAt: data.updatedAt?.toDate
+          ? data.updatedAt.toDate().toISOString()
+          : data.updatedAt?.seconds
+          ? new Date(data.updatedAt.seconds * 1000).toISOString()
+          : null,
+      };
+    });
+
     return NextResponse.json(bookings);
   } catch (error) {
     console.error("❌ Error fetching bookings:", error);

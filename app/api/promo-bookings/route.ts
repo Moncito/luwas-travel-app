@@ -17,7 +17,27 @@ interface PromoData {
 export async function GET() {
   try {
     const snapshot = await db.collection("promoBookings").orderBy("createdAt", "desc").get();
-    const bookings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    const bookings = snapshot.docs.map((doc) => {
+      const data = doc.data();
+
+      return {
+        id: doc.id,
+        ...data,
+        // ✅ Fix Firestore Timestamp → ISO string
+        createdAt: data.createdAt?.toDate
+          ? data.createdAt.toDate().toISOString()
+          : data.createdAt?.seconds
+          ? new Date(data.createdAt.seconds * 1000).toISOString()
+          : null,
+        updatedAt: data.updatedAt?.toDate
+          ? data.updatedAt.toDate().toISOString()
+          : data.updatedAt?.seconds
+          ? new Date(data.updatedAt.seconds * 1000).toISOString()
+          : null,
+      };
+    });
+
     return NextResponse.json(bookings);
   } catch (err) {
     console.error("❌ Error fetching promo bookings:", err);
