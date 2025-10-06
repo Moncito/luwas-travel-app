@@ -124,24 +124,26 @@ export default function ItineraryBookingsTable({
       )}
 
       {selected && (
-        <BookingDetailsModal
-          isOpen={!!selected}
-          onClose={() => setSelected(null)}
-          booking={{
-            id: selected.id,
-            fullName: selected.name,
-            email: selected.email,
-            phone: selected.phone ?? '',
-            destination: selected.slug?.replace(/-/g, ' ') ?? 'Untitled',
-            departureDate: selected.date,
-            status: selected.status ?? 'upcoming',
-            proofUrl: selected.proofUrl,
-            weather: selected.weather,
-          }}
-          onStatusChange={onUpdateStatus}
-          type="itinerary"
-        />
-      )}
+      <BookingDetailsModal
+        isOpen={!!selected}
+        onClose={() => setSelected(null)}
+        booking={{
+          id: selected.id,
+          fullName: selected.name,
+          email: selected.email,
+          phone: selected.phone ?? '',
+          destination: selected.slug?.replace(/-/g, ' ') ?? 'Untitled',
+          departureDate: selected.date,
+          status: selected.status ?? 'upcoming',
+          proofUrl: selected.proofUrl,
+          weather: selected.weather,
+          price: selected.totalPrice ?? selected.price ?? 0, // ✅ Added this line
+        }}
+        onStatusChange={onUpdateStatus}
+        type="itinerary"
+      />
+    )}
+
 
       <ConfirmActionModal
         isOpen={confirmOpen}

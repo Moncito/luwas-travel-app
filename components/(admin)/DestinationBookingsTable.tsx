@@ -122,14 +122,25 @@ export default function DestinationBookingsTable({
       )}
 
       {selected && (
-        <BookingDetailsModal
-          isOpen={!!selected}
-          onClose={() => setSelected(null)}
-          booking={selected}
-          onStatusChange={onUpdateStatus}
-          type="destination"
-        />
-      )}
+      <BookingDetailsModal
+        isOpen={!!selected}
+        onClose={() => setSelected(null)}
+        booking={{
+          id: selected.id,
+          fullName: selected.fullName,
+          email: selected.email,
+          phone: selected.phone ?? '',
+          destination: selected.destination ?? 'Unknown Destination',
+          departureDate: selected.departureDate,
+          status: selected.status ?? 'upcoming',
+          proofUrl: selected.proofUrl,
+          weather: selected.weather,
+          price: selected.price ?? selected.totalPrice ?? 0, // ✅ Added this line
+        }}
+        onStatusChange={onUpdateStatus}
+        type="destination"
+      />
+    )}
 
       <ConfirmActionModal
         isOpen={confirmOpen}

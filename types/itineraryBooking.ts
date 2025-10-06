@@ -3,6 +3,7 @@ export interface ItineraryBooking {
   name: string;
   email: string;
   date: string;
+  price: number;
   people: number;
   slug?: string;
   status?: 'upcoming' | 'completed' | 'cancelled' | 'paid' | 'waiting_payment';

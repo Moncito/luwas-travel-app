@@ -105,24 +105,26 @@ export default function PromoBookingsTable({
       </div>
 
       {selected && (
-        <BookingDetailsModal
-          isOpen={!!selected}
-          onClose={() => setSelected(null)}
-          booking={{
-            id: selected.id,
-            fullName: selected.fullName,
-            email: selected.email,
-            phone: selected.phone ?? '',
-            destination: selected.promoTitle,
-            departureDate: selected.departureDate,
-            status: selected.status ?? 'upcoming',
-            proofUrl: selected.proofUrl,
-            weather: selected.weather,
-          }}
-          onStatusChange={onUpdateStatus}
-          type="destination" // ✅ reuse existing modal instead of adding "promo"
-        />
-      )}
+      <BookingDetailsModal
+        isOpen={!!selected}
+        onClose={() => setSelected(null)}
+        booking={{
+          id: selected.id,
+          fullName: selected.fullName,
+          email: selected.email,
+          phone: selected.phone ?? '',
+          destination: selected.promoTitle,
+          departureDate: selected.departureDate,
+          status: selected.status ?? 'upcoming',
+          proofUrl: selected.proofUrl,
+          weather: selected.weather,
+          price: selected.finalPrice ?? selected.price ?? 0, // ✅ Added this line
+        }}
+        onStatusChange={onUpdateStatus}
+        type="promo"
+      />
+    )}
+
 
       <ConfirmActionModal
         isOpen={confirmOpen}

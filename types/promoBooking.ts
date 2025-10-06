@@ -3,6 +3,7 @@ export interface PromoBooking {
   userId: string;                  // who booked
   fullName: string;                // required
   email: string;                   // required
+  price: number;
   phone?: string;
   promoId: string;                  // link back to promo
   promoTitle: string;               // copy of promo title for quick reference

@@ -1,6 +1,7 @@
 export interface Booking {
   id: string;
   userId: string;
+  price: number;
   fullName: string; // 🔧 make required
   email: string;    // 🔧 make required
   phone?: string;

@@ -34,6 +34,7 @@ interface Props {
       humidity?: number;
       icon?: string;
     };
+    price?: number;
   };
   onStatusChange: (id: string, newStatus: string) => void;
   type?: 'destination' | 'itinerary';
@@ -116,6 +117,16 @@ export default function BookingDetailsModal({
                   <CalendarDays className="w-4 h-4" />
                   <span><strong>Departure:</strong> {booking.departureDate}</span>
                 </div>
+                
+                {booking.price && (
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-700 font-medium">💰 Total Price:</span>
+                  <span className="text-blue-700 font-semibold">
+                    ₱{booking.price.toLocaleString()}
+                  </span>
+                </div>
+              )}
+
 
                 <div className="flex items-center gap-2">
                   <BadgeInfo className="w-4 h-4" />
