@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect } from "react";
 import { Pie, Bar, Doughnut } from "react-chartjs-2";
@@ -60,57 +60,88 @@ export default function DemographicsAnalyticsChart() {
       .join(" • ");
   };
 
+  // ─────────── OVERVIEW ───────────
   const renderOverview = () => {
     if (!data) return <p className="text-center text-gray-500">No data available</p>;
 
     return (
       <div className="flex flex-col gap-6 items-center justify-center h-full">
-        <h2 className="text-2xl font-bold text-center">Overall Demographics</h2>
-        <p className="text-center text-gray-600 max-w-2xl">
+        <h2 className="text-2xl font-bold text-center text-gray-800">Overall Demographics</h2>
+        <p className="text-center text-gray-600 max-w-2xl leading-relaxed">
           A general overview of user demographics combining gender, age, occupation, income, and location.
           This gives a quick summary of your audience profile before diving deeper into specific categories.
         </p>
 
         {/* Summary cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
-          <div className="p-4 bg-blue-50 rounded-xl shadow text-center">
-            <h3 className="font-semibold">Gender</h3>
-            <p className="text-sm text-gray-700">{percentageSummary(safeLabels(data.gender), safeData(data.gender))}</p>
+        <div
+          className="
+            grid 
+            grid-cols-[repeat(auto-fit,minmax(240px,1fr))]
+            gap-6 
+            w-full
+          "
+        >
+          <div className="p-5 bg-blue-50 rounded-xl shadow text-center hover:shadow-md transition">
+            <h3 className="font-semibold text-gray-800">Gender</h3>
+            <p className="text-sm text-gray-700">
+              {percentageSummary(safeLabels(data.gender), safeData(data.gender))}
+            </p>
           </div>
-          <div className="p-4 bg-green-50 rounded-xl shadow text-center">
-            <h3 className="font-semibold">Age</h3>
-            <p className="text-sm text-gray-700">{percentageSummary(safeLabels(data.age), safeData(data.age))}</p>
+
+          <div className="p-5 bg-green-50 rounded-xl shadow text-center hover:shadow-md transition">
+            <h3 className="font-semibold text-gray-800">Age</h3>
+            <p className="text-sm text-gray-700">
+              {percentageSummary(safeLabels(data.age), safeData(data.age))}
+            </p>
           </div>
-          <div className="p-4 bg-yellow-50 rounded-xl shadow text-center">
-            <h3 className="font-semibold">Occupation</h3>
-            <p className="text-sm text-gray-700">{percentageSummary(safeLabels(data.occupation), safeData(data.occupation))}</p>
+
+          <div className="p-5 bg-yellow-50 rounded-xl shadow text-center hover:shadow-md transition">
+            <h3 className="font-semibold text-gray-800">Occupation</h3>
+            <p className="text-sm text-gray-700">
+              {percentageSummary(safeLabels(data.occupation), safeData(data.occupation))}
+            </p>
           </div>
-          <div className="p-4 bg-purple-50 rounded-xl shadow text-center">
-            <h3 className="font-semibold">Income</h3>
-            <p className="text-sm text-gray-700">{percentageSummary(safeLabels(data.income), safeData(data.income))}</p>
+
+          <div className="p-5 bg-purple-50 rounded-xl shadow text-center hover:shadow-md transition">
+            <h3 className="font-semibold text-gray-800">Income</h3>
+            <p className="text-sm text-gray-700">
+              {percentageSummary(safeLabels(data.income), safeData(data.income))}
+            </p>
           </div>
-          <div className="p-4 bg-pink-50 rounded-xl shadow text-center sm:col-span-2 lg:col-span-1">
-            <h3 className="font-semibold">Location</h3>
-            <p className="text-sm text-gray-700">{percentageSummary(safeLabels(data.location), safeData(data.location))}</p>
+
+          <div className="p-5 bg-pink-50 rounded-xl shadow text-center hover:shadow-md transition">
+            <h3 className="font-semibold text-gray-800">Location</h3>
+            <p className="text-sm text-gray-700">
+              {percentageSummary(safeLabels(data.location), safeData(data.location))}
+            </p>
           </div>
         </div>
       </div>
     );
   };
 
+  // ─────────── INDIVIDUAL CHARTS ───────────
   const renderChart = () => {
     if (!data) return <p className="text-center text-gray-500">No data available</p>;
 
     const chartClass = "flex flex-col items-center justify-center h-full";
 
+    const motionSettings = {
+      initial: { opacity: 0, scale: 0.9 },
+      animate: { opacity: 1, scale: 1 },
+      exit: { opacity: 0, scale: 0.9 },
+      transition: { duration: 0.4, ease: "easeOut" },
+    };
+
     switch (slides[index]) {
       case "Overview":
         return renderOverview();
+
       case "Gender":
         return (
-          <div className={chartClass}>
+          <motion.div {...motionSettings} className={chartClass}>
             <h2 className="text-xl font-bold mb-4 text-center">Gender Distribution</h2>
-            <div className="w-[280px] h-[280px]">
+            <div className="w-[260px] h-[260px] md:w-[300px] md:h-[300px]">
               <Pie
                 data={{
                   labels: safeLabels(data.gender),
@@ -123,38 +154,42 @@ export default function DemographicsAnalyticsChart() {
                 }}
               />
             </div>
-            <p className="mt-4 text-center text-sm text-gray-700">
+            <p className="mt-4 text-center text-sm text-gray-700 max-w-sm">
               {safeSummary(data.gender)} <br />
-              <span className="font-medium">{percentageSummary(safeLabels(data.gender), safeData(data.gender))}</span>
+              <span className="font-medium">
+                {percentageSummary(safeLabels(data.gender), safeData(data.gender))}
+              </span>
             </p>
-          </div>
+          </motion.div>
         );
+
       case "Age":
         return (
-          <div className={chartClass}>
+          <motion.div {...motionSettings} className={chartClass}>
             <h2 className="text-xl font-bold mb-4 text-center">Age Groups</h2>
             <div className="w-[400px] h-[280px]">
               <Bar
                 data={{
                   labels: safeLabels(data.age),
-                  datasets: [
-                    { data: safeData(data.age), backgroundColor: "#3b82f6" },
-                  ],
+                  datasets: [{ data: safeData(data.age), backgroundColor: "#3b82f6" }],
                 }}
                 options={{ maintainAspectRatio: false }}
               />
             </div>
-            <p className="mt-4 text-center text-sm text-gray-700">
+            <p className="mt-4 text-center text-sm text-gray-700 max-w-sm">
               {safeSummary(data.age)} <br />
-              <span className="font-medium">{percentageSummary(safeLabels(data.age), safeData(data.age))}</span>
+              <span className="font-medium">
+                {percentageSummary(safeLabels(data.age), safeData(data.age))}
+              </span>
             </p>
-          </div>
+          </motion.div>
         );
+
       case "Occupation":
         return (
-          <div className={chartClass}>
+          <motion.div {...motionSettings} className={chartClass}>
             <h2 className="text-xl font-bold mb-4 text-center">Occupation</h2>
-            <div className="w-[280px] h-[280px]">
+            <div className="w-[260px] h-[260px] md:w-[300px] md:h-[300px]">
               <Doughnut
                 data={{
                   labels: safeLabels(data.occupation),
@@ -167,17 +202,20 @@ export default function DemographicsAnalyticsChart() {
                 }}
               />
             </div>
-            <p className="mt-4 text-center text-sm text-gray-700">
+            <p className="mt-4 text-center text-sm text-gray-700 max-w-sm">
               {safeSummary(data.occupation)} <br />
-              <span className="font-medium">{percentageSummary(safeLabels(data.occupation), safeData(data.occupation))}</span>
+              <span className="font-medium">
+                {percentageSummary(safeLabels(data.occupation), safeData(data.occupation))}
+              </span>
             </p>
-          </div>
+          </motion.div>
         );
+
       case "Income":
         return (
-          <div className={chartClass}>
+          <motion.div {...motionSettings} className={chartClass}>
             <h2 className="text-xl font-bold mb-4 text-center">Income Levels</h2>
-            <div className="w-[280px] h-[280px]">
+            <div className="w-[260px] h-[260px] md:w-[300px] md:h-[300px]">
               <Pie
                 data={{
                   labels: safeLabels(data.income),
@@ -190,33 +228,37 @@ export default function DemographicsAnalyticsChart() {
                 }}
               />
             </div>
-            <p className="mt-4 text-center text-sm text-gray-700">
+            <p className="mt-4 text-center text-sm text-gray-700 max-w-sm">
               {safeSummary(data.income)} <br />
-              <span className="font-medium">{percentageSummary(safeLabels(data.income), safeData(data.income))}</span>
+              <span className="font-medium">
+                {percentageSummary(safeLabels(data.income), safeData(data.income))}
+              </span>
             </p>
-          </div>
+          </motion.div>
         );
+
       case "Location":
         return (
-          <div className={chartClass}>
+          <motion.div {...motionSettings} className={chartClass}>
             <h2 className="text-xl font-bold mb-4 text-center">User Locations</h2>
             <div className="w-[400px] h-[280px]">
               <Bar
                 data={{
                   labels: safeLabels(data.location),
-                  datasets: [
-                    { data: safeData(data.location), backgroundColor: "#0ea5e9" },
-                  ],
+                  datasets: [{ data: safeData(data.location), backgroundColor: "#0ea5e9" }],
                 }}
                 options={{ maintainAspectRatio: false }}
               />
             </div>
-            <p className="mt-4 text-center text-sm text-gray-700">
+            <p className="mt-4 text-center text-sm text-gray-700 max-w-sm">
               {safeSummary(data.location)} <br />
-              <span className="font-medium">{percentageSummary(safeLabels(data.location), safeData(data.location))}</span>
+              <span className="font-medium">
+                {percentageSummary(safeLabels(data.location), safeData(data.location))}
+              </span>
             </p>
-          </div>
+          </motion.div>
         );
+
       default:
         return null;
     }
@@ -227,9 +269,9 @@ export default function DemographicsAnalyticsChart() {
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-lg relative overflow-hidden">
+    <div className="w-full max-w-5xl mx-auto bg-white p-8 rounded-2xl shadow-lg relative overflow-hidden">
       {/* Slide container */}
-      <div className="relative h-[500px] flex items-center justify-center">
+      <div className="relative h-[550px] flex items-center justify-center">
         <AnimatePresence mode="wait">
           <motion.div
             key={slides[index]}
@@ -248,7 +290,7 @@ export default function DemographicsAnalyticsChart() {
       <div className="flex justify-between items-center mt-6">
         <button
           onClick={prev}
-          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg shadow-sm"
+          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg shadow-sm text-sm"
         >
           ◀ Prev
         </button>
@@ -264,7 +306,7 @@ export default function DemographicsAnalyticsChart() {
         </div>
         <button
           onClick={next}
-          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg shadow-sm"
+          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg shadow-sm text-sm"
         >
           Next ▶
         </button>

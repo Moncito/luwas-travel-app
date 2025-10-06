@@ -9,25 +9,30 @@ import {
   MapPin,
   PlusCircle,
   BookOpen,
-  CalendarCheck,
   MessageCircle,
   ChevronDown,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { collection, onSnapshot, where, query } from 'firebase/firestore';
 import { db } from '@/firebase/client';
 import { toast } from 'sonner';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
 
 export default function AdminNavbar() {
   const pathname = usePathname();
   const [profileOpen, setProfileOpen] = useState(false);
-  const [bookingsOpen, setBookingsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [ping, setPing] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(false);
 
-  // ✅ Unlock sound on first user interaction
+  // 🔊 Enable sound on first interaction
   useEffect(() => {
     const enableSound = () => {
       setSoundEnabled(true);
@@ -37,7 +42,7 @@ export default function AdminNavbar() {
     return () => window.removeEventListener('click', enableSound);
   }, []);
 
-  // 🔔 Real-time unread listener + notification sound
+  // 🔔 Real-time unread listener + sound
   useEffect(() => {
     const q = query(
       collection(db, 'conversations'),
@@ -45,24 +50,20 @@ export default function AdminNavbar() {
     );
 
     let firstLoad = true;
-
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const count = snapshot.size;
       setUnreadCount(count);
 
-      // Don’t trigger sound on initial load
       if (!firstLoad && count > 0) {
         setPing(true);
         setTimeout(() => setPing(false), 1500);
 
-        // ✅ Play sound only if allowed
         if (soundEnabled) {
           const audio = new Audio('/sounds/notification.wav');
           audio.volume = 0.5;
           audio.play().catch(() => {});
         }
 
-        // ✅ Toast alert for admin
         toast.info(`New message received from a user 📨`, {
           duration: 3000,
         });
@@ -81,67 +82,72 @@ export default function AdminNavbar() {
           Luwas Admin
         </Link>
 
-        {/* Nav Links */}
+        {/* Navigation */}
         <ul className="hidden md:flex items-center gap-5 relative">
           <NavLink href="/admin" icon={LayoutDashboard} label="Dashboard" pathname={pathname} />
           <NavLink href="/admin/users" icon={Users} label="Users" pathname={pathname} />
           <NavLink href="/admin/trips" icon={MapPin} label="Trips" pathname={pathname} />
-          <NavLink href="/admin/add-destination" icon={PlusCircle} label="Destinations" pathname={pathname} />
-          <NavLink href="/admin/add-promo" icon={PlusCircle} label="Promo" pathname={pathname} />
-          <NavLink href="/admin/itineraries" icon={CalendarCheck} label="Itineraries" pathname={pathname} />
+
+          {/* Add Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  'flex items-center gap-1.5 text-xs font-medium',
+                  pathname.includes('/add') || pathname.includes('/itineraries')
+                    ? 'text-blue-700'
+                    : 'text-gray-600 hover:text-blue-600'
+                )}
+              >
+                <PlusCircle size={14} />
+                Add
+                <ChevronDown size={12} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-40">
+              <DropdownMenuItem asChild>
+                <Link href="/admin/add-destination">Destination</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/admin/add-promo">Promo</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/admin/itineraries/add">Itinerary</Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* Bookings Dropdown */}
-          <li className="relative group">
-            <button
-              onClick={() => setBookingsOpen(!bookingsOpen)}
-              className={cn(
-                'flex items-center gap-1.5 px-2 py-1 text-xs font-medium transition-all',
-                pathname.startsWith('/admin/bookings') || pathname === '/admin/reviews'
-                  ? 'text-blue-700'
-                  : 'text-gray-600 hover:text-blue-600'
-              )}
-            >
-              <BookOpen size={14} className="text-gray-400" />
-              Bookings
-              <ChevronDown
-                size={12}
-                className={`ml-1 transition-transform ${bookingsOpen ? 'rotate-180' : ''}`}
-              />
-            </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  'flex items-center gap-1.5 text-xs font-medium',
+                  pathname.startsWith('/admin/bookings') || pathname === '/admin/reviews'
+                    ? 'text-blue-700'
+                    : 'text-gray-600 hover:text-blue-600'
+                )}
+              >
+                <BookOpen size={14} />
+                Bookings
+                <ChevronDown size={12} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-40">
+              <DropdownMenuItem asChild>
+                <Link href="/admin/bookings">Booking List</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/admin/reviews">Reviews</Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-            <AnimatePresence>
-              {bookingsOpen && (
-                <motion.ul
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.2, ease: 'easeOut' }}
-                  className="absolute left-0 mt-2 w-44 bg-white shadow-xl rounded-md border border-blue-100 z-50 overflow-hidden"
-                >
-                  <motion.li whileHover={{ backgroundColor: '#f0f6ff' }}>
-                    <Link
-                      href="/admin/bookings"
-                      className="block px-3 py-2 text-xs text-gray-700"
-                      onClick={() => setBookingsOpen(false)}
-                    >
-                      📘 Booking List
-                    </Link>
-                  </motion.li>
-                  <motion.li whileHover={{ backgroundColor: '#f0f6ff' }}>
-                    <Link
-                      href="/admin/reviews"
-                      className="block px-3 py-2 text-xs text-gray-700"
-                      onClick={() => setBookingsOpen(false)}
-                    >
-                      💬 Reviews
-                    </Link>
-                  </motion.li>
-                </motion.ul>
-              )}
-            </AnimatePresence>
-          </li>
-
-          {/* Chat Support with Notification */}
+          {/* Chat Support */}
           <li className="relative group">
             <Link
               href="/admin/chat-support"
@@ -154,7 +160,6 @@ export default function AdminNavbar() {
             >
               <MessageCircle size={14} className="text-gray-400" />
               Chat Support
-
               {unreadCount > 0 && (
                 <motion.span
                   initial={{ scale: 0 }}
@@ -186,40 +191,38 @@ export default function AdminNavbar() {
             A
           </button>
 
-          <AnimatePresence>
-            {profileOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.2 }}
-                className="absolute right-0 mt-2 w-36 bg-white shadow-lg rounded-md border border-blue-100 z-50"
+          {profileOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+              className="absolute right-0 mt-2 w-36 bg-white shadow-lg rounded-md border border-blue-100 z-50"
+            >
+              <Link
+                href="/admin/profile"
+                className="block px-3 py-2 text-xs text-gray-700 hover:bg-blue-50"
               >
-                <Link
-                  href="/admin/profile"
-                  className="block px-3 py-2 text-xs text-gray-700 hover:bg-blue-50"
-                >
-                  Profile
-                </Link>
-                <Link
-                  href="/admin/settings"
-                  className="block px-3 py-2 text-xs text-gray-700 hover:bg-blue-50"
-                >
-                  Settings
-                </Link>
-                <button className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-blue-50">
-                  Logout
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                Profile
+              </Link>
+              <Link
+                href="/admin/settings"
+                className="block px-3 py-2 text-xs text-gray-700 hover:bg-blue-50"
+              >
+                Settings
+              </Link>
+              <button className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-blue-50">
+                Logout
+              </button>
+            </motion.div>
+          )}
         </div>
       </div>
     </nav>
   );
 }
 
-// ───────── Helper Component ─────────
+// ───────── Helper NavLink ─────────
 function NavLink({
   href,
   icon: Icon,
