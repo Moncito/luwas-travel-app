@@ -4,18 +4,27 @@ import { auth as firebaseAuth, db } from "@/firebase/admin";
 import type { DecodedIdToken } from "firebase-admin/auth";
 import ClientAdminNavbar from "@/components/(admin)/ClientAdminNavbar";
 
-export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const cookieStore = cookies();
   const session = cookieStore.get("session");
 
+  // 🔒 Redirect if no session
   if (!session?.value) redirect("/admin-log-in");
 
   try {
-    const decoded: DecodedIdToken = await firebaseAuth.verifySessionCookie(session.value, true);
+    // ✅ Verify Firebase session cookie
+    const decoded: DecodedIdToken = await firebaseAuth.verifySessionCookie(
+      session.value,
+      true
+    );
 
     let isAdmin = decoded.admin ?? false;
 
-    // 🔍 Firestore fallback
+    // 🔍 Double-check Firestore for "admin" role
     if (!isAdmin) {
       const userDoc = await db.collection("users").doc(decoded.uid).get();
       if (userDoc.exists && userDoc.data()?.role === "admin") {
@@ -23,22 +32,22 @@ export default async function DashboardLayout({ children }: { children: React.Re
       }
     }
 
-    // ✅ DEV mode: allow all authenticated
-    // ✅ PROD mode: restrict
+    // 🚫 Restrict non-admins in production only
     if (process.env.NODE_ENV === "production" && !isAdmin) {
-      redirect("/"); // safer fallback instead of looping
+      redirect("/");
     }
   } catch (err) {
     console.error("🔥 Session verification failed:", err);
     redirect("/admin-log-in");
   }
 
+  // ✅ Authenticated layout
   return (
     <div className="min-h-screen flex flex-col">
-      {/* ✅ Navbar */}
+      {/* Navbar (Client-Side for Realtime + Notifications) */}
       <ClientAdminNavbar />
 
-      {/* ✅ Main content */}
+      {/* Page Content */}
       <main className="flex-1 p-8 bg-gray-50">{children}</main>
     </div>
   );
