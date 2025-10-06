@@ -1,44 +1,65 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import Link from "next/link"
-import { useRouter, usePathname } from "next/navigation"
-import { onAuthStateChanged, signOut } from "firebase/auth"
-import { auth } from "@/firebase/client"
-import { UserCircle } from "lucide-react"
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { auth, db } from "@/firebase/client";
+import { doc, getDoc } from "firebase/firestore";
+import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
 
 const Navbar = () => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [scrolled, setScrolled] = useState(false)
-  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
-  const router = useRouter()
-  const pathname = usePathname()
+  const router = useRouter();
+  const pathname = usePathname();
 
+  // 🔹 Listen for authentication changes
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setIsAuthenticated(!!user)
-    })
-    return () => unsubscribe()
-  }, [])
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setIsAuthenticated(true);
 
+        try {
+          const userRef = doc(db, "users", user.uid);
+          const snap = await getDoc(userRef);
+          if (snap.exists()) {
+            const data = snap.data();
+            setAvatarUrl(data.avatarUrl || null);
+          }
+        } catch (err) {
+          console.error("Error fetching avatar:", err);
+        }
+      } else {
+        setIsAuthenticated(false);
+        setAvatarUrl(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // 🔹 Handle scroll blur effect
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20)
-    }
-    window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
+  // 🔹 Logout
   const handleLogout = async () => {
-    setLoading(true)
-    await signOut(auth)
-    setIsAuthenticated(false)
-    setLoading(false)
-    router.push("/sign-in")
-  }
+    setLoading(true);
+    await signOut(auth);
+    setIsAuthenticated(false);
+    setLoading(false);
+    router.push("/sign-in");
+  };
 
   const navItems = [
     { href: "/", text: "HOME" },
@@ -46,7 +67,7 @@ const Navbar = () => {
     { href: "/promos", text: "PROMO!" },
     { href: "/destinations", text: "DESTINATIONS" },
     { href: "/history", text: "TRAVEL HISTORY" },
-  ]
+  ];
 
   return (
     <nav
@@ -55,12 +76,12 @@ const Navbar = () => {
       }`}
     >
       <div className="container mx-auto px-6 py-5 flex items-center justify-between">
-        {/* Left - Logo */}
+        {/* 🔹 Left - Logo */}
         <Link href="/" className="text-white text-2xl md:text-3xl font-bold tracking-wide">
           LUWAS
         </Link>
 
-        {/* Center - Nav Items */}
+        {/* 🔹 Middle - Nav Items */}
         <div className="hidden lg:flex space-x-8">
           {navItems.map((item) => (
             <Link
@@ -77,41 +98,64 @@ const Navbar = () => {
           ))}
         </div>
 
-        {/* Right - Auth Section */}
+        {/* 🔹 Right - Auth Section */}
         <div className="hidden lg:flex items-center space-x-4 relative">
           {isAuthenticated ? (
             <div className="relative">
               <button
                 onClick={() => setProfileMenuOpen((prev) => !prev)}
-                className="flex items-center gap-2 text-white font-medium focus:outline-none"
+                className="focus:outline-none"
               >
-                <UserCircle className="w-7 h-7" />
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                  className="w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-md bg-gray-200"
+                >
+                  <Image
+                    src={avatarUrl || "/images/default-avatar.jpg"}
+                    alt="User Avatar"
+                    width={40}
+                    height={40}
+                    className="object-cover w-full h-full cursor-pointer"
+                    unoptimized
+                    referrerPolicy="no-referrer"
+                  />
+                </motion.div>
               </button>
 
-              {profileMenuOpen && (
-                <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg py-2">
-                  <Link
-                    href="/profile"
-                    onClick={() => setProfileMenuOpen(false)}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              {/* 🔹 Profile Dropdown */}
+              <AnimatePresence>
+                {profileMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg py-2"
                   >
-                    Profile
-                  </Link>
-                  <Link
-                    href="/history"
-                    onClick={() => setProfileMenuOpen(false)}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    Travel History
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-                  >
-                    {loading ? "Logging out..." : "Logout"}
-                  </button>
-                </div>
-              )}
+                    <Link
+                      href="/profile"
+                      onClick={() => setProfileMenuOpen(false)}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Profile
+                    </Link>
+                    <Link
+                      href="/history"
+                      onClick={() => setProfileMenuOpen(false)}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Travel History
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                    >
+                      {loading ? "Logging out..." : "Logout"}
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           ) : (
             <button
@@ -123,9 +167,12 @@ const Navbar = () => {
           )}
         </div>
 
-        {/* Mobile Menu Icon */}
+        {/* 🔹 Mobile Menu Icon */}
         <div className="lg:hidden flex items-center">
-          <button onClick={() => setIsMobileMenuOpen((prev) => !prev)} className="text-white focus:outline-none">
+          <button
+            onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+            className="text-white focus:outline-none"
+          >
             <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
@@ -133,7 +180,7 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Mobile Menu Dropdown */}
+      {/* 🔹 Mobile Dropdown */}
       {isMobileMenuOpen && (
         <div className="animate-slide-down bg-white/95 backdrop-blur-md shadow-lg rounded-lg p-4 space-y-4 lg:hidden">
           {navItems.map((item) => (
@@ -159,8 +206,8 @@ const Navbar = () => {
               </Link>
               <button
                 onClick={async () => {
-                  setIsMobileMenuOpen(false)
-                  await handleLogout()
+                  setIsMobileMenuOpen(false);
+                  await handleLogout();
                 }}
                 className="block w-full text-gray-700 font-semibold hover:text-black text-center transition-colors"
               >
@@ -170,8 +217,8 @@ const Navbar = () => {
           ) : (
             <button
               onClick={() => {
-                setIsMobileMenuOpen(false)
-                router.push("/sign-in")
+                setIsMobileMenuOpen(false);
+                router.push("/sign-in");
               }}
               className="block w-full bg-black text-white font-semibold py-2 rounded-lg hover:bg-gray-800 transition"
             >
@@ -181,7 +228,7 @@ const Navbar = () => {
         </div>
       )}
     </nav>
-  )
-}
+  );
+};
 
-export default Navbar
+export default Navbar;

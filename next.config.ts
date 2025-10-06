@@ -5,26 +5,26 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   typescript: {
-    ignoreBuildErrors: true, // ← temporarily set to true for deployment
+    // Safe for temporary build passes, but disable later in production
+    ignoreBuildErrors: true,
   },
   images: {
-    domains: [
-      'i.imgur.com',
-      's3-media3.fl.yelpcdn.com',
-      'upload.wikimedia.org',
-      'images.unsplash.com',
-      'lh3.googleusercontent.com',
-      's3-media0.fl.yelpcdn.com',
-      's3-media1.fl.yelpcdn.com',
-      's3-media2.fl.yelpcdn.com',
-      's3-media3.fl.yelpcdn.com',
-      'firebasestorage.googleapis.com', // ✅ added Firebase Storage
+    remotePatterns: [
+      { protocol: "https", hostname: "i.imgur.com" },
+      { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "upload.wikimedia.org" },
+      { protocol: "https", hostname: "lh3.googleusercontent.com" },
+      { protocol: "https", hostname: "firebasestorage.googleapis.com" },
+      { protocol: "https", hostname: "s3-media0.fl.yelpcdn.com" },
+      { protocol: "https", hostname: "s3-media1.fl.yelpcdn.com" },
+      { protocol: "https", hostname: "s3-media2.fl.yelpcdn.com" },
+      { protocol: "https", hostname: "s3-media3.fl.yelpcdn.com" },
     ],
   },
   experimental: {
     serverActions: {
-      bodySizeLimit: '1mb',
-      allowedOrigins: ['*'],
+      bodySizeLimit: "2mb", // slightly increased for image payloads
+      allowedOrigins: ["*"],
     },
   },
 };

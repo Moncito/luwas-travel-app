@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { auth, db } from "@/firebase/client";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -25,48 +25,44 @@ export default function ProfileForm() {
 
   const [loading, setLoading] = useState(false);
 
-  // 🔹 Compute profile completion %
+  // 🔹 Real-time sync listener
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const userRef = doc(db, "users", user.uid);
+
+    // Real-time Firestore listener
+    const unsubscribe = onSnapshot(userRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setForm({
+          fullName: data.fullName || "",
+          email: user.email || "",
+          phoneNumber: data.phoneNumber || "",
+          age: data.age ? String(data.age) : "",
+          gender: data.gender || "",
+          address: data.address || "",
+          occupation: data.occupation || "",
+          incomeLevel: data.incomeLevel || "",
+        });
+      } else {
+        setForm((p) => ({ ...p, email: user.email || "" }));
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // 🔹 Profile completion percentage
   const completion = useMemo(() => {
-    const fields = Object.entries(form).filter(([key]) => key !== "email"); // email is auto-filled
+    const fields = Object.entries(form).filter(([key]) => key !== "email");
     const filled = fields.filter(([, value]) => value && value.trim() !== "")
       .length;
     return Math.round((filled / fields.length) * 100);
   }, [form]);
 
-  // 🔹 Load user profile on mount
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const user = auth.currentUser;
-        if (!user) return;
-
-        const userRef = doc(db, "users", user.uid);
-        const snap = await getDoc(userRef);
-
-        if (snap.exists()) {
-          const data = snap.data();
-          setForm({
-            fullName: data.fullName || "",
-            email: user.email || "",
-            phoneNumber: data.phoneNumber || "",
-            age: data.age ? String(data.age) : "",
-            gender: data.gender || "",
-            address: data.address || "",
-            occupation: data.occupation || "",
-            incomeLevel: data.incomeLevel || "",
-          });
-        } else {
-          setForm((p) => ({ ...p, email: user.email || "" }));
-        }
-      } catch (err) {
-        console.error(err);
-        toast.error("Failed to load profile.");
-      }
-    };
-
-    fetchProfile();
-  }, []);
-
+  // 🔹 Handle input changes
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -74,18 +70,20 @@ export default function ProfileForm() {
     setForm((p) => ({ ...p, [name]: value }));
   };
 
+  // 🔹 Save to Firestore
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const user = auth.currentUser;
+    if (!user) {
+      toast.error("You must be logged in.");
+      return;
+    }
+
     try {
-      const user = auth.currentUser;
-      if (!user) {
-        toast.error("You must be logged in.");
-        return;
-      }
-
       setLoading(true);
-
       const userRef = doc(db, "users", user.uid);
+
       await setDoc(
         userRef,
         {
@@ -98,20 +96,17 @@ export default function ProfileForm() {
         { merge: true }
       );
 
-      toast.success("✅ Profile saved successfully!");
+      toast.success("✅ Profile updated successfully!");
     } catch (err) {
-      console.error(err);
-      toast.error("❌ Failed to save profile.");
+      console.error("Profile update failed:", err);
+      toast.error("❌ Failed to update profile.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-8 text-left"
-    >
+    <form onSubmit={handleSubmit} className="space-y-8 text-left">
       {/* 🔹 Profile Completion */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -146,7 +141,7 @@ export default function ProfileForm() {
           />
         </div>
 
-        {/* Email (disabled) */}
+        {/* Email (read-only) */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Email
@@ -159,7 +154,7 @@ export default function ProfileForm() {
           />
         </div>
 
-        {/* Phone */}
+        {/* Phone Number */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Phone Number
