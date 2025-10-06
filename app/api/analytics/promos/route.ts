@@ -1,58 +1,79 @@
-// File: app/api/analytics/promos/route.ts
+// ✅ /app/api/analytics/promos/route.ts
 import { db } from "@/firebase/admin";
 import { NextResponse } from "next/server";
+import { Timestamp } from "firebase-admin/firestore";
 
 export async function GET() {
   try {
     const snapshot = await db.collection("promoBookings").get();
 
-    const data = snapshot.docs.map((doc) => {
-      const d = doc.data();
+    const dailyCounts: Record<string, { paid: number; cancelled: number; pending: number }> = {};
 
-      // normalize createdAt
-      let createdAt: Date;
-      if (d.createdAt?.toDate) {
-        createdAt = d.createdAt.toDate();
-      } else if (d.createdAt?.seconds) {
-        createdAt = new Date(d.createdAt.seconds * 1000);
-      } else {
-        createdAt = new Date(d.createdAt);
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      const raw = data.createdAt;
+
+      let date: string | null = null;
+
+      // ✅ Normalize Firestore timestamps (all possible types)
+      if (raw instanceof Timestamp) {
+        date = raw.toDate().toISOString().split("T")[0];
+      } else if (raw?.toDate) {
+        date = raw.toDate().toISOString().split("T")[0];
+      } else if (typeof raw === "string") {
+        const d = new Date(raw);
+        date = isNaN(d.getTime()) ? null : d.toISOString().split("T")[0];
+      } else if (typeof raw === "number") {
+        const d = new Date(raw);
+        date = isNaN(d.getTime()) ? null : d.toISOString().split("T")[0];
+      } else if (raw && typeof raw === "object" && "seconds" in raw) {
+        const d = new Date((raw as any).seconds * 1000);
+        date = isNaN(d.getTime()) ? null : d.toISOString().split("T")[0];
       }
 
-      return {
-        id: doc.id,
-        date: createdAt.toISOString(),
-        status: d.status || "pending",
-      };
+      if (!date) return;
+
+      if (!dailyCounts[date]) {
+        dailyCounts[date] = { paid: 0, cancelled: 0, pending: 0 };
+      }
+
+      // ✅ Unified status classification
+      const status = (data.status || "").toLowerCase();
+
+      switch (status) {
+        case "paid":
+        case "completed":
+          dailyCounts[date].paid++;
+          break;
+
+        case "cancelled":
+          dailyCounts[date].cancelled++;
+          break;
+
+        case "awaiting_approval":
+        case "pending":
+        case "pending_payment":
+        case "waiting_payment":
+        case "upcoming":
+        default:
+          dailyCounts[date].pending++;
+          break;
+      }
     });
 
-    // group by date
-    const grouped: Record<string, { confirmed: number; cancelled: number; pending: number }> = {};
+    // ✅ Format final response
+    const results = Object.entries(dailyCounts).map(
+      ([date, { paid, cancelled, pending }]) => ({
+        date,
+        paid,
+        cancelled,
+        pending,
+      })
+    );
 
-    data.forEach((item) => {
-      const day = new Date(item.date).toISOString().split("T")[0]; // YYYY-MM-DD
-      if (!grouped[day]) {
-        grouped[day] = { confirmed: 0, cancelled: 0, pending: 0 };
-      }
-      if (item.status === "completed" || item.status === "paid") {
-        grouped[day].confirmed++;
-      } else if (item.status === "cancelled") {
-        grouped[day].cancelled++;
-      } else {
-        grouped[day].pending++;
-      }
-    });
-
-    const result = Object.entries(grouped).map(([date, counts]) => ({
-      date,
-      confirmed: counts.confirmed,
-      cancelled: counts.cancelled,
-      pending: counts.pending,
-    }));
-
-    return NextResponse.json(result);
+    return NextResponse.json(results);
   } catch (error) {
     console.error("🔥 Error fetching promo analytics:", error);
-    return new NextResponse("Server Error", { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch promo analytics" }, { status: 500 });
   }
 }

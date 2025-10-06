@@ -16,7 +16,7 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 interface PromoBookingData {
   date: string
-  confirmed: number
+  paid: number
   cancelled?: number
   pending?: number
 }
@@ -50,7 +50,7 @@ export default function PromoBookingsAnalyticsChart() {
   }, [])
 
   const months = useMemo(
-    () => Array.from(new Set(data.map(d => getMonth(d.date)))),
+    () => Array.from(new Set(data.map((d) => getMonth(d.date)))),
     [data]
   )
 
@@ -58,38 +58,45 @@ export default function PromoBookingsAnalyticsChart() {
     () =>
       selectedMonth === 'All'
         ? data
-        : data.filter(d => getMonth(d.date) === selectedMonth),
+        : data.filter((d) => getMonth(d.date) === selectedMonth),
     [data, selectedMonth]
   )
 
   const bookingStats = useMemo(() => {
-    const totalConfirmed = filteredData.reduce((sum, d) => sum + (d.confirmed || 0), 0)
+    const totalPaid = filteredData.reduce((sum, d) => sum + (d.paid || 0), 0)
     const totalCancelled = filteredData.reduce((sum, d) => sum + (d.cancelled || 0), 0)
     const totalPending = filteredData.reduce((sum, d) => sum + (d.pending || 0), 0)
-    const total = totalConfirmed + totalCancelled + totalPending
+    const total = totalPaid + totalCancelled + totalPending
 
     const prevData =
       selectedMonth === 'All'
         ? []
-        : data.filter(d => getMonth(d.date) !== selectedMonth)
+        : data.filter((d) => getMonth(d.date) !== selectedMonth)
 
     const prevTotal = prevData.reduce(
-      (sum, d) => sum + (d.confirmed || 0) + (d.cancelled || 0) + (d.pending || 0),
+      (sum, d) => sum + (d.paid || 0) + (d.cancelled || 0) + (d.pending || 0),
       0
     )
+
     const growth = prevTotal
       ? Math.round(((total - prevTotal) / prevTotal) * 100)
       : 0
 
-    return { total, totalConfirmed, totalCancelled, totalPending, growth }
+    return { total, totalPaid, totalCancelled, totalPending, growth }
   }, [data, filteredData, selectedMonth])
 
-  if (loading) return <p className="text-center text-gray-600 mt-10">Loading promo booking chart...</p>
-  if (error) return <p className="text-center text-red-500 mt-10">{error}</p>
+  if (loading)
+    return (
+      <p className="text-center text-gray-600 mt-10">
+        Loading promo booking chart...
+      </p>
+    )
+  if (error)
+    return <p className="text-center text-red-500 mt-10">{error}</p>
 
   // Chart.js config
   const chartData = {
-    labels: filteredData.map(d =>
+    labels: filteredData.map((d) =>
       new Date(d.date).toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -97,22 +104,22 @@ export default function PromoBookingsAnalyticsChart() {
     ),
     datasets: [
       {
-        label: 'Confirmed',
-        data: filteredData.map(d => d.confirmed),
-        backgroundColor: 'rgba(220, 38, 38, 0.8)', // red-600
+        label: 'Paid',
+        data: filteredData.map((d) => d.paid),
+        backgroundColor: 'rgba(59, 130, 246, 0.8)', // blue-500
         stack: 'promos',
         borderRadius: 6,
       },
       {
         label: 'Cancelled',
-        data: filteredData.map(d => d.cancelled ?? 0),
-        backgroundColor: 'rgba(107, 114, 128, 0.8)', // gray-500
+        data: filteredData.map((d) => d.cancelled ?? 0),
+        backgroundColor: 'rgba(239, 68, 68, 0.8)', // red-500
         stack: 'promos',
         borderRadius: 6,
       },
       {
         label: 'Pending',
-        data: filteredData.map(d => d.pending ?? 0),
+        data: filteredData.map((d) => d.pending ?? 0),
         backgroundColor: 'rgba(249, 115, 22, 0.8)', // orange-500
         stack: 'promos',
         borderRadius: 6,
@@ -128,8 +135,8 @@ export default function PromoBookingsAnalyticsChart() {
       tooltip: { mode: 'index' as const, intersect: false },
     },
     scales: {
-      x: { stacked: true, grid: { color: '#fef2f2' } }, // red-50
-      y: { stacked: true, beginAtZero: true, grid: { color: '#fee2e2' } }, // red-100
+      x: { stacked: true, grid: { color: '#fef2f2' } },
+      y: { stacked: true, beginAtZero: true, grid: { color: '#fee2e2' } },
     },
   }
 
@@ -137,17 +144,19 @@ export default function PromoBookingsAnalyticsChart() {
     bookingStats.total ? ((value / bookingStats.total) * 100).toFixed(1) : '0.0'
 
   return (
-    <div className="mt-10 p-8 rounded-xl bg-gradient-to-br from-red-50 via-white to-orange-50 shadow-lg">
+    <div className="mt-10 p-8 rounded-xl bg-gradient-to-br from-orange-50 via-white to-red-50 shadow-lg">
       {/* Header + Filter */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-red-800">Promo Booking Trends</h2>
+        <h2 className="text-2xl font-bold text-orange-800">
+          Promo Booking Trends
+        </h2>
         <select
           value={selectedMonth}
-          onChange={e => setSelectedMonth(e.target.value)}
-          className="border border-red-300 text-red-900 px-3 py-1 rounded-lg shadow-sm focus:outline-none"
+          onChange={(e) => setSelectedMonth(e.target.value)}
+          className="border border-orange-300 text-orange-900 px-3 py-1 rounded-lg shadow-sm focus:outline-none"
         >
           <option value="All">All Months</option>
-          {months.map(month => (
+          {months.map((month) => (
             <option key={month} value={month}>
               {month}
             </option>
@@ -156,23 +165,36 @@ export default function PromoBookingsAnalyticsChart() {
       </div>
 
       {/* Descriptive Summary */}
-      <div className="bg-white border border-red-100 rounded-md px-4 py-2 mb-4 shadow-sm text-sm text-gray-700">
+      <div className="bg-white border border-orange-100 rounded-md px-4 py-2 mb-4 shadow-sm text-sm text-gray-700">
         {selectedMonth !== 'All' ? (
           <p>
-            In <span className="font-semibold text-red-700">{selectedMonth}</span>, there were{' '}
-            <span className="font-bold">{bookingStats.total}</span> total promo bookings (
-            <span className="text-red-600">{bookingStats.totalConfirmed} confirmed</span>,{' '}
-            <span className="text-gray-600">{bookingStats.totalCancelled} cancelled</span>,{' '}
-            <span className="text-orange-600">{bookingStats.totalPending} pending</span>). Compared
-            to the previous period,{' '}
+            In{' '}
+            <span className="font-semibold text-orange-700">
+              {selectedMonth}
+            </span>
+            , there were{' '}
+            <span className="font-bold">{bookingStats.total}</span> total promo
+            bookings (
+            <span className="text-blue-600">{bookingStats.totalPaid} paid</span>
+            ,{' '}
+            <span className="text-red-600">
+              {bookingStats.totalCancelled} cancelled
+            </span>
+            ,{' '}
+            <span className="text-orange-600">
+              {bookingStats.totalPending} pending
+            </span>
+            ). Compared to the previous period,{' '}
             {bookingStats.growth >= 0
               ? `bookings increased by ${bookingStats.growth}%`
-              : `bookings decreased by ${Math.abs(bookingStats.growth)}%`}.
+              : `bookings decreased by ${Math.abs(bookingStats.growth)}%`}
+            .
           </p>
         ) : (
           <p>
-            This chart displays promo booking trends over time, stacked by status. Use the filter
-            above to explore changes month by month and identify growth patterns.
+            This chart displays promo booking trends over time, stacked by
+            status. Use the month filter above to explore changes and identify
+            growth patterns.
           </p>
         )}
       </div>
@@ -186,19 +208,21 @@ export default function PromoBookingsAnalyticsChart() {
       <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-gray-700">
         <div className="p-4 bg-white rounded-lg shadow-sm border">
           <p className="font-semibold text-gray-600">Total Promo Bookings</p>
-          <p className="text-xl font-bold text-red-700">{bookingStats.total}</p>
+          <p className="text-xl font-bold text-orange-700">
+            {bookingStats.total}
+          </p>
         </div>
 
-        {/* Confirmed */}
+        {/* Paid */}
         <div className="p-4 bg-white rounded-lg shadow-sm border">
-          <p className="font-semibold text-gray-600">Confirmed</p>
-          <p className="text-lg font-bold text-red-600">
-            {bookingStats.totalConfirmed} ({getPercentage(bookingStats.totalConfirmed)}%)
+          <p className="font-semibold text-gray-600">Paid</p>
+          <p className="text-lg font-bold text-blue-600">
+            {bookingStats.totalPaid} ({getPercentage(bookingStats.totalPaid)}%)
           </p>
           <div className="w-full bg-gray-100 rounded-full h-2 mt-2">
             <div
-              className="bg-red-500 h-2 rounded-full"
-              style={{ width: `${getPercentage(bookingStats.totalConfirmed)}%` }}
+              className="bg-blue-500 h-2 rounded-full"
+              style={{ width: `${getPercentage(bookingStats.totalPaid)}%` }}
             ></div>
           </div>
         </div>
@@ -206,12 +230,13 @@ export default function PromoBookingsAnalyticsChart() {
         {/* Cancelled */}
         <div className="p-4 bg-white rounded-lg shadow-sm border">
           <p className="font-semibold text-gray-600">Cancelled</p>
-          <p className="text-lg font-bold text-gray-600">
-            {bookingStats.totalCancelled} ({getPercentage(bookingStats.totalCancelled)}%)
+          <p className="text-lg font-bold text-red-600">
+            {bookingStats.totalCancelled} (
+            {getPercentage(bookingStats.totalCancelled)}%)
           </p>
           <div className="w-full bg-gray-100 rounded-full h-2 mt-2">
             <div
-              className="bg-gray-500 h-2 rounded-full"
+              className="bg-red-500 h-2 rounded-full"
               style={{ width: `${getPercentage(bookingStats.totalCancelled)}%` }}
             ></div>
           </div>
@@ -221,7 +246,8 @@ export default function PromoBookingsAnalyticsChart() {
         <div className="p-4 bg-white rounded-lg shadow-sm border">
           <p className="font-semibold text-gray-600">Pending</p>
           <p className="text-lg font-bold text-orange-600">
-            {bookingStats.totalPending} ({getPercentage(bookingStats.totalPending)}%)
+            {bookingStats.totalPending} (
+            {getPercentage(bookingStats.totalPending)}%)
           </p>
           <div className="w-full bg-gray-100 rounded-full h-2 mt-2">
             <div

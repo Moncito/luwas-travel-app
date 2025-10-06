@@ -16,7 +16,7 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 interface BookingData {
   date: string
-  confirmed: number
+  paid: number
   cancelled?: number
   pending?: number
 }
@@ -62,10 +62,10 @@ export default function BookingsAnalyticsChart() {
   )
 
   const bookingStats = useMemo(() => {
-    const totalConfirmed = filteredData.reduce((sum, d) => sum + (d.confirmed || 0), 0)
+    const totalPaid = filteredData.reduce((sum, d) => sum + (d.paid || 0), 0)
     const totalCancelled = filteredData.reduce((sum, d) => sum + (d.cancelled || 0), 0)
     const totalPending = filteredData.reduce((sum, d) => sum + (d.pending || 0), 0)
-    const total = totalConfirmed + totalCancelled + totalPending
+    const total = totalPaid + totalCancelled + totalPending
 
     const prevData =
       selectedMonth === 'All'
@@ -73,14 +73,14 @@ export default function BookingsAnalyticsChart() {
         : data.filter(d => getMonth(d.date) !== selectedMonth)
 
     const prevTotal = prevData.reduce(
-      (sum, d) => sum + (d.confirmed || 0) + (d.cancelled || 0) + (d.pending || 0),
+      (sum, d) => sum + (d.paid || 0) + (d.cancelled || 0) + (d.pending || 0),
       0
     )
     const growth = prevTotal
       ? Math.round(((total - prevTotal) / prevTotal) * 100)
       : 0
 
-    return { total, totalConfirmed, totalCancelled, totalPending, growth }
+    return { total, totalPaid, totalCancelled, totalPending, growth }
   }, [data, filteredData, selectedMonth])
 
   if (loading) return <p className="text-center text-gray-600 mt-10">Loading booking chart...</p>
@@ -95,8 +95,8 @@ export default function BookingsAnalyticsChart() {
     ),
     datasets: [
       {
-        label: 'Confirmed',
-        data: filteredData.map(d => d.confirmed ?? 0),
+        label: 'Paid',
+        data: filteredData.map(d => d.paid ?? 0),
         backgroundColor: 'rgba(16, 185, 129, 0.8)',
         stack: 'bookings',
         borderRadius: 6,
@@ -159,7 +159,7 @@ export default function BookingsAnalyticsChart() {
           <p>
             In <span className="font-semibold text-green-700">{selectedMonth}</span>, there were{' '}
             <span className="font-bold">{bookingStats.total}</span> total bookings (
-            <span className="text-green-600">{bookingStats.totalConfirmed} confirmed</span>,{' '}
+            <span className="text-green-600">{bookingStats.totalPaid} paid</span>,{' '}
             <span className="text-red-600">{bookingStats.totalCancelled} cancelled</span>,{' '}
             <span className="text-yellow-600">{bookingStats.totalPending} pending</span>). Compared
             to the previous period,{' '}
@@ -184,37 +184,27 @@ export default function BookingsAnalyticsChart() {
       <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-gray-700">
         <div className="p-4 bg-white rounded-lg shadow-sm border">
           <p className="font-semibold text-gray-600">Total Bookings</p>
-          <p className="text-xl font-bold text-green-700">
-            {typeof bookingStats.total === 'number' && !isNaN(bookingStats.total)
-              ? bookingStats.total
-              : 0}
-          </p>
+          <p className="text-xl font-bold text-green-700">{bookingStats.total}</p>
         </div>
 
         <div className="p-4 bg-white rounded-lg shadow-sm border">
-          <p className="font-semibold text-gray-600">Confirmed</p>
+          <p className="font-semibold text-gray-600">Paid</p>
           <p className="text-lg font-bold text-green-600">
-            {typeof bookingStats.totalConfirmed === 'number' && !isNaN(bookingStats.totalConfirmed)
-              ? `${bookingStats.totalConfirmed} (${getPercentage(bookingStats.totalConfirmed)}%)`
-              : '0 (0.0%)'}
+            {`${bookingStats.totalPaid} (${getPercentage(bookingStats.totalPaid)}%)`}
           </p>
         </div>
 
         <div className="p-4 bg-white rounded-lg shadow-sm border">
           <p className="font-semibold text-gray-600">Cancelled</p>
           <p className="text-lg font-bold text-red-600">
-            {typeof bookingStats.totalCancelled === 'number' && !isNaN(bookingStats.totalCancelled)
-              ? `${bookingStats.totalCancelled} (${getPercentage(bookingStats.totalCancelled)}%)`
-              : '0 (0.0%)'}
+            {`${bookingStats.totalCancelled} (${getPercentage(bookingStats.totalCancelled)}%)`}
           </p>
         </div>
 
         <div className="p-4 bg-white rounded-lg shadow-sm border">
           <p className="font-semibold text-gray-600">Pending</p>
           <p className="text-lg font-bold text-yellow-600">
-            {typeof bookingStats.totalPending === 'number' && !isNaN(bookingStats.totalPending)
-              ? `${bookingStats.totalPending} (${getPercentage(bookingStats.totalPending)}%)`
-              : '0 (0.0%)'}
+            {`${bookingStats.totalPending} (${getPercentage(bookingStats.totalPending)}%)`}
           </p>
         </div>
       </div>

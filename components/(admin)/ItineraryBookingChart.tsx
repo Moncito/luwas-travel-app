@@ -2,41 +2,24 @@
 
 import { useEffect, useState, useMemo } from "react"
 import { Doughnut } from "react-chartjs-2"
-import {
-  Chart as ChartJS,
-  ArcElement,
-  Tooltip,
-  Legend,
-} from "chart.js"
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js"
 import { CheckCircle, XCircle, Clock, ListChecks } from "lucide-react"
 
 ChartJS.register(ArcElement, Tooltip, Legend)
 
-type Status =
-  | "upcoming"
-  | "completed"
-  | "cancelled"
-  | "paid"
-  | "waiting_payment"
-  | "awaiting_approval"
-
 interface ItineraryBooking {
-  id: string
-  status: Status | string
-  createdAt: string | null
+  date: string
+  paid: number
+  cancelled?: number
+  pending?: number
 }
 
-function getMonth(raw: ItineraryBooking["createdAt"]): string {
-  try {
-    if (!raw) return "Unknown"
-    return new Date(raw).toLocaleString("default", { month: "long" })
-  } catch {
-    return "Unknown"
-  }
+function getMonth(dateStr: string): string {
+  return new Date(dateStr).toLocaleString("default", { month: "long" })
 }
 
 export default function ItineraryBookingsDonut() {
-  const [rows, setRows] = useState<ItineraryBooking[]>([])
+  const [data, setData] = useState<ItineraryBooking[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedMonth, setSelectedMonth] = useState("All")
@@ -45,12 +28,12 @@ export default function ItineraryBookingsDonut() {
     async function fetchData() {
       try {
         const res = await fetch("/api/analytics/itinerary-bookings")
-        if (!res.ok) throw new Error("Failed to fetch itinerary bookings")
-        const json: ItineraryBooking[] = await res.json()
-        setRows(json)
+        if (!res.ok) throw new Error("Failed to fetch itinerary analytics")
+        const json = await res.json()
+        setData(json)
       } catch (err) {
         console.error(err)
-        setError("Could not load itinerary bookings")
+        setError("Could not load itinerary analytics")
       } finally {
         setLoading(false)
       }
@@ -59,65 +42,50 @@ export default function ItineraryBookingsDonut() {
   }, [])
 
   const months = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          rows
-            .map((r) => getMonth(r.createdAt))
-            .filter((m) => m && m !== "Unknown")
-        )
-      ),
-    [rows]
+    () => Array.from(new Set(data.map((d) => getMonth(d.date)))),
+    [data]
   )
 
   const filtered = useMemo(
     () =>
       selectedMonth === "All"
-        ? rows
-        : rows.filter((r) => getMonth(r.createdAt) === selectedMonth),
-    [rows, selectedMonth]
+        ? data
+        : data.filter((d) => getMonth(d.date) === selectedMonth),
+    [data, selectedMonth]
   )
 
   const stats = useMemo(() => {
-    const isPending = (s: string) =>
-      s === "upcoming" || s === "waiting_payment" || s === "awaiting_approval"
-
-    const confirmed = filtered.filter(
-      (r) => r.status === "paid" || r.status === "completed"
-    ).length
-
-    const cancelled = filtered.filter((r) => r.status === "cancelled").length
-    const pending = filtered.filter((r) => isPending(String(r.status))).length
-    const total = confirmed + cancelled + pending
+    const totalPaid = filtered.reduce((sum, d) => sum + (d.paid || 0), 0)
+    const totalCancelled = filtered.reduce((sum, d) => sum + (d.cancelled || 0), 0)
+    const totalPending = filtered.reduce((sum, d) => sum + (d.pending || 0), 0)
+    const total = totalPaid + totalCancelled + totalPending
 
     const prevData =
       selectedMonth === "All"
         ? []
-        : rows.filter((r) => getMonth(r.createdAt) !== selectedMonth)
-    const prevTotal = prevData.length
+        : data.filter((d) => getMonth(d.date) !== selectedMonth)
+    const prevTotal = prevData.reduce(
+      (sum, d) => sum + (d.paid || 0) + (d.cancelled || 0) + (d.pending || 0),
+      0
+    )
+
     const growth = prevTotal
       ? Math.round(((total - prevTotal) / prevTotal) * 100)
       : 0
 
-    return { confirmed, cancelled, pending, total, growth }
-  }, [filtered, rows, selectedMonth])
+    return { totalPaid, totalCancelled, totalPending, total, growth }
+  }, [filtered, data, selectedMonth])
 
   if (loading)
-    return (
-      <p className="text-center text-gray-600 mt-10">
-        Loading itinerary analytics...
-      </p>
-    )
+    return <p className="text-center text-gray-600 mt-10">Loading itinerary analytics...</p>
   if (error)
-    return (
-      <p className="text-center text-red-500 mt-10">{error}</p>
-    )
+    return <p className="text-center text-red-500 mt-10">{error}</p>
 
   const chartData = {
-    labels: ["Confirmed", "Cancelled", "Pending"],
+    labels: ["Paid", "Cancelled", "Pending"],
     datasets: [
       {
-        data: [stats.confirmed, stats.cancelled, stats.pending],
+        data: [stats.totalPaid, stats.totalCancelled, stats.totalPending],
         backgroundColor: ["#10b981", "#ef4444", "#f59e0b"],
         borderColor: ["#fff"],
         borderWidth: 2,
@@ -174,9 +142,7 @@ export default function ItineraryBookingsDonut() {
                 ? "bg-green-500"
                 : color === "text-red-600"
                 ? "bg-red-500"
-                : color === "text-yellow-600"
-                ? "bg-yellow-500"
-                : "bg-purple-500"
+                : "bg-yellow-500"
             }`}
             style={{ width: `${percentage}%` }}
           />
@@ -187,7 +153,6 @@ export default function ItineraryBookingsDonut() {
 
   return (
     <div className="mt-10 p-8 rounded-xl bg-gradient-to-br from-purple-50 via-white to-purple-100 shadow-lg">
-      {/* Header + Filter */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-purple-800">
           Itinerary Bookings Overview
@@ -206,29 +171,15 @@ export default function ItineraryBookingsDonut() {
         </select>
       </div>
 
-      {/* Descriptive Summary */}
       <div className="bg-white border border-purple-100 rounded-md px-4 py-2 mb-6 shadow-sm text-sm text-gray-700">
         {selectedMonth !== "All" ? (
           <p>
-            In{" "}
-            <span className="font-semibold text-purple-700">
-              {selectedMonth}
-            </span>
-            , there were{" "}
-            <span className="font-bold">{stats.total}</span>{" "}
-            itinerary bookings (
-            <span className="text-green-600">
-              {stats.confirmed} confirmed
-            </span>
-            ,{" "}
-            <span className="text-red-600">
-              {stats.cancelled} cancelled
-            </span>
-            ,{" "}
-            <span className="text-yellow-600">
-              {stats.pending} pending
-            </span>
-            ). Compared to the previous period,{" "}
+            In <span className="font-semibold text-purple-700">{selectedMonth}</span>, there were{" "}
+            <span className="font-bold">{stats.total}</span> itinerary bookings (
+            <span className="text-green-600">{stats.totalPaid} paid</span>,{" "}
+            <span className="text-red-600">{stats.totalCancelled} cancelled</span>,{" "}
+            <span className="text-yellow-600">{stats.totalPending} pending</span>). Compared to the
+            previous period,{" "}
             {stats.growth >= 0
               ? `bookings increased by ${stats.growth}%`
               : `bookings decreased by ${Math.abs(stats.growth)}%`}
@@ -236,53 +187,43 @@ export default function ItineraryBookingsDonut() {
           </p>
         ) : (
           <p>
-            This donut chart shows the distribution of itinerary
-            bookings across statuses. Use the month filter for
-            detailed breakdowns.
+            This donut chart shows the distribution of itinerary bookings across statuses. Use the
+            month filter for detailed breakdowns.
           </p>
         )}
       </div>
 
-      {/* Donut Chart */}
       <div className="flex justify-center mb-8">
         <div className="relative w-64 h-64">
           <Doughnut data={chartData} options={options} />
           <div className="absolute inset-0 flex items-center justify-center">
-            <p className="text-xl font-bold text-purple-800">
-              {stats.total} Total
-            </p>
+            <p className="text-xl font-bold text-purple-800">{stats.total} Total</p>
           </div>
         </div>
       </div>
 
-      {/* Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+        <Card title="Total" value={stats.total} color="text-purple-600" icon={ListChecks} />
         <Card
-          title="Total"
-          value={stats.total}
-          color="text-purple-600"
-          icon={ListChecks}
-        />
-        <Card
-          title="Confirmed"
-          value={stats.confirmed}
+          title="Paid"
+          value={stats.totalPaid}
           color="text-green-600"
           icon={CheckCircle}
-          percentage={(stats.confirmed / stats.total) * 100 || 0}
+          percentage={(stats.totalPaid / stats.total) * 100 || 0}
         />
         <Card
           title="Cancelled"
-          value={stats.cancelled}
+          value={stats.totalCancelled}
           color="text-red-600"
           icon={XCircle}
-          percentage={(stats.cancelled / stats.total) * 100 || 0}
+          percentage={(stats.totalCancelled / stats.total) * 100 || 0}
         />
         <Card
           title="Pending"
-          value={stats.pending}
+          value={stats.totalPending}
           color="text-yellow-600"
           icon={Clock}
-          percentage={(stats.pending / stats.total) * 100 || 0}
+          percentage={(stats.totalPending / stats.total) * 100 || 0}
         />
       </div>
     </div>
