@@ -12,26 +12,25 @@ import {
   FacebookAuthProvider,
 } from "firebase/auth";
 import { auth } from "@/firebase/client";
-import { signUp, setSessionCookie, signIn } from "@/lib/actions/auth.action";
+import { signUp, signIn, setSessionCookie } from "@/lib/actions/auth.action";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-
 import FormField from "@/components/FormField";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 
+// ------------------- TYPES & SCHEMA -------------------
 type FormType = "sign-in" | "sign-up";
 
-// ------------------- SCHEMA -------------------
 const authFormSchema = (type: FormType) =>
   z.object({
     name:
       type === "sign-up"
         ? z.string().min(3, "Name must be at least 3 characters")
         : z.string().optional(),
-    email: z.string().email("Enter a valid email"),
+    email: z.string().email("Please enter a valid email address"),
     password: z.string().min(6, "Password must be at least 6 characters"),
   });
 
@@ -51,17 +50,15 @@ const AuthForm = ({ type }: { type: FormType }) => {
     if (!email) return toast.error("Please enter your email first.");
     try {
       await sendPasswordResetEmail(auth, email);
-      toast.success("Password reset email sent.");
+      toast.success("Password reset email sent successfully!");
     } catch {
-      toast.error("Failed to send reset email.");
+      toast.error("Failed to send reset email. Try again later.");
     }
   };
 
   const handleGoogleLogin = async () => {
     try {
       const provider = new GoogleAuthProvider();
-
-      // ✅ Explicitly set clientId for consistency (localhost + Vercel)
       provider.setCustomParameters({
         client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
       });
@@ -69,12 +66,13 @@ const AuthForm = ({ type }: { type: FormType }) => {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
       const idToken = await user.getIdToken();
+
       await setSessionCookie(idToken);
-      toast.success(`Welcome ${user.displayName || "Traveler"}!`);
+      toast.success(`Welcome ${user.displayName || "Traveler"}! 🌍`);
       router.push("/");
-    } catch (error: any) {
-      toast.error("Google login failed.");
-      console.error(error);
+    } catch (error) {
+      toast.error("Google login failed. Please try again.");
+      console.error("Google Login Error:", error);
     }
   };
 
@@ -84,12 +82,13 @@ const AuthForm = ({ type }: { type: FormType }) => {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
       const idToken = await user.getIdToken();
+
       await setSessionCookie(idToken);
-      toast.success(`Welcome ${user.displayName || "Traveler"}!`);
+      toast.success(`Welcome ${user.displayName || "Traveler"}! 🌴`);
       router.push("/");
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Facebook login failed.");
-      console.error(error);
+      console.error("Facebook Login Error:", error);
     }
   };
 
@@ -98,12 +97,8 @@ const AuthForm = ({ type }: { type: FormType }) => {
 
     try {
       if (!isSignIn) {
-        // SIGN-UP
-        const userCred = await createUserWithEmailAndPassword(
-          auth,
-          email,
-          password
-        );
+        // --- SIGN UP ---
+        const userCred = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCred.user;
         const idToken = await user.getIdToken();
 
@@ -113,26 +108,28 @@ const AuthForm = ({ type }: { type: FormType }) => {
         toast.success("Account created successfully!");
         router.push("/");
       } else {
-        // SIGN-IN
+        // --- SIGN IN ---
         const userCred = await signInWithEmailAndPassword(auth, email, password);
         const idToken = await userCred.user.getIdToken();
 
         await signIn({ email, idToken });
 
-        toast.success("Logged in successfully!");
+        toast.success("Welcome back to LUWAS! 🌊");
         router.push("/");
       }
     } catch (error: any) {
       console.error("Auth error:", error);
       switch (error.code) {
         case "auth/email-already-in-use":
-          toast.error("Email is already registered.");
+          toast.error("This email is already registered.");
           break;
         case "auth/invalid-credential":
-          toast.error("Invalid credentials.");
+        case "auth/user-not-found":
+        case "auth/wrong-password":
+          toast.error("Invalid email or password.");
           break;
         default:
-          toast.error("Authentication error. Please try again.");
+          toast.error("Something went wrong. Please try again later.");
       }
     }
   };
@@ -142,7 +139,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
     <div className="flex flex-col gap-6">
       {/* Title */}
       <div className="text-center mb-2">
-        <h2 className="text-2xl font-[var(--font-playfair)] text-white font-bold">
+        <h2 className="text-2xl font-[var(--font-playfair)] text-white font-bold tracking-wide">
           {isSignIn ? "Login with" : "Sign up with"}
         </h2>
         <p className="text-sm text-gray-300 mt-1 font-[var(--font-poppins)]">
@@ -154,21 +151,16 @@ const AuthForm = ({ type }: { type: FormType }) => {
       <div className="flex gap-4">
         <button
           onClick={handleGoogleLogin}
-          className="flex-1 flex items-center justify-center gap-2 bg-white text-gray-900 rounded-xl py-3 font-semibold hover:opacity-90 transition cursor-pointer"
+          className="flex-1 flex items-center justify-center gap-2 bg-white text-gray-900 rounded-xl py-3 font-semibold hover:opacity-90 transition"
         >
           <Image src="/icons/google.svg" alt="Google" width={20} height={20} />
           Google
         </button>
         <button
           onClick={handleFacebookLogin}
-          className="flex-1 flex items-center justify-center gap-2 bg-white text-gray-900 rounded-xl py-3 font-semibold hover:opacity-90 transition cursor-pointer"
+          className="flex-1 flex items-center justify-center gap-2 bg-white text-gray-900 rounded-xl py-3 font-semibold hover:opacity-90 transition"
         >
-          <Image
-            src="/icons/facebook.svg"
-            alt="Facebook"
-            width={20}
-            height={20}
-          />
+          <Image src="/icons/facebook.svg" alt="Facebook" width={20} height={20} />
           Facebook
         </button>
       </div>
@@ -180,37 +172,45 @@ const AuthForm = ({ type }: { type: FormType }) => {
         <div className="h-px bg-white/30 flex-1"></div>
       </div>
 
-      {/* Form */}
+      {/* Email Form */}
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
           {!isSignIn && (
             <FormField
               control={form.control}
               name="name"
-              placeholder="Your name"
-              inputClass="bg-white/20 text-white placeholder-white/70 border border-white/30 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-400"
+              placeholder="Your Name"
+              inputClass="bg-white/15 text-white placeholder-white/70 border border-white/30 
+              rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 
+              focus:border-transparent transition-all duration-200 backdrop-blur-md"
             />
           )}
+
           <FormField
             control={form.control}
             name="email"
-            placeholder="Your Email Address"
+            placeholder="Email Address"
             type="email"
-            inputClass="bg-white/20 text-white placeholder-white/70 border border-white/30 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-400"
+            inputClass="bg-white/15 text-white placeholder-white/70 border border-white/30 
+            rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 
+            focus:border-transparent transition-all duration-200 backdrop-blur-md"
           />
+
           <FormField
             control={form.control}
             name="password"
-            placeholder="Enter your Password"
+            placeholder="Password"
             type="password"
-            inputClass="bg-white/20 text-white placeholder-white/70 border border-white/30 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-400"
+            inputClass="bg-white/15 text-white placeholder-white/70 border border-white/30 
+            rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 
+            focus:border-transparent transition-all duration-200 backdrop-blur-md"
           />
 
           {isSignIn && (
             <div className="text-right">
               <button
                 type="button"
-                className="text-xs text-blue-300 hover:underline cursor-pointer"
+                className="text-xs text-blue-300 hover:underline"
                 onClick={() => handleForgotPassword(form.getValues("email"))}
               >
                 Forgot Password?
@@ -220,19 +220,20 @@ const AuthForm = ({ type }: { type: FormType }) => {
 
           <Button
             type="submit"
-            className="w-full py-3 rounded-xl bg-white text-gray-900 font-semibold tracking-wide hover:bg-gray-100 transition cursor-pointer"
+            className="w-full py-3 rounded-xl bg-white text-gray-900 font-semibold tracking-wide 
+            hover:bg-gray-100 transition cursor-pointer"
           >
             {isSignIn ? "Login" : "Sign up"}
           </Button>
         </form>
       </Form>
 
-      {/* Switch */}
+      {/* Switch Between Forms */}
       <p className="text-center text-sm text-gray-200 mt-4 font-[var(--font-poppins)]">
         {isSignIn ? "No account yet?" : "Already have an account?"}
         <Link
           href={isSignIn ? "/sign-up" : "/sign-in"}
-          className="font-bold text-blue-300 ml-1 hover:underline cursor-pointer"
+          className="font-bold text-blue-300 ml-1 hover:underline"
         >
           {isSignIn ? "Sign up" : "Sign in"}
         </Link>
