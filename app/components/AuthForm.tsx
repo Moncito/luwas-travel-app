@@ -58,7 +58,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
     if (!email) return toast.error("Please enter your email first.");
     try {
       await sendPasswordResetEmail(auth, email);
-      toast.success("Password reset email sent successfully!");
+      toast.success("Password reset email sent successfully! Check Spam Folder on your Gmail Account");
     } catch {
       toast.error("Failed to send reset email. Try again later.");
     }
