@@ -1,27 +1,22 @@
 'use client';
 
 import Lottie from 'lottie-react';
-import planeLoader from './lottie/planeloader.json'; // ✅ Correct path now
+import planeLoader from './lottie/planeloader.json';
 
 const PlaneLottieLoader = () => {
   return (
-    <div className="fixed inset-0 bg-white flex flex-col items-center justify-center z-[9999] transition-opacity duration-700">
-      <Lottie
-        animationData={planeLoader}
-        loop
-        className="w-48 h-48"
-      />
-      <h1 className="mt-4 text-4xl font-extrabold text-black animate-pulse tracking-wider drop-shadow-lg">
-        <span className="animate-[blinker_1.2s_infinite]">LUWAS</span>
+    <div className="fixed inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 via-white to-sky-100 z-[9999] transition-all duration-700">
+      <Lottie animationData={planeLoader} loop className="w-44 h-44 sm:w-56 sm:h-56 drop-shadow-md" />
+
+      <h1 className="mt-6 text-4xl sm:text-5xl font-extrabold text-blue-800 tracking-widest animate-pulse drop-shadow-md">
+        <span className="relative">
+          L<span className="text-sky-500">U</span>WAS
+        </span>
       </h1>
 
-      <style jsx>{`
-        @keyframes blinker {
-          50% {
-            opacity: 0;
-          }
-        }
-      `}</style>
+      <p className="mt-3 text-blue-600 font-semibold text-sm sm:text-base animate-pulse">
+        Traveling beyond borders...
+      </p>
     </div>
   );
 };

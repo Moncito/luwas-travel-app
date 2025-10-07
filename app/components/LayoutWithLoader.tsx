@@ -1,22 +1,26 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
-import PlaneLottieLoader from './PlaneLottieLoader';
-import RouteChangeLoader from './RouteChangeLoader';
 import ScrollToTop from './ScrollToTop';
 import { Toaster } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// ✅ Dynamically import client-only components
+const RouteChangeLoader = dynamic(() => import('@/components/RouteChangeLoader'), { ssr: false });
+const PlaneLottieLoader = dynamic(() => import('./PlaneLottieLoader'), { ssr: false });
 
 export default function LayoutWithLoader({ children }: { children: React.ReactNode }) {
   const [initialLoading, setInitialLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setInitialLoading(false), 2000); // show loader for 2 seconds
+    const timer = setTimeout(() => setInitialLoading(false), 2000);
     return () => clearTimeout(timer);
   }, []);
 
   return (
     <>
+      {/* Loaders are now client-only and safe */}
       <RouteChangeLoader />
       <ScrollToTop />
 
