@@ -1,7 +1,7 @@
 import { db } from "@/firebase/admin";
-import { fetchWeather } from "@/lib/weather";
 import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
+import { fetchWeather } from "@/lib/weather";
 
 interface DestinationData {
   name: string;
@@ -13,80 +13,70 @@ interface DestinationData {
   imageUrl?: string;
 }
 
-// ✅ Create a new booking (fixed)
+// ✅ Handle GET requests
+export async function GET() {
+  try {
+    const snapshot = await db.collection("bookings").orderBy("createdAt", "desc").get();
+
+    const bookings = snapshot.docs.map((doc) => {
+      const data = doc.data();
+
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate
+          ? data.createdAt.toDate().toISOString()
+          : null,
+        updatedAt: data.updatedAt?.toDate
+          ? data.updatedAt.toDate().toISOString()
+          : null,
+      };
+    });
+
+    return NextResponse.json(bookings);
+  } catch (error) {
+    console.error("❌ Error fetching bookings:", error);
+    return NextResponse.json({ error: "Failed to fetch bookings" }, { status: 500 });
+  }
+}
+
+// ✅ Handle POST requests
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-
-    const {
-      userId,
-      destinationId,
-      fullName,
-      email,
-      phone,
-      localAddress,
-      departureDate,
-      returnDate,
-      travelers,
-      specialRequests,
-      totalPrice, // ✅ include from form
-      status,
-    } = body;
+    const { destinationId, departureDate, fullName, email, travelers } = body;
 
     if (!destinationId || !departureDate || !fullName || !email) {
-      return NextResponse.json(
-        { error: "Missing required booking fields" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // ✅ Fetch destination
     const destDoc = await db.collection("destinations").doc(destinationId).get();
     if (!destDoc.exists)
       return NextResponse.json({ error: "Destination not found" }, { status: 404 });
 
     const destData = destDoc.data() as DestinationData;
-    if (!destData?.latitude || !destData?.longitude) {
-      return NextResponse.json(
-        { error: "Destination missing lat/lon" },
-        { status: 400 }
-      );
-    }
 
-    // ✅ Fetch weather data
-    const weather = await fetchWeather(
-      destData.latitude,
-      destData.longitude,
-      departureDate
-    );
+    const weather = await fetchWeather(destData.latitude, destData.longitude, departureDate);
 
-    // ✅ Construct booking object with price and extras
     const newBooking = {
-      userId: userId || null,
       fullName,
       email,
-      phone: phone || "",
-      localAddress: localAddress || "",
-      destination: destData.name ?? "Unknown Destination",
+      destination: destData.name,
+      departureDate,
+      travelers,
       latitude: destData.latitude,
       longitude: destData.longitude,
-      departureDate,
-      returnDate: returnDate || null,
-      travelers: travelers ?? 1,
-      specialRequests: specialRequests || "",
-      totalPrice: totalPrice ?? 0, // ✅ now saved
-      status: status || "pending_payment",
+      status: "upcoming",
       weather,
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     };
 
-    // ✅ Save to Firestore
     const docRef = await db.collection("bookings").add(newBooking);
 
     return NextResponse.json({ id: docRef.id, ...newBooking }, { status: 201 });
-  } catch (err) {
-    console.error("❌ Error creating booking:", err);
+  } catch (error) {
+    console.error("❌ Error creating booking:", error);
     return NextResponse.json({ error: "Failed to create booking" }, { status: 500 });
   }
 }
