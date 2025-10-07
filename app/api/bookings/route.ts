@@ -13,75 +13,77 @@ interface DestinationData {
   imageUrl?: string;
 }
 
-// ✅ Fetch all bookings
-export async function GET() {
-  try {
-    const snapshot = await db.collection("bookings").orderBy("createdAt", "desc").get();
-
-    const bookings = snapshot.docs.map((doc) => {
-      const data = doc.data();
-
-      return {
-        id: doc.id,
-        ...data,
-        // ✅ Ensure proper ISO date format for frontend
-        createdAt: data.createdAt?.toDate
-          ? data.createdAt.toDate().toISOString()
-          : data.createdAt?.seconds
-          ? new Date(data.createdAt.seconds * 1000).toISOString()
-          : null,
-        updatedAt: data.updatedAt?.toDate
-          ? data.updatedAt.toDate().toISOString()
-          : data.updatedAt?.seconds
-          ? new Date(data.updatedAt.seconds * 1000).toISOString()
-          : null,
-      };
-    });
-
-    return NextResponse.json(bookings);
-  } catch (error) {
-    console.error("❌ Error fetching bookings:", error);
-    return NextResponse.json({ error: "Failed to fetch bookings" }, { status: 500 });
-  }
-}
-
-// ✅ Create a new booking
+// ✅ Create a new booking (fixed)
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { destinationId, departureDate, fullName, email, travelers } = body;
 
-    if (!destinationId || !departureDate || !fullName || !email) {
-      return NextResponse.json({ error: "Missing required booking fields" }, { status: 400 });
-    }
-
-    // Fetch destination
-    const destDoc = await db.collection("destinations").doc(destinationId).get();
-    if (!destDoc.exists) return NextResponse.json({ error: "Destination not found" }, { status: 404 });
-
-    const destData = destDoc.data() as DestinationData | undefined;
-    if (!destData?.latitude || !destData?.longitude) {
-      return NextResponse.json({ error: "Destination missing lat/lon" }, { status: 400 });
-    }
-
-    // Fetch weather for departure date
-    const weather = await fetchWeather(destData.latitude, destData.longitude, departureDate);
-
-    const newBooking = {
+    const {
+      userId,
+      destinationId,
       fullName,
       email,
+      phone,
+      localAddress,
+      departureDate,
+      returnDate,
+      travelers,
+      specialRequests,
+      totalPrice, // ✅ include from form
+      status,
+    } = body;
+
+    if (!destinationId || !departureDate || !fullName || !email) {
+      return NextResponse.json(
+        { error: "Missing required booking fields" },
+        { status: 400 }
+      );
+    }
+
+    // ✅ Fetch destination
+    const destDoc = await db.collection("destinations").doc(destinationId).get();
+    if (!destDoc.exists)
+      return NextResponse.json({ error: "Destination not found" }, { status: 404 });
+
+    const destData = destDoc.data() as DestinationData;
+    if (!destData?.latitude || !destData?.longitude) {
+      return NextResponse.json(
+        { error: "Destination missing lat/lon" },
+        { status: 400 }
+      );
+    }
+
+    // ✅ Fetch weather data
+    const weather = await fetchWeather(
+      destData.latitude,
+      destData.longitude,
+      departureDate
+    );
+
+    // ✅ Construct booking object with price and extras
+    const newBooking = {
+      userId: userId || null,
+      fullName,
+      email,
+      phone: phone || "",
+      localAddress: localAddress || "",
       destination: destData.name ?? "Unknown Destination",
       latitude: destData.latitude,
       longitude: destData.longitude,
       departureDate,
+      returnDate: returnDate || null,
       travelers: travelers ?? 1,
-      status: "upcoming", // default status
+      specialRequests: specialRequests || "",
+      totalPrice: totalPrice ?? 0, // ✅ now saved
+      status: status || "pending_payment",
+      weather,
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
-      weather,
     };
 
+    // ✅ Save to Firestore
     const docRef = await db.collection("bookings").add(newBooking);
+
     return NextResponse.json({ id: docRef.id, ...newBooking }, { status: 201 });
   } catch (err) {
     console.error("❌ Error creating booking:", err);
