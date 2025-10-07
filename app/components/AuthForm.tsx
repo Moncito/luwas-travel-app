@@ -11,7 +11,14 @@ import {
   GoogleAuthProvider,
   FacebookAuthProvider,
 } from "firebase/auth";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  serverTimestamp,
+} from "firebase/firestore";
 import { auth } from "@/firebase/client";
+import { db } from "@/lib/firebase";
 import { signUp, signIn, setSessionCookie } from "@/lib/actions/auth.action";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -46,6 +53,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
   });
 
   // ------------------- HANDLERS -------------------
+
   const handleForgotPassword = async (email: string) => {
     if (!email) return toast.error("Please enter your email first.");
     try {
@@ -56,6 +64,31 @@ const AuthForm = ({ type }: { type: FormType }) => {
     }
   };
 
+  // ✅ Shared Firestore user creation logic
+  const ensureUserInFirestore = async (user: any, provider: string) => {
+    try {
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        await setDoc(userRef, {
+          uid: user.uid,
+          name: user.displayName || "Traveler",
+          email: user.email,
+          photoURL: user.photoURL || null,
+          provider,
+          createdAt: serverTimestamp(),
+        });
+        console.log("✅ Firestore user created:", user.email);
+      } else {
+        console.log("🔁 Firestore user already exists:", user.email);
+      }
+    } catch (err) {
+      console.error("🔥 Firestore sync failed:", err);
+    }
+  };
+
+  // 🟦 Google Login
   const handleGoogleLogin = async () => {
     try {
       const provider = new GoogleAuthProvider();
@@ -67,7 +100,9 @@ const AuthForm = ({ type }: { type: FormType }) => {
       const user = result.user;
       const idToken = await user.getIdToken();
 
+      await ensureUserInFirestore(user, "google");
       await setSessionCookie(idToken);
+
       toast.success(`Welcome ${user.displayName || "Traveler"}! 🌍`);
       router.push("/");
     } catch (error) {
@@ -76,6 +111,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
     }
   };
 
+  // 🟦 Facebook Login
   const handleFacebookLogin = async () => {
     try {
       const provider = new FacebookAuthProvider();
@@ -83,7 +119,9 @@ const AuthForm = ({ type }: { type: FormType }) => {
       const user = result.user;
       const idToken = await user.getIdToken();
 
+      await ensureUserInFirestore(user, "facebook");
       await setSessionCookie(idToken);
+
       toast.success(`Welcome ${user.displayName || "Traveler"}! 🌴`);
       router.push("/");
     } catch (error) {
@@ -92,6 +130,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
     }
   };
 
+  // 📨 Email Sign In / Sign Up
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     const { name, email, password } = values;
 
@@ -103,6 +142,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
         const idToken = await user.getIdToken();
 
         await signUp({ uid: user.uid, name: name!, email });
+        await ensureUserInFirestore(user, "email");
         await setSessionCookie(idToken);
 
         toast.success("Account created successfully!");
@@ -113,6 +153,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
         const idToken = await userCred.user.getIdToken();
 
         await signIn({ email, idToken });
+        await ensureUserInFirestore(userCred.user, "email");
 
         toast.success("Welcome back to LUWAS! 🌊");
         router.push("/");
