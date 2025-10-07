@@ -14,6 +14,9 @@ const montserrat = Montserrat({
 export const metadata = {
   title: "Luwas",
   description: "Travel Agency for Filipinos",
+  icons: {
+    icon: '/logo.ico',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
