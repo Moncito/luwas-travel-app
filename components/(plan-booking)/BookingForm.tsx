@@ -31,17 +31,25 @@ interface Destination {
   imageUrl?: string
 }
 
-function IconInput({ icon: Icon, ...props }: any) {
+function IconInput({ icon: Icon, name, type = "Text", ...props }: any) {
   return (
     <div className="relative w-full">
       <Icon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
       <input
         {...props}
-        className="pl-10 pr-4 py-3 w-full rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
+        name={name}
+        type={type}
+        // ✅ Restrict to 11 digits for phone
+        maxLength={name === "phone" ? 11 : undefined}
+        pattern={name === "phone" ? "[0-9]{11}" : undefined}
+        inputMode={name === "phone" ? "numeric" : undefined}
+        className="pl-10 pr-4 py-3 w-full rounded-md border border-gray-300 bg-white 
+                   focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
       />
     </div>
   )
 }
+
 
 export default function BookingForm({ destinationId, user }: Props) {
   const router = useRouter()
