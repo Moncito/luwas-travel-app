@@ -12,10 +12,32 @@ const montserrat = Montserrat({
 });
 
 export const metadata = {
-  title: "Luwas",
-  description: "Travel Agency for Filipinos",
+  title: "Luwas Travel & Tours",
+  description: "Traveling beyond borders — your trusted Filipino travel agency.",
   icons: {
-    icon: '/logo.ico',
+    icon: "/logo.ico",
+  },
+  openGraph: {
+    title: "Luwas Travel & Tours",
+    description: "Discover, plan, and travel with ease through Luwas.",
+    url: "https://luwas-travel.tours",
+    siteName: "Luwas Travel & Tours",
+    images: [
+      {
+        url: "/og-image.png", // ✅ Place this file inside /public
+        width: 1200,
+        height: 630,
+        alt: "Luwas Travel & Tours Preview",
+      },
+    ],
+    locale: "en_PH",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Luwas Travel & Tours",
+    description: "Traveling beyond borders with Luwas.",
+    images: ["/og-image.png"], // ✅ same image for Twitter preview
   },
 };
 
