@@ -9,7 +9,7 @@ import { db, storage } from '@/lib/firebase';
 import { Loader2, Upload, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function DestinationPayPage() {
+export default function PromoPayPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const bookingId = searchParams.get('bookingId');
@@ -37,7 +37,7 @@ export default function DestinationPayPage() {
 
     setLoading(true);
     try {
-      const proofRef = ref(storage, `proofs/destinations/${bookingId}/${file.name}`);
+      const proofRef = ref(storage, `proofs/promos/${bookingId}/${file.name}`);
       const uploadTask = uploadBytesResumable(proofRef, file);
 
       uploadTask.on(
@@ -50,8 +50,9 @@ export default function DestinationPayPage() {
         },
         async () => {
           const proofUrl = await getDownloadURL(uploadTask.snapshot.ref);
-          const bookingRef = doc(db, 'itineraryBookings', bookingId);
 
+          // ✅ Correct Firestore collection here
+          const bookingRef = doc(db, 'promoBookings', bookingId);
 
           await updateDoc(bookingRef, {
             proofUrl,
@@ -65,7 +66,7 @@ export default function DestinationPayPage() {
           });
 
           toast.success('Proof uploaded successfully!');
-          router.push(`/booking-success?type=destination&title=${encodeURIComponent(title)}`);
+          router.push(`/booking-success?type=promo&title=${encodeURIComponent(title)}`);
         }
       );
     } catch (err) {
@@ -80,6 +81,7 @@ export default function DestinationPayPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-orange-50 px-4 py-12">
       <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-lg">
+        {/* Header */}
         <div className="text-center mb-8">
           <CreditCard className="w-12 h-12 text-blue-700 mx-auto mb-3" />
           <h1 className="text-2xl font-extrabold text-blue-900">Complete Your Payment</h1>
@@ -88,15 +90,18 @@ export default function DestinationPayPage() {
           </p>
         </div>
 
+        {/* QR Section */}
         <div className="flex flex-col items-center mb-6">
           <div className="p-3 border rounded-lg shadow-sm bg-gray-50">
             <img src="/images/gcash-qr.jpeg" alt="GCash QR" className="w-48 h-48 object-contain" />
           </div>
           <p className="mt-3 text-sm text-gray-700">
-            Send payment to: <span className="font-semibold text-blue-800">0977-698-0768</span>
+            Send payment to:{' '}
+            <span className="font-semibold text-blue-800">0977-698-0768</span>
           </p>
         </div>
 
+        {/* File Upload */}
         <div className="mb-6">
           <label className="block text-gray-800 font-medium mb-2">
             Upload Proof of Payment
@@ -112,6 +117,7 @@ export default function DestinationPayPage() {
           />
         </div>
 
+        {/* Submit Button */}
         <button
           onClick={handleUpload}
           disabled={loading || !file}
