@@ -96,7 +96,7 @@ export default function AdminNavbar() {
                 size="sm"
                 className={cn(
                   'flex items-center gap-1.5 text-xs font-medium',
-                  pathname.includes('/add') || pathname.includes('/itineraries')
+                  pathname.includes('') || pathname.includes('/itineraries')
                     ? 'text-blue-700'
                     : 'text-gray-600 hover:text-blue-600'
                 )}
@@ -114,7 +114,7 @@ export default function AdminNavbar() {
                 <Link href="/admin/add-promo">Promo</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/admin/itineraries/add">Itinerary</Link>
+                <Link href="/admin/itineraries">Itinerary</Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
