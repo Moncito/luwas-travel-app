@@ -130,7 +130,7 @@ export default function EditDestinationPage() {
         price: Number(formData.price),
       });
       toast.success("✅ Destination updated!");
-      router.push("/admin/destinations");
+      router.push("/admin/trips");
     } catch (err) {
       console.error(err);
       toast.error("❌ Update failed");
