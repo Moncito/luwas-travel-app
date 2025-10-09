@@ -116,9 +116,12 @@ export default async function PromoDetailPage({
           <div className="lg:col-span-2 space-y-10">
             {/* Description & Pricing */}
             <div className="text-center lg:text-left">
-              <p className="text-lg leading-relaxed text-gray-700">
-                {promo.description}
-              </p>
+              <p
+              className="text-lg text-gray-700 leading-relaxed whitespace-pre-line max-w-prose mx-auto lg:mx-0"
+            >
+              {promo.description}
+            </p>
+
 
               <div className="mt-6 flex flex-wrap justify-center lg:justify-start items-center gap-4">
                 {promo.price > promo.finalPrice && (

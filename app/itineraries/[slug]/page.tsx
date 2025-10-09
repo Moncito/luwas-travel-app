@@ -85,9 +85,12 @@ export default async function ItineraryPage({
           <div className="lg:col-span-2 space-y-12">
             {/* Description */}
             <div className="text-center lg:text-left">
-              <p className="text-lg text-gray-700 leading-relaxed">
-                {itinerary.description}
-              </p>
+              <p
+  className="text-lg text-gray-700 leading-relaxed whitespace-pre-line max-w-prose mx-auto lg:mx-0"
+>
+  {itinerary.description}
+</p>
+
               <p className="mt-4 text-2xl font-semibold text-blue-800">
                 ₱{itinerary.price?.toLocaleString()} per person
               </p>

@@ -1,3 +1,4 @@
+// File: app/destinations/[id]/page.tsx
 import { notFound } from "next/navigation";
 import { db } from "@/firebase/admin";
 import Image from "next/image";
@@ -10,8 +11,6 @@ import WeatherInsights from "@/components/(map-reviews)/WeatherInsights";
 import RecommendedPlacesForDestinations from "@/components/(map-reviews)/RecommendedPlacesForDestinations";
 import AnimatedHero from "@/components/(itineraries)/AnimatedHero";
 import { extractYelpName } from "@/lib/utils/yelpHelper";
-
-
 
 interface Destination {
   name: string;
@@ -59,7 +58,7 @@ export default async function DestinationPage({
   const isDev = process.env.NODE_ENV !== "production";
   const baseUrl = isDev
     ? "http://localhost:3000"
-    : process.env.NEXT_PUBLIC_SITE_URL || "https://luwas-travel.vercel.app";
+    : process.env.NEXT_PUBLIC_SITE_URL || "https://luwas-travel.tours";
 
   let recommendedPlaces: Place[] = [];
   try {
@@ -82,31 +81,33 @@ export default async function DestinationPage({
     <>
       <Navbar />
 
-      <main className="min-h-screen bg-white text-black">
-        {/* Hero with animation */}
+      <main className="min-h-screen bg-white text-gray-900">
+        {/* 🌅 Hero Section */}
         <AnimatedHero
           image={destination.imageUrl}
           title={destination.name}
           location={destination.location}
         />
 
-        {/* Content Grid */}
-        <section className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-3 gap-10">
+        {/* 📖 Main Content Section */}
+        <section className="max-w-7xl mx-auto px-6 py-20 grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-12">
           {/* LEFT COLUMN */}
-          <div className="lg:col-span-2 space-y-12">
-            {/* Description + Tags */}
+          <div className="space-y-12">
+            {/* Destination Description */}
             <div className="text-center lg:text-left">
-              <p className="text-lg text-gray-700 leading-relaxed">
-                {destination.description}
-              </p>
+              <p
+              className="text-lg text-gray-700 leading-relaxed whitespace-pre-line max-w-prose mx-auto lg:mx-0"
+            >
+              {destination.description}
+            </p>
 
               {/* Tags */}
               {destination.tags.length > 0 && (
-                <div className="flex flex-wrap justify-center lg:justify-start gap-2 mt-4">
+                <div className="flex flex-wrap justify-center lg:justify-start gap-2 mt-5">
                   {destination.tags.map((tag, i) => (
                     <span
                       key={i}
-                      className="bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full"
+                      className="bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full hover:bg-blue-700 hover:text-white transition"
                     >
                       {tag}
                     </span>
@@ -114,35 +115,39 @@ export default async function DestinationPage({
                 </div>
               )}
 
-              {/* Price + Booking */}
-              <p className="mt-6 text-2xl font-semibold text-blue-800">
-                ₱{destination.price.toLocaleString()} per person
-              </p>
-              <div className="mt-4">
+              {/* Price and Booking Button */}
+              <div className="mt-8 space-y-3">
+                <p className="text-2xl font-semibold text-blue-800">
+                  ₱{destination.price.toLocaleString()} per person
+                </p>
                 <Link
                   href={`/destinations/${destinationId}/book`}
-                  className="inline-block bg-blue-700 text-white px-6 py-3 rounded-full hover:bg-white hover:text-blue-700 border border-blue-700 transition"
+                  className="inline-block bg-blue-700 text-white px-8 py-3 rounded-full font-medium hover:bg-white hover:text-blue-700 border border-blue-700 transition"
                 >
                   Book This Destination
                 </Link>
               </div>
             </div>
 
-          {/* Traveler Reviews */}
-          <div className="bg-gray-50 p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-bold mb-6">Traveler Reviews</h2>
-            <div className="space-y-6">
+            {/* Traveler Reviews */}
+            <div className="bg-gray-50 p-6 rounded-xl shadow-sm border border-gray-100">
+              <h2 className="text-xl font-bold mb-6 text-gray-800">
+                Traveler Reviews
+              </h2>
               <YelpSummary
-                name={extractYelpName(destination.name, destination.location ?? "")}
+                name={extractYelpName(
+                  destination.name,
+                  destination.location ?? ""
+                )}
                 location={destination.location ?? "Philippines"}
               />
             </div>
-          </div>
-
 
             {/* Recommended Places */}
-            <div className="bg-gray-50 p-4 rounded-lg shadow-md">
-              <h2 className="text-lg font-bold mb-3">Nearby Spots</h2>
+            <div className="bg-gray-50 p-6 rounded-xl shadow-sm border border-gray-100">
+              <h2 className="text-xl font-bold mb-4 text-gray-800">
+                Nearby Spots
+              </h2>
               <RecommendedPlacesForDestinations
                 destination={destination.name}
                 places={recommendedPlaces}
@@ -151,10 +156,10 @@ export default async function DestinationPage({
           </div>
 
           {/* RIGHT SIDEBAR */}
-          <aside className="space-y-8 lg:sticky lg:top-20 self-start">
-            {/* Map */}
+          <aside className="space-y-8 lg:sticky lg:top-24 self-start">
+            {/* Location Map */}
             {destination.latitude && destination.longitude && (
-              <div className="bg-gray-50 p-4 rounded-lg shadow-md">
+              <div className="bg-gray-50 p-6 rounded-xl shadow-sm border border-gray-100">
                 <h2 className="text-lg font-bold mb-3">Location</h2>
                 <DestinationMapClientWrapper
                   lat={destination.latitude}
@@ -163,8 +168,8 @@ export default async function DestinationPage({
               </div>
             )}
 
-            {/* Weather */}
-            <div className="bg-gray-50 p-4 rounded-lg shadow-md">
+            {/* Weather Insights */}
+            <div className="bg-gray-50 p-6 rounded-xl shadow-sm border border-gray-100">
               <h2 className="text-lg font-bold mb-3">Weather Insights</h2>
               <WeatherInsights
                 title={destination.name}
