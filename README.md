@@ -44,7 +44,7 @@ It supports multi-device access (web and mobile) and includes an administrative 
 | **Payments** | PayMongo, QRPH Integration |
 | **Email Services** | Resend (Transactional Emails) |
 | **File Uploads** | UploadThing, Imgur |
-| **Mobile Application** | React Native (Firebase Integration) - Check my Another Repository Called luwas-mobile |
+| **Mobile Application** | React Native (Firebase Integration) - See separate repository: **luwas-mobile** |
 | **Analytics and Visualization** | Recharts, Firestore Aggregations |
 | **Notifications** | Twilio (SMS Messaging) |
 
@@ -60,7 +60,7 @@ It supports multi-device access (web and mobile) and includes an administrative 
 
 ---
 
-## Suggested Screenshots
+## Flow
 
 | Page | Description |
 |------|--------------|
@@ -80,34 +80,24 @@ It supports multi-device access (web and mobile) and includes an administrative 
 git clone https://github.com/moncitohernandez/luwas-travel.git
 cd luwas-travel
 
-npm install
-# or
-yarn install
+```
 
-Developer Information
+## Mobile Version
+
+The mobile version of Luwas is developed using React Native with Firebase integration.
+It shares the same backend and authentication system as the web version, allowing seamless synchronization between devices.
+
+Repository: github.com/moncitohernandez/luwas-mobile
+
+--- 
+
+## Developer Information
 
 Moncito Glenn N. Hernandez
 Bachelor of Science in Information Technology
 National University – Manila
 
-Project: Luwas: A Mobile and Web Travel Management System with Descriptive Analytics
-
-GitHub: github.com/moncitohernandez
-
-Future Enhancements
-
-AI-powered itinerary planner based on weather, budget, and user preferences
-
-Offline mobile support with local data caching
-
-Community-based review aggregation and map clustering
-
-Integrated chatbot for booking assistance
-
-Predictive travel recommendations using analytics and weather data
-
-License
+## License
 
 This project is licensed under the MIT License.
 It is free to use, modify, and distribute for educational and non-commercial purposes.
-
