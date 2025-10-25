@@ -44,7 +44,7 @@ It supports multi-device access (web and mobile) and includes an administrative 
 | **Payments** | PayMongo, QRPH Integration |
 | **Email Services** | Resend (Transactional Emails) |
 | **File Uploads** | UploadThing, Imgur |
-| **Mobile Application** | Flutter (Firebase Integration) |
+| **Mobile Application** | React Native (Firebase Integration) - Check my Another Repository Called luwas-mobile |
 | **Analytics and Visualization** | Recharts, Firestore Aggregations |
 | **Notifications** | Twilio (SMS Messaging) |
 
