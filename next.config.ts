@@ -5,7 +5,6 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   typescript: {
-    // Safe for temporary build passes, but disable later in production
     ignoreBuildErrors: true,
   },
   images: {
@@ -23,7 +22,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      bodySizeLimit: "2mb", // slightly increased for image payloads
+      bodySizeLimit: "2mb",
       allowedOrigins: ["*"],
     },
   },

@@ -5,7 +5,8 @@ import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/firebase/client";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
-import { MapPin, UploadCloud } from "lucide-react";
+import Link from "next/link";
+import { MapPin, UploadCloud, Compass, Plane, PlusCircle } from "lucide-react";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 const storage = getStorage();
@@ -16,14 +17,14 @@ export default function AddDestinationPanel() {
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
-  const [price, setPrice] = useState("");
+  const [bestSeason, setBestSeason] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  // 🔼 Handle file upload to Firebase Storage
+  // 🔼 Handle image upload
   const handleFileUpload = async (file: File) => {
     try {
       setUploading(true);
@@ -40,12 +41,13 @@ export default function AddDestinationPanel() {
     }
   };
 
+  // 🧾 Handle form submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    if (!name || !location || !description || !tags || !price || !imageUrl || latitude === null || longitude === null) {
-      toast.error("⚠️ Please fill out all fields and select a location on the map.");
+    if (!name || !location || !description || !tags || !imageUrl || latitude === null || longitude === null) {
+      toast.error("⚠️ Please fill out all required fields and select a map location.");
       setLoading(false);
       return;
     }
@@ -56,8 +58,8 @@ export default function AddDestinationPanel() {
         location,
         description,
         tags: tags.split(",").map((tag) => tag.trim()),
-        price: Number(price),
         imageUrl,
+        bestSeason,
         latitude,
         longitude,
         createdAt: serverTimestamp(),
@@ -68,7 +70,7 @@ export default function AddDestinationPanel() {
       setLocation("");
       setDescription("");
       setTags("");
-      setPrice("");
+      setBestSeason("");
       setImageUrl("");
       setLatitude(null);
       setLongitude(null);
@@ -82,13 +84,16 @@ export default function AddDestinationPanel() {
 
   return (
     <div className="bg-white p-8 rounded-2xl shadow-lg max-w-6xl mx-auto">
+      {/* Header */}
       <h2 className="text-2xl font-bold text-blue-700 mb-8 flex items-center gap-2">
         <MapPin className="h-6 w-6 text-blue-600" /> Add New Destination
       </h2>
 
+      {/* Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left Column - Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Basic Info */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <input
               className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500"
@@ -106,7 +111,34 @@ export default function AddDestinationPanel() {
             />
           </div>
 
-          {/* Drag & Drop Upload */}
+          {/* Tags + Best Season */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <input
+              className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500"
+              placeholder="Tags (comma-separated)"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              required
+            />
+            <input
+              className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500"
+              placeholder="Best Season to Visit (e.g. Dec–Apr)"
+              value={bestSeason}
+              onChange={(e) => setBestSeason(e.target.value)}
+            />
+          </div>
+
+          {/* Description */}
+          <textarea
+            className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-500"
+            placeholder="Description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+            required
+          />
+
+          {/* Image Upload */}
           <div
             className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 transition"
             onDragOver={(e) => e.preventDefault()}
@@ -143,34 +175,7 @@ export default function AddDestinationPanel() {
             )}
           </div>
 
-          <input
-            className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500"
-            placeholder="Tags (comma-separated)"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-            required
-          />
-
-          <input
-            className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500"
-            placeholder="Price"
-            type="number"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            required
-            min="0.01"
-            step="0.01"
-          />
-
-          <textarea
-            className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-500"
-            placeholder="Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={4}
-            required
-          />
-
+          {/* Buttons */}
           <div className="flex justify-end gap-4 pt-2">
             <button
               type="button"
@@ -179,7 +184,7 @@ export default function AddDestinationPanel() {
                 setLocation("");
                 setDescription("");
                 setTags("");
-                setPrice("");
+                setBestSeason("");
                 setImageUrl("");
                 setLatitude(null);
                 setLongitude(null);
@@ -233,24 +238,55 @@ export default function AddDestinationPanel() {
             <p className="mt-2 text-gray-600 line-clamp-3">
               {description || "Destination description will appear here."}
             </p>
-            <div className="flex justify-between items-center mt-4">
-              <span className="text-blue-600 font-semibold">
-                {price ? `₱${price}` : "₱0.00"}
-              </span>
-              <div className="flex gap-2 flex-wrap">
-                {tags
-                  ? tags.split(",").map((tag, i) => (
-                      <span
-                        key={i}
-                        className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full"
-                      >
-                        {tag.trim()}
-                      </span>
-                    ))
-                  : <span className="text-gray-400 text-xs">#tags</span>}
-              </div>
+            <div className="flex flex-wrap gap-2 mt-3">
+              {tags
+                ? tags.split(",").map((tag, i) => (
+                    <span key={i} className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full">
+                      {tag.trim()}
+                    </span>
+                  ))
+                : <span className="text-gray-400 text-xs">#tags</span>}
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* ✅ Quick Add Step Cards */}
+      <div className="mt-12 border-t pt-8">
+        <h3 className="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
+          <Compass className="h-5 w-5 text-blue-600" /> Next Steps
+        </h3>
+        <p className="text-gray-500 mb-6">
+          Now that you’ve added <strong>{name || "a destination"}</strong>, you can extend it by creating trip packages or custom activities.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <Link
+            href="/admin/add-package"
+            className="border-2 border-blue-200 hover:border-blue-400 rounded-xl p-6 flex flex-col items-center text-center hover:shadow-md transition-all"
+          >
+            <Plane className="h-10 w-10 text-blue-600 mb-3" />
+            <h4 className="font-semibold text-gray-800 mb-1">Add Trip Package</h4>
+            <p className="text-gray-500 text-sm">
+              Create fixed itineraries like “3D2N Palawan Getaway” with pricing and daily schedules.
+            </p>
+            <div className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-1">
+              <PlusCircle className="h-4 w-4" /> Add Package
+            </div>
+          </Link>
+
+          <Link
+            href="/admin/add-activity"
+            className="border-2 border-green-200 hover:border-green-400 rounded-xl p-6 flex flex-col items-center text-center hover:shadow-md transition-all"
+          >
+            <MapPin className="h-10 w-10 text-green-600 mb-3" />
+            <h4 className="font-semibold text-gray-800 mb-1">Add Activity</h4>
+            <p className="text-gray-500 text-sm">
+              Add flexible activities users can mix and match for their own custom trip plans.
+            </p>
+            <div className="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-1">
+              <PlusCircle className="h-4 w-4" /> Add Activity
+            </div>
+          </Link>
         </div>
       </div>
     </div>

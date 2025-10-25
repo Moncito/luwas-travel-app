@@ -1,6 +1,8 @@
 import { db } from "@/firebase/admin";
 import { NextResponse } from "next/server";
+import { FieldValue } from "firebase-admin/firestore";
 
+// ✅ PATCH: Update booking status (for Admin quick updates)
 export async function PATCH(
   req: Request,
   context: { params: Promise<{ id: string }> }
@@ -10,12 +12,14 @@ export async function PATCH(
     const { status } = await req.json();
 
     if (!status) {
-      return NextResponse.json({ error: "Status is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Status field is required" },
+        { status: 400 }
+      );
     }
 
-    // collections to check
+    // 🔎 Check booking in all possible collections (hybrid model)
     const collections = ["bookings", "itineraryBookings", "promoBookings"];
-
     let updated = false;
 
     for (const col of collections) {
@@ -23,10 +27,17 @@ export async function PATCH(
       const docSnap = await docRef.get();
 
       if (docSnap.exists) {
+        const current = docSnap.data();
+
+        // ✅ Keep consistent fields across all booking types
         await docRef.update({
           status,
-          updatedAt: new Date(),
+          updatedAt: FieldValue.serverTimestamp(),
         });
+
+        console.log(
+          `✅ Updated booking ${id} (${col}) → new status: ${status}`
+        );
         updated = true;
         break;
       }
@@ -39,9 +50,14 @@ export async function PATCH(
       );
     }
 
-    return NextResponse.json({ message: "Booking updated successfully" });
-  } catch (err: any) {
-    console.error("🔥 Failed to update booking status:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({
+      message: `Booking status updated to '${status}' successfully`,
+    });
+  } catch (error) {
+    console.error("🔥 Failed to update booking status:", error);
+    return NextResponse.json(
+      { error: "Failed to update booking status" },
+      { status: 500 }
+    );
   }
 }

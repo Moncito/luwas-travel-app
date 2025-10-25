@@ -20,12 +20,11 @@ const Navbar = () => {
   const router = useRouter();
   const pathname = usePathname();
 
-  // 🔹 Listen for authentication changes
+  // ✅ Listen for authentication changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setIsAuthenticated(true);
-
         try {
           const userRef = doc(db, "users", user.uid);
           const snap = await getDoc(userRef);
@@ -41,18 +40,29 @@ const Navbar = () => {
         setAvatarUrl(null);
       }
     });
-
     return () => unsubscribe();
   }, []);
 
-  // 🔹 Handle scroll blur effect
+  // ✅ Scroll detection for subtle nav shadow
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // 🔹 Logout
+  // ✅ Lock body scroll when mobile menu opens
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMobileMenuOpen]);
+
+  // ✅ Logout function
   const handleLogout = async () => {
     setLoading(true);
     await signOut(auth);
@@ -71,24 +81,30 @@ const Navbar = () => {
 
   return (
     <nav
-      className={`fixed top-0 left-0 w-full z-50 transition-colors duration-500 ${
+      className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${
         scrolled ? "bg-black/70 backdrop-blur-md shadow-md" : "bg-transparent"
       }`}
     >
       <div className="container mx-auto px-6 py-5 flex items-center justify-between">
-        {/* 🔹 Left - Logo */}
-        <Link href="/" className="text-white text-2xl md:text-3xl font-bold tracking-wide">
+        {/* 🌍 Logo */}
+        <Link
+          href="/"
+          className="text-white text-2xl md:text-3xl font-bold tracking-[0.2em] drop-shadow-md"
+        >
           LUWAS
         </Link>
 
-        {/* 🔹 Middle - Nav Items */}
+        {/* 💻 Desktop Nav */}
         <div className="hidden lg:flex space-x-8">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={`relative font-semibold text-sm xl:text-base transition duration-300
-                ${pathname === item.href ? "text-white" : "text-gray-300 hover:text-white"}`}
+              className={`relative font-semibold text-sm xl:text-base transition duration-300 ${
+                pathname === item.href
+                  ? "text-white"
+                  : "text-gray-300 hover:text-white"
+              }`}
             >
               {item.text}
               {pathname === item.href && (
@@ -98,7 +114,7 @@ const Navbar = () => {
           ))}
         </div>
 
-        {/* 🔹 Right - Auth Section */}
+        {/* 👤 Desktop Auth */}
         <div className="hidden lg:flex items-center space-x-4 relative">
           {isAuthenticated ? (
             <div className="relative">
@@ -123,7 +139,6 @@ const Navbar = () => {
                 </motion.div>
               </button>
 
-              {/* 🔹 Profile Dropdown */}
               <AnimatePresence>
                 {profileMenuOpen && (
                   <motion.div
@@ -167,66 +182,110 @@ const Navbar = () => {
           )}
         </div>
 
-        {/* 🔹 Mobile Menu Icon */}
+        {/* 🍔 Mobile Toggle Button */}
         <div className="lg:hidden flex items-center">
           <button
             onClick={() => setIsMobileMenuOpen((prev) => !prev)}
             className="text-white focus:outline-none"
           >
-            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            <svg
+              className="w-7 h-7"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d={
+                  isMobileMenuOpen
+                    ? "M6 18L18 6M6 6l12 12"
+                    : "M4 6h16M4 12h16M4 18h16"
+                }
+              />
             </svg>
           </button>
         </div>
       </div>
 
-      {/* 🔹 Mobile Dropdown */}
-      {isMobileMenuOpen && (
-        <div className="animate-slide-down bg-white/95 backdrop-blur-md shadow-lg rounded-lg p-4 space-y-4 lg:hidden">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setIsMobileMenuOpen(false)}
-              className={`block text-center font-semibold text-base transition-colors ${
-                pathname === item.href ? "text-black" : "text-gray-700 hover:text-black"
-              }`}
-            >
-              {item.text}
-            </Link>
-          ))}
-          {isAuthenticated ? (
-            <>
-              <Link
-                href="/profile"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="block text-center font-semibold text-base text-gray-700 hover:text-black"
+      {/* 🌫️ Mobile Glass Menu */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -30 }}
+            transition={{ type: "spring", stiffness: 100, damping: 15 }}
+            className="
+              lg:hidden fixed inset-0 top-[72px] z-40
+              bg-gradient-to-b from-black/10 via-black/55 to-black/40
+              backdrop-blur-xl border-t border-white/10
+              flex flex-col items-center justify-start space-y-6 py-10
+              overflow-y-auto
+            "
+          >
+            {navItems.map((item) => (
+              <motion.div
+                key={item.href}
+                whileHover={{ scale: 1.05 }}
+                transition={{ type: 'spring', stiffness: 200 }}
               >
-                Profile
-              </Link>
-              <button
-                onClick={async () => {
-                  setIsMobileMenuOpen(false);
-                  await handleLogout();
-                }}
-                className="block w-full text-gray-700 font-semibold hover:text-black text-center transition-colors"
-              >
-                {loading ? "Logging out..." : "LOGOUT"}
-              </button>
-            </>
-          ) : (
-            <button
-              onClick={() => {
-                setIsMobileMenuOpen(false);
-                router.push("/sign-in");
-              }}
-              className="block w-full bg-black text-white font-semibold py-2 rounded-lg hover:bg-gray-800 transition"
-            >
-              LOGIN
-            </button>
-          )}
-        </div>
-      )}
+                <Link
+                  href={item.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`text-lg font-medium tracking-wide transition-all duration-200 ${
+                    pathname === item.href
+                      ? 'text-white underline underline-offset-4'
+                      : 'text-white/80 hover:text-white'
+                  }`}
+                >
+                  {item.text}
+                </Link>
+              </motion.div>
+            ))}
+
+            {/* 🔐 Auth Buttons */}
+            <div className="pt-8 w-full flex flex-col items-center space-y-3">
+              {isAuthenticated ? (
+                <>
+                  <Link
+                    href="/profile"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="text-white/80 hover:text-white text-lg"
+                  >
+                    Profile
+                  </Link>
+                  <button
+                    onClick={async () => {
+                      setIsMobileMenuOpen(false);
+                      await handleLogout();
+                    }}
+                    className="text-red-400 hover:text-red-200 font-semibold text-lg"
+                  >
+                    {loading ? "Logging out..." : "Logout"}
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    router.push("/sign-in");
+                  }}
+                  className="
+                    mt-2 px-8 py-2 text-sm font-semibold text-white
+                    bg-white/10 border border-white/20 rounded-full
+                    backdrop-blur-md shadow-inner
+                    hover:bg-white/20 hover:scale-105 transition-all duration-300
+                  "
+                >
+                  LOGIN
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 };

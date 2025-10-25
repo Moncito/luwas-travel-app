@@ -18,42 +18,54 @@ export default function ItineraryCard({
   imageUrl,
   duration = 'Multi-day Trip',
   highlights,
-  price = 0
+  price = 0,
 }: ItineraryProps) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 text-black flex flex-col">
-      {/* Image */}
-      <div className="relative h-56 w-full">
+    <div
+      className="
+        flex flex-col overflow-hidden rounded-2xl
+        border border-gray-300 bg-white/70 backdrop-blur-md
+        shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.01]
+      "
+    >
+      {/* Image Section */}
+      <div className="relative h-56 w-full overflow-hidden">
         <Image
           src={imageUrl}
           alt={title}
           fill
           className="object-cover"
         />
-        <div className="absolute inset-0 bg-black/20" />
+        <div className="absolute inset-0 bg-black/10" />
       </div>
 
-      {/* Content */}
-      <div className="p-6 flex flex-col flex-grow justify-between text-center">
-        <div className="space-y-2">
-          <h2 className="text-xl font-bold">{title}</h2>
-          <p className="text-sm italic text-black/80">{duration}</p>
+      {/* Content Section */}
+      <div className="flex flex-col justify-between flex-1 p-6 text-center text-black">
+        <div className="flex flex-col items-center space-y-2 min-h-[160px]">
+          <h2 className="text-xl font-semibold">{title}</h2>
+          <p className="text-sm italic">{duration}</p>
           <p className="text-base font-semibold">
-            ₱{price.toLocaleString()} per person
+            ₱{price.toLocaleString()} <span className="text-sm font-normal">per person</span>
           </p>
 
-          <ul className="text-sm text-black/80 list-disc list-inside space-y-1 max-w-xs mx-auto min-h-[72px]">
+          {/* Highlights */}
+          <ul className="text-sm list-disc list-inside space-y-1 max-w-xs mx-auto text-black/80">
             {highlights.slice(0, 3).map((h, i) => (
-              <li key={i} className="truncate">{h}</li>
+              <li key={i} className="truncate">
+                {h}
+              </li>
             ))}
           </ul>
         </div>
 
-        {/* Button aligned at bottom */}
-        <div className="pt-4">
+        {/* Button */}
+        <div className="mt-6">
           <Link
             href={`/itineraries/${slug}`}
-            className="inline-block text-sm font-medium underline underline-offset-4 hover:text-gray-800 transition"
+            className="
+              inline-block text-sm font-medium border border-black px-4 py-2 rounded-md
+              hover:bg-black hover:text-white transition
+            "
           >
             View Details →
           </Link>

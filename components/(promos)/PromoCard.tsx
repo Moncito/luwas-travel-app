@@ -1,19 +1,18 @@
-'use client'
+'use client';
 
-import Image from 'next/image'
-import Link from 'next/link'
+import Image from 'next/image';
+import Link from 'next/link';
 
 interface PromoProps {
-  id: string
-  title: string
-  description: string
-  discountPercentage: number
-  price: number
-  finalPrice: number
-  startDate: string
-  endDate: string
-  location: string
-  imageUrl?: string
+  id: string;
+  title: string;
+  description: string;
+  discountPercentage: number;
+  price: number;
+  finalPrice: number;
+  endDate: string;
+  location: string;
+  imageUrl?: string;
 }
 
 export default function PromoCard({
@@ -28,69 +27,69 @@ export default function PromoCard({
   imageUrl,
 }: PromoProps) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden">
-      {/* Image */}
-      <div className="relative h-52 w-full">
+    <div
+      className="
+        flex flex-col overflow-hidden rounded-2xl
+        border border-gray-300 bg-white/70 backdrop-blur-md
+        shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.01]
+      "
+    >
+      {/* 🖼️ Image Section */}
+      <div className="relative h-56 w-full overflow-hidden">
         <Image
-          src={imageUrl || '/placeholder.jpg'}
+          src={imageUrl || '/images/placeholder.jpg'}
           alt={title}
           fill
-          priority
           className="object-cover"
         />
-        {/* Discount Badge */}
-        <span className="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow">
+        <div className="absolute inset-0 bg-black/10" />
+        <span
+          className="
+            absolute top-3 left-3 bg-red-600 text-white text-xs 
+            font-bold px-3 py-1 rounded-full shadow-md
+          "
+        >
           {discountPercentage}% OFF
         </span>
       </div>
 
-      {/* Content */}
-      <div className="p-6 flex flex-col flex-grow justify-between">
-        <div className="space-y-3 text-center">
-          {/* Title */}
-          <h2 className="text-lg font-extrabold text-black line-clamp-2">
-            {title}
-          </h2>
+      {/* 📜 Content Section */}
+      <div className="flex flex-col justify-between flex-1 p-6 text-center text-black">
+        <div className="flex flex-col items-center space-y-2 min-h-[160px]">
+          <h2 className="text-xl font-semibold">{title}</h2>
+          <p className="text-sm text-black/70 line-clamp-3">{description}</p>
 
-          {/* Description */}
-          <p className="text-sm text-gray-700 font-medium line-clamp-3">
-            {description}
-          </p>
+          <p className="text-sm font-medium text-black">📍 {location}</p>
 
-          {/* Location */}
-          <p className="text-sm text-black font-semibold">{location}</p>
-
-          {/* Price Section */}
-          <div className="flex justify-center gap-3 items-center">
+          {/* 💰 Price Section */}
+          <div className="flex justify-center items-center gap-3 mt-2">
             <p className="text-gray-500 line-through text-sm font-semibold">
               ₱{price.toLocaleString()}
             </p>
-            <p className="text-xl font-extrabold text-black">
+            <p className="text-xl font-bold text-black">
               ₱{finalPrice.toLocaleString()}
             </p>
           </div>
 
-          {/* Validity */}
-          <p className="text-xs text-black font-medium mt-1">
+          {/* 🕓 Validity */}
+          <p className="text-xs text-black/80 font-medium mt-2">
             Valid until: {endDate ? new Date(endDate).toLocaleDateString() : 'N/A'}
           </p>
         </div>
 
         {/* CTA Button */}
-        <div className="pt-6">
-         <Link
-  href={`/promos/${id}`}
-  className="block w-full text-center text-sm font-bold tracking-wide 
-             text-white bg-gradient-to-r from-blue-600 to-blue-800 
-             hover:from-blue-700 hover:to-blue-900 
-             px-5 py-3 rounded-xl shadow-lg 
-             transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
->
-  View Details →
-</Link>
-
+        <div className="mt-6">
+          <Link
+            href={`/promos/${id}`}
+            className="
+              inline-block text-sm font-medium border border-black px-4 py-2 rounded-md
+              hover:bg-black hover:text-white transition
+            "
+          >
+            View Details →
+          </Link>
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -1,8 +1,8 @@
-'use client';
+'use client'
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { cn } from '@/lib/utils'
 import {
   LayoutDashboard,
   Users,
@@ -10,69 +10,67 @@ import {
   PlusCircle,
   BookOpen,
   MessageCircle,
+  Briefcase,
   ChevronDown,
-} from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { collection, onSnapshot, where, query } from 'firebase/firestore';
-import { db } from '@/firebase/client';
-import { toast } from 'sonner';
+  Layers,
+  ActivitySquare,
+} from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
+import { collection, onSnapshot, where, query } from 'firebase/firestore'
+import { db } from '@/firebase/client'
+import { toast } from 'sonner'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-} from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
+} from '@/components/ui/dropdown-menu'
+import { Button } from '@/components/ui/button'
 
 export default function AdminNavbar() {
-  const pathname = usePathname();
-  const [profileOpen, setProfileOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [ping, setPing] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(false);
+  const pathname = usePathname()
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [ping, setPing] = useState(false)
+  const [soundEnabled, setSoundEnabled] = useState(false)
 
   // 🔊 Enable sound on first interaction
   useEffect(() => {
     const enableSound = () => {
-      setSoundEnabled(true);
-      window.removeEventListener('click', enableSound);
-    };
-    window.addEventListener('click', enableSound);
-    return () => window.removeEventListener('click', enableSound);
-  }, []);
+      setSoundEnabled(true)
+      window.removeEventListener('click', enableSound)
+    }
+    window.addEventListener('click', enableSound)
+    return () => window.removeEventListener('click', enableSound)
+  }, [])
 
   // 🔔 Real-time unread listener + sound
   useEffect(() => {
-    const q = query(
-      collection(db, 'conversations'),
-      where('lastMessageSender', '==', 'user')
-    );
+    const q = query(collection(db, 'conversations'), where('lastMessageSender', '==', 'user'))
 
-    let firstLoad = true;
+    let firstLoad = true
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const count = snapshot.size;
-      setUnreadCount(count);
+      const count = snapshot.size
+      setUnreadCount(count)
 
       if (!firstLoad && count > 0) {
-        setPing(true);
-        setTimeout(() => setPing(false), 1500);
+        setPing(true)
+        setTimeout(() => setPing(false), 1500)
 
         if (soundEnabled) {
-          const audio = new Audio('/sounds/notification.wav');
-          audio.volume = 0.5;
-          audio.play().catch(() => {});
+          const audio = new Audio('/sounds/notification.wav')
+          audio.volume = 0.5
+          audio.play().catch(() => {})
         }
 
-        toast.info(`New message received from a user 📨`, {
-          duration: 3000,
-        });
+        toast.info(`New message received from a user 📨`, { duration: 3000 })
       }
-      firstLoad = false;
-    });
+      firstLoad = false
+    })
 
-    return () => unsubscribe();
-  }, [soundEnabled]);
+    return () => unsubscribe()
+  }, [soundEnabled])
 
   return (
     <nav className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-md border-b shadow-sm">
@@ -88,7 +86,7 @@ export default function AdminNavbar() {
           <NavLink href="/admin/users" icon={Users} label="Users" pathname={pathname} />
           <NavLink href="/admin/trips" icon={MapPin} label="Trips" pathname={pathname} />
 
-          {/* Add Dropdown */}
+          {/* 🌐 Management Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -96,9 +94,42 @@ export default function AdminNavbar() {
                 size="sm"
                 className={cn(
                   'flex items-center gap-1.5 text-xs font-medium',
-                  pathname.includes('') || pathname.includes('/itineraries')
+                  pathname.startsWith('/admin/trip-packages') ||
+                    pathname.startsWith('/admin/activities')
                     ? 'text-blue-700'
                     : 'text-gray-600 hover:text-blue-600'
+                )}
+              >
+                <Briefcase size={14} />
+                Management
+                <ChevronDown size={12} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-44">
+              <DropdownMenuItem asChild>
+                <Link href="/admin/trip-packages" className="flex items-center gap-2">
+                  <Layers size={14} className="text-blue-600" />
+                  Trip Packages
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/admin/activities" className="flex items-center gap-2">
+                  <ActivitySquare size={14} className="text-green-600" />
+                  Activities
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* ➕ Add Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  'flex items-center gap-1.5 text-xs font-medium',
+                  pathname.includes('/add-') ? 'text-blue-700' : 'text-gray-600 hover:text-blue-600'
                 )}
               >
                 <PlusCircle size={14} />
@@ -114,12 +145,15 @@ export default function AdminNavbar() {
                 <Link href="/admin/add-promo">Promo</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/admin/itineraries">Itinerary</Link>
+                <Link href="/admin/add-activity">Activity</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/admin/add-trip-package">Trip Package</Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Bookings Dropdown */}
+          {/* 📚 Bookings Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -147,7 +181,7 @@ export default function AdminNavbar() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Chat Support */}
+          {/* 💬 Chat Support */}
           <li className="relative group">
             <Link
               href="/admin/chat-support"
@@ -182,7 +216,7 @@ export default function AdminNavbar() {
           </li>
         </ul>
 
-        {/* Profile Dropdown */}
+        {/* 👤 Profile Dropdown */}
         <div className="relative">
           <button
             onClick={() => setProfileOpen(!profileOpen)}
@@ -219,7 +253,7 @@ export default function AdminNavbar() {
         </div>
       </div>
     </nav>
-  );
+  )
 }
 
 // ───────── Helper NavLink ─────────
@@ -229,12 +263,12 @@ function NavLink({
   label,
   pathname,
 }: {
-  href: string;
-  icon: any;
-  label: string;
-  pathname: string;
+  href: string
+  icon: any
+  label: string
+  pathname: string
 }) {
-  const isActive = pathname === href;
+  const isActive = pathname === href
   return (
     <li className="relative group">
       <Link
@@ -254,5 +288,5 @@ function NavLink({
         )}
       />
     </li>
-  );
+  )
 }

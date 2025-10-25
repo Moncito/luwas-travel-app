@@ -10,55 +10,104 @@ export async function DELETE(
   const { id } = context.params;
   try {
     await db.collection("bookings").doc(id).delete();
+    console.log(`🗑️ Deleted booking ${id}`);
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting booking:", error);
-    return NextResponse.json({ error: "Failed to delete booking" }, { status: 500 });
+    console.error("❌ Error deleting booking:", error);
+    return NextResponse.json(
+      { error: "Failed to delete booking" },
+      { status: 500 }
+    );
   }
 }
 
-// ✅ PATCH status
+// ✅ PATCH booking (update fields like status, activities, totalPrice, etc.)
 export async function PATCH(
   req: Request,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await context.params;
-    const { status } = await req.json();
+    const body = await req.json();
 
-    if (!status) {
-      return NextResponse.json({ error: "Status is required" }, { status: 400 });
-    }
+    const {
+      status,
+      activities,
+      totalPrice,
+      tripType,
+      tripPackageId,
+      specialRequests,
+      proofUrl,
+    } = body;
 
-    // collections to check
-    const collections = ["bookings", "itineraryBookings", "promoBookings"];
-
-    let updated = false;
-
-    for (const col of collections) {
-      const docRef = db.collection(col).doc(id);
-      const docSnap = await docRef.get();
-
-      if (docSnap.exists) {
-        await docRef.update({
-          status,
-          updatedAt: FieldValue.serverTimestamp(),
-        });
-        updated = true;
-        break;
-      }
-    }
-
-    if (!updated) {
+    // 🧩 Validate that at least one field is provided
+    if (
+      !status &&
+      !activities &&
+      !totalPrice &&
+      !tripType &&
+      !tripPackageId &&
+      !specialRequests &&
+      !proofUrl
+    ) {
       return NextResponse.json(
-        { error: `Booking ${id} not found in any collection` },
+        { error: "No fields provided to update." },
+        { status: 400 }
+      );
+    }
+
+    // ✅ Find booking document
+    const bookingRef = db.collection("bookings").doc(id);
+    const bookingSnap = await bookingRef.get();
+
+    if (!bookingSnap.exists) {
+      return NextResponse.json(
+        { error: `Booking ${id} not found` },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ message: "Booking updated successfully" });
-  } catch (err: any) {
-    console.error("🔥 Failed to update booking status:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const currentData = bookingSnap.data();
+
+    // ✅ Prepare update payload
+    const updateData: Record<string, any> = {
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+
+    if (status) updateData.status = status;
+    if (tripType) updateData.tripType = tripType;
+    if (tripPackageId) updateData.tripPackageId = tripPackageId;
+    if (specialRequests) updateData.specialRequests = specialRequests;
+    if (proofUrl) updateData.proofUrl = proofUrl;
+
+    // 🔹 If custom trip → update activities & recompute total
+    if (tripType === "custom" && Array.isArray(activities)) {
+      const computedTotal = activities.reduce(
+        (sum, act) => sum + (Number(act.price) || 0),
+        0
+      );
+      updateData.activities = activities;
+      updateData.totalPrice = computedTotal;
+    }
+
+    // 🔹 If fixed trip → allow manual price adjustment (optional)
+    if (tripType === "fixed" && totalPrice) {
+      updateData.totalPrice = Number(totalPrice);
+    }
+
+    // ✅ Update Firestore
+    await bookingRef.update(updateData);
+
+    console.log(`✅ Booking ${id} updated successfully`);
+    return NextResponse.json({
+      message: "Booking updated successfully",
+      updated: updateData,
+    });
+  } catch (error) {
+    console.error("🔥 Error updating booking:", error);
+    return NextResponse.json(
+      { error: "Failed to update booking" },
+      { status: 500 }
+    );
   }
 }

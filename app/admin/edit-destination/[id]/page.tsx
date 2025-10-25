@@ -1,4 +1,3 @@
-// File: app/admin/edit-destination/[id]/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -7,6 +6,7 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/firebase/client";
 import { toast } from "sonner";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { MapPin, UploadCloud, Pencil, ArrowLeftCircle } from "lucide-react";
 
 interface FormData {
   name: string;
@@ -24,8 +24,7 @@ const validateFormData = (formData: FormData) => {
   if (!formData.description) errors.description = "Description is required";
   if (!formData.imageUrl) errors.imageUrl = "Image is required";
   if (!formData.tags) errors.tags = "Tags are required";
-  if (!formData.price || isNaN(Number(formData.price)))
-    errors.price = "Invalid price";
+  if (!formData.price || isNaN(Number(formData.price))) errors.price = "Invalid price";
   return errors;
 };
 
@@ -36,7 +35,6 @@ export default function EditDestinationPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
-
   const [formData, setFormData] = useState<FormData>({
     name: "",
     location: "",
@@ -45,7 +43,6 @@ export default function EditDestinationPage() {
     tags: "",
     price: "",
   });
-
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
@@ -65,12 +62,12 @@ export default function EditDestinationPage() {
           });
         } else {
           toast.error("Destination not found");
-          router.push("/admin/destinations");
+          router.push("/admin/trips");
         }
       } catch (error) {
         console.error(error);
         toast.error("Failed to fetch destination");
-        router.push("/admin/destinations");
+        router.push("/admin/trips");
       } finally {
         setLoading(false);
       }
@@ -78,9 +75,7 @@ export default function EditDestinationPage() {
     fetchData();
   }, [id, router]);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: "" }));
@@ -91,10 +86,7 @@ export default function EditDestinationPage() {
     try {
       setUploading(true);
       const storage = getStorage();
-      const storageRef = ref(
-        storage,
-        `destinations/${id}-${Date.now()}-${file.name}`
-      );
+      const storageRef = ref(storage, `destinations/${id}-${Date.now()}-${file.name}`);
       await uploadBytes(storageRef, file);
       const url = await getDownloadURL(storageRef);
       setFormData((prev) => ({ ...prev, imageUrl: url }));
@@ -129,7 +121,7 @@ export default function EditDestinationPage() {
         tags: formData.tags.split(",").map((tag) => tag.trim()),
         price: Number(formData.price),
       });
-      toast.success("✅ Destination updated!");
+      toast.success("✅ Destination updated successfully!");
       router.push("/admin/trips");
     } catch (err) {
       console.error(err);
@@ -139,45 +131,61 @@ export default function EditDestinationPage() {
     }
   };
 
-  if (loading) return <p className="p-6">Loading destination...</p>;
+  if (loading)
+    return (
+      <div className="flex items-center justify-center h-64 text-blue-600 font-medium">
+        Loading destination details...
+      </div>
+    );
 
   return (
     <div className="bg-white p-8 rounded-2xl shadow-lg max-w-6xl mx-auto mt-10">
-      <h2 className="text-2xl font-bold text-blue-700 mb-8">✏️ Edit Destination</h2>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-2xl font-bold text-blue-700 flex items-center gap-2">
+          <Pencil className="h-6 w-6 text-blue-600" /> Edit Destination
+        </h2>
+        <button
+          onClick={() => router.push("/admin/trips")}
+          className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition"
+        >
+          <ArrowLeftCircle className="h-5 w-5" />
+          Back to Destinations
+        </button>
+      </div>
 
+      {/* Form and Preview Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Left Column - Form */}
+        {/* Left Column - Edit Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Name */}
           <input
-            className={`border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500 ${
-              errors.name ? "border-red-500" : ""
-            }`}
             name="name"
             value={formData.name}
             onChange={handleChange}
-            placeholder="Name"
-            required
+            placeholder="Destination Name"
+            className={`border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500 ${
+              errors.name ? "border-red-500" : ""
+            }`}
           />
           {errors.name && <p className="text-red-500 text-sm">{errors.name}</p>}
 
+          {/* Location */}
           <input
-            className={`border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500 ${
-              errors.location ? "border-red-500" : ""
-            }`}
             name="location"
             value={formData.location}
             onChange={handleChange}
             placeholder="Location"
-            required
+            className={`border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500 ${
+              errors.location ? "border-red-500" : ""
+            }`}
           />
-          {errors.location && (
-            <p className="text-red-500 text-sm">{errors.location}</p>
-          )}
+          {errors.location && <p className="text-red-500 text-sm">{errors.location}</p>}
 
-          {/* Drag and Drop Upload */}
+          {/* Image Upload */}
           <div
             className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer ${
-              uploading ? "opacity-50" : "hover:bg-gray-50"
+              uploading ? "opacity-50" : "hover:border-blue-400"
             }`}
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleDrop}
@@ -185,60 +193,66 @@ export default function EditDestinationPage() {
             {uploading ? (
               <p className="text-blue-600">Uploading...</p>
             ) : formData.imageUrl ? (
-              <img
-                src={formData.imageUrl}
-                alt="Preview"
-                className="mx-auto h-40 object-cover rounded-lg"
-              />
+              <img src={formData.imageUrl} alt="Preview" className="mx-auto h-40 object-cover rounded-lg shadow" />
             ) : (
-              <p className="text-gray-500">Drag & drop an image here</p>
+              <div className="flex flex-col items-center gap-2 text-gray-500">
+                <UploadCloud className="h-6 w-6" />
+                <p>Drag & drop an image here or click to upload</p>
+              </div>
             )}
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              id="imageUpload"
+              onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0])}
+            />
+            <label htmlFor="imageUpload" className="block text-sm text-blue-600 mt-2 cursor-pointer hover:underline">
+              Browse Files
+            </label>
           </div>
-          {errors.imageUrl && (
-            <p className="text-red-500 text-sm">{errors.imageUrl}</p>
-          )}
+          {errors.imageUrl && <p className="text-red-500 text-sm">{errors.imageUrl}</p>}
 
+          {/* Tags */}
           <input
-            className={`border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500 ${
-              errors.tags ? "border-red-500" : ""
-            }`}
             name="tags"
             value={formData.tags}
             onChange={handleChange}
             placeholder="Tags (comma-separated)"
-            required
+            className={`border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500 ${
+              errors.tags ? "border-red-500" : ""
+            }`}
           />
           {errors.tags && <p className="text-red-500 text-sm">{errors.tags}</p>}
 
+          {/* Price */}
           <input
-            className={`border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500 ${
-              errors.price ? "border-red-500" : ""
-            }`}
             name="price"
             type="number"
             value={formData.price}
             onChange={handleChange}
             placeholder="Price"
-            required
+            className={`border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500 ${
+              errors.price ? "border-red-500" : ""
+            }`}
           />
           {errors.price && <p className="text-red-500 text-sm">{errors.price}</p>}
 
+          {/* Description */}
           <textarea
-            className={`border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500 ${
-              errors.description ? "border-red-500" : ""
-            }`}
             name="description"
             value={formData.description}
             onChange={handleChange}
             placeholder="Description"
             rows={4}
-            required
+            className={`border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500 ${
+              errors.description ? "border-red-500" : ""
+            }`}
           />
-          {errors.description && (
-            <p className="text-red-500 text-sm">{errors.description}</p>
-          )}
+          {errors.description && <p className="text-red-500 text-sm">{errors.description}</p>}
 
-          <div className="flex justify-end gap-4 pt-2">
+          {/* Buttons */}
+          <div className="flex justify-end gap-4 pt-4">
             <button
               type="button"
               onClick={() => router.push("/admin/trips")}
@@ -260,31 +274,20 @@ export default function EditDestinationPage() {
 
         {/* Right Column - Live Preview */}
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold mb-2 text-gray-700">
-            Live Preview
-          </h3>
+          <h3 className="text-lg font-semibold text-gray-700 mb-2">Live Preview</h3>
           <div className="border rounded-xl shadow-md overflow-hidden max-w-md">
             {formData.imageUrl ? (
-              <img
-                src={formData.imageUrl}
-                alt={formData.name}
-                className="h-48 w-full object-cover"
-              />
+              <img src={formData.imageUrl} alt={formData.name} className="h-48 w-full object-cover" />
             ) : (
-              <div className="h-48 w-full bg-gray-200 flex items-center justify-center text-gray-500">
+              <div className="h-48 w-full bg-gray-100 flex items-center justify-center text-gray-400">
                 No Image Preview
               </div>
             )}
             <div className="p-4">
-              <h4 className="text-xl font-bold text-gray-800">
-                {formData.name || "Destination Name"}
-              </h4>
-              <p className="text-sm text-gray-500">
-                {formData.location || "Location"}
-              </p>
+              <h4 className="text-xl font-bold text-gray-800">{formData.name || "Destination Name"}</h4>
+              <p className="text-sm text-gray-500">{formData.location || "Location"}</p>
               <p className="mt-2 text-gray-600 line-clamp-3">
-                {formData.description ||
-                  "Destination description will appear here."}
+                {formData.description || "Destination description will appear here."}
               </p>
               <div className="flex justify-between items-center mt-4">
                 <span className="text-blue-700 font-semibold">
@@ -300,9 +303,7 @@ export default function EditDestinationPage() {
                           {tag.trim()}
                         </span>
                       ))
-                    : (
-                      <span className="text-gray-400 text-xs">#tags</span>
-                    )}
+                    : <span className="text-gray-400 text-xs">#tags</span>}
                 </div>
               </div>
             </div>

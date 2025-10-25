@@ -1,26 +1,41 @@
 export interface Booking {
   id: string;
   userId: string;
-  price: number;
-  fullName: string; // 🔧 make required
-  email: string;    // 🔧 make required
+  fullName: string;
+  email: string;
   phone?: string;
-  destination: string; // 🔧 make required
-  title?: string;
-  departureDate: string;
-  createdAt: string | Date; // accept both Date and ISO string
-  status: 'upcoming' | 'completed' | 'cancelled' | 'paid' | 'pending_payment';
-  proofUrl?: string;
-  specialRequests?: string;
-  location?: string;
-  travelers?: number;
-  totalPrice: number;
-  type: 'trip' | 'itinerary';
-  weather: {
-  condition: string,   // "Rain", "Cloudy", "Sunny"
-  temperature: number, // in Celsius
-  icon: string,        // weather API icon url/code
-  fetchedAt: string,   // ISO timestamp when fetched
-}
 
+  destination: string;
+  title?: string; // package title or “Custom Trip to X”
+  destinationId?: string;
+  tripPackageId?: string; // optional for fixed trips
+  tripType: 'fixed' | 'custom'; // NEW FIELD
+  type: 'trip' | 'itinerary'; // existing
+  activities?: {
+    id: string;
+    title: string;
+    price: number;
+    day: number;
+  }[];
+
+  departureDate: string;
+  returnDate?: string;
+  travelers?: number;
+
+  price?: number;
+  totalPrice: number;
+
+  location?: string;
+  specialRequests?: string;
+  proofUrl?: string;
+
+  status: 'upcoming' | 'completed' | 'cancelled' | 'paid' | 'pending_payment';
+  createdAt: string | Date;
+
+  weather: {
+    condition: string;
+    temperature: number;
+    icon: string;
+    fetchedAt: string;
+  };
 }

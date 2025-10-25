@@ -1,4 +1,3 @@
-// File: app/destinations/[id]/page.tsx
 import { notFound } from "next/navigation";
 import { db } from "@/firebase/admin";
 import Image from "next/image";
@@ -18,7 +17,6 @@ interface Destination {
   location: string;
   description: string;
   imageUrl: string;
-  price: number;
   tags: string[];
   latitude: number;
   longitude: number;
@@ -49,7 +47,6 @@ export default async function DestinationPage({
     location: rawData.location || "Unknown Location",
     description: rawData.description || "No description available.",
     imageUrl: rawData.imageUrl || "/images/fallback.jpg",
-    price: rawData.price || 0,
     tags: rawData.tags || [],
     latitude: rawData.latitude || 0,
     longitude: rawData.longitude || 0,
@@ -95,11 +92,9 @@ export default async function DestinationPage({
           <div className="space-y-12">
             {/* Destination Description */}
             <div className="text-center lg:text-left">
-              <p
-              className="text-lg text-gray-700 leading-relaxed whitespace-pre-line max-w-prose mx-auto lg:mx-0"
-            >
-              {destination.description}
-            </p>
+              <p className="text-lg text-gray-700 leading-relaxed whitespace-pre-line max-w-prose mx-auto lg:mx-0">
+                {destination.description}
+              </p>
 
               {/* Tags */}
               {destination.tags.length > 0 && (
@@ -115,13 +110,10 @@ export default async function DestinationPage({
                 </div>
               )}
 
-              {/* Price and Booking Button */}
-              <div className="mt-8 space-y-3">
-                <p className="text-2xl font-semibold text-blue-800">
-                  ₱{destination.price.toLocaleString()} per person
-                </p>
+              {/* Booking Button (💳 no more price above) */}
+              <div className="mt-8">
                 <Link
-                  href={`/destinations/${destinationId}/book`}
+                  href={`/destinations/${destinationId}/check`}
                   className="inline-block bg-blue-700 text-white px-8 py-3 rounded-full font-medium hover:bg-white hover:text-blue-700 border border-blue-700 transition"
                 >
                   Book This Destination

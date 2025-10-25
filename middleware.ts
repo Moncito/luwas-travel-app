@@ -1,34 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function middleware(req: NextRequest) {
-  const { pathname, origin } = req.nextUrl;
+  const { pathname } = req.nextUrl;
   const sessionCookie = req.cookies.get("session")?.value;
 
-  // Create base response early so we can attach headers later
-  const res = NextResponse.next();
+  // Skip middleware for API, Next assets, and favicon
+  if (
+    pathname.startsWith("/api") ||
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/favicon.ico")
+  ) {
+    return NextResponse.next();
+  }
 
-  // ✅ Apply Global Security Headers
-  res.headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
-  res.headers.set(
-    "Content-Security-Policy",
-    "default-src 'self'; img-src * data: https:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none';"
-  );
-  res.headers.set("X-Frame-Options", "DENY");
-  res.headers.set("X-Content-Type-Options", "nosniff");
-  res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  res.headers.set(
-    "Permissions-Policy",
-    "camera=(), microphone=(), geolocation=(), payment=()"
-  );
-
-  // ✅ Admin Login Protection
+  // Handle Admin Login Page
   if (pathname === "/admin-log-in") {
     if (sessionCookie) {
       try {
-        const verify = await fetch(`${origin}/api/verify-token`, {
+        const verify = await fetch(`${req.nextUrl.origin}/api/verify-token`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token: sessionCookie }),
+          cache: "no-store",
         });
 
         const result = await verify.json();
@@ -39,20 +32,21 @@ export async function middleware(req: NextRequest) {
         console.error("❌ Middleware login check failed:", err);
       }
     }
-    return res; // Return with headers even if login proceeds
+    return NextResponse.next();
   }
 
-  // ✅ Admin Route Protection
+  // Protect all /admin routes
   if (pathname.startsWith("/admin")) {
     if (!sessionCookie) {
       return NextResponse.redirect(new URL("/admin-log-in", req.url));
     }
 
     try {
-      const verify = await fetch(`${origin}/api/verify-token`, {
+      const verify = await fetch(`${req.nextUrl.origin}/api/verify-token`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: sessionCookie }),
+        cache: "no-store",
       });
 
       const result = await verify.json();
@@ -65,8 +59,7 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // ✅ Return response with security headers
-  return res;
+  return NextResponse.next();
 }
 
 export const config = {

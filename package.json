@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "set-admin": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" scripts/setAdmin.ts"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.3",
