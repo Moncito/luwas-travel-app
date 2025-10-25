@@ -1,36 +1,113 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LUWAS: Travel Smarter, Journey Further
 
-## Getting Started
+**Luwas** is a modern web and mobile travel management platform designed for Philippine travel agencies and travelers.  
+It enables users to discover destinations, book trips and itineraries, track travel history, and experience descriptive analytics through a seamless, intelligent, and responsive interface.
 
-First, run the development server:
+---
 
+## Overview
+
+Luwas reimagines how travelers explore and how agencies operate—combining data analytics, AI-powered insights, and real-time updates into one unified platform.  
+It supports multi-device access (web and mobile) and includes an administrative panel for travel agencies to manage destinations, bookings, itineraries, and user analytics efficiently.
+
+> “Travel smarter with LUWAS — your journey, your story.”
+
+---
+
+## Key Features
+
+### For Travelers
+- **Destination Discovery:** Browse featured destinations and curated itineraries across the Philippines.  
+- **Smart Booking System:** Book trips, upload IDs, and confirm travel dates in one streamlined process.  
+- **In-App Chat Support:** Receive real-time assistance from agency staff.  
+- **Travel History Tracker:** View upcoming, completed, or cancelled trips through an interactive timeline.  
+- **Weather Insights:** Access AI-generated “Best Time to Visit” summaries and real-time weather forecasts.  
+- **Review System:** Submit and view traveler reviews with aggregated insights from Yelp or AI summaries.
+
+### For Administrators
+- **Analytics Dashboard:** Visualize user growth, booking trends, and itinerary performance using dynamic charts.  
+- **Destination Management:** Add, edit, and remove destinations and promotional offers.  
+- **Itinerary Management:** Create and manage fixed travel packages (e.g., “7 Days in Palawan”).  
+- **Booking Management:** Approve, update, or delete bookings in real time.  
+- **Automated Email Receipts:** Generate and send downloadable, branded PDF receipts.  
+- **Descriptive Analytics:** Gain insights through detailed data trends and performance metrics.
+
+---
+
+## Technology Stack
+
+| Layer | Technologies |
+|-------|---------------|
+| **Frontend (Web)** | Next.js 15, React 19, TypeScript, TailwindCSS, ShadCN UI, Framer Motion |
+| **Backend / Database** | Firebase (Firestore, Storage, Authentication), Firebase Admin SDK |
+| **APIs and Integrations** | OpenAI, Yelp API, OpenStreetMap, Wikipedia, Weather API |
+| **Payments** | PayMongo, QRPH Integration |
+| **Email Services** | Resend (Transactional Emails) |
+| **File Uploads** | UploadThing, Imgur |
+| **Mobile Application** | Flutter (Firebase Integration) |
+| **Analytics and Visualization** | Recharts, Firestore Aggregations |
+| **Notifications** | Twilio (SMS Messaging) |
+
+---
+
+## System Architecture
+
+**Three-Tier Architecture Design:**
+
+1. **Presentation Layer** – Next.js (Client-side UI, Routing, and Component Rendering)  
+2. **Logic Layer** – Firebase Admin SDK (Authentication, Firestore Queries, Data Management, and Analytics)  
+3. **Data Layer** – Firestore Database (Collections for Destinations, Itineraries, Users, Bookings, and Reviews)
+
+---
+
+## Suggested Screenshots
+
+| Page | Description |
+|------|--------------|
+| Home Page | Displays featured destinations and call-to-action elements |
+| Destination Page | Contains dynamic destination details, booking forms, and user reviews |
+| Itinerary Page | Displays pre-planned tour packages with AI-based insights |
+| Admin Dashboard | Provides analytical insights through interactive charts |
+| Chat Support | Enables real-time communication between travelers and administrators |
+| Booking History | Displays filtered travel records in an animated timeline layout |
+
+---
+
+## Installation and Setup
+
+### Step 1: Clone the Repository
 ```bash
-npm run dev
+git clone https://github.com/moncitohernandez/luwas-travel.git
+cd luwas-travel
+
+npm install
 # or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+yarn install
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Developer Information
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Moncito Glenn N. Hernandez
+Bachelor of Science in Information Technology
+National University – Manila
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Project: Luwas: A Mobile and Web Travel Management System with Descriptive Analytics
 
-## Learn More
+GitHub: github.com/moncitohernandez
 
-To learn more about Next.js, take a look at the following resources:
+Future Enhancements
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+AI-powered itinerary planner based on weather, budget, and user preferences
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Offline mobile support with local data caching
 
-## Deploy on Vercel
+Community-based review aggregation and map clustering
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Integrated chatbot for booking assistance
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Predictive travel recommendations using analytics and weather data
+
+License
+
+This project is licensed under the MIT License.
+It is free to use, modify, and distribute for educational and non-commercial purposes.
+
