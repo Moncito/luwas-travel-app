@@ -93,7 +93,7 @@ Repository: github.com/moncitohernandez/luwas-mobile
 
 ## Developer Information
 
-Moncito Glenn N. Hernandez
+Moncito Glenn Nepomuceno Hernandez
 Bachelor of Science in Information Technology
 National University – Manila
 
