@@ -31,10 +31,19 @@ interface Place {
 
 export default async function DestinationPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const { id: destinationId } = await params;
+  const sp = await searchParams;
+  
+  // Forward searchParams (date, travelers) to the check/booking page
+  const queryParts = [];
+  if (sp.date) queryParts.push(`date=${sp.date}`);
+  if (sp.travelers) queryParts.push(`travelers=${sp.travelers}`);
+  const queryString = queryParts.length > 0 ? `?${queryParts.join("&")}` : "";
 
   const snapshot = await db.collection("destinations").doc(destinationId).get();
   if (!snapshot.exists) return notFound();
@@ -110,10 +119,10 @@ export default async function DestinationPage({
                 </div>
               )}
 
-              {/* Booking Button (💳 no more price above) */}
+              {/* Booking Button */}
               <div className="mt-8">
                 <Link
-                  href={`/destinations/${destinationId}/check`}
+                  href={`/destinations/${destinationId}/check${queryString}`}
                   className="inline-block bg-blue-700 text-white px-8 py-3 rounded-full font-medium hover:bg-white hover:text-blue-700 border border-blue-700 transition"
                 >
                   Book This Destination
