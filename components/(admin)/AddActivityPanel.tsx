@@ -43,6 +43,7 @@ export default function AddActivityPanel() {
   const [dayRecommendation, setDayRecommendation] = useState<number | ''>('')
   const [description, setDescription] = useState('')
   const [imageUrl, setImageUrl] = useState('')
+  const [uploadingImage, setUploadingImage] = useState(false)
   const [loading, setLoading] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
 
@@ -130,7 +131,18 @@ export default function AddActivityPanel() {
       }
     } catch (err) {
       console.error('❌ Firestore error:', err)
-      toast.error('Error saving activity.')
+      const message =
+        err instanceof Error
+          ? err.message
+          : typeof err === 'object' && err !== null && 'message' in err
+            ? String((err as { message?: unknown }).message || '')
+            : ''
+
+      if (message) {
+        toast.error(`Error saving activity: ${message}`)
+      } else {
+        toast.error('Error saving activity.')
+      }
     } finally {
       setLoading(false)
     }
@@ -240,7 +252,19 @@ export default function AddActivityPanel() {
         {/* 🖼 Image Upload */}
         <div>
           <label className="block font-semibold mb-2">Activity Image</label>
-          <ImageUploader onUploadComplete={(url) => setImageUrl(url)} />
+          <ImageUploader 
+            onUploadStart={() => setUploadingImage(true)}
+            onUploadComplete={(url) => {
+              setImageUrl(url)
+              setUploadingImage(false)
+            }} 
+            onUploadError={() => setUploadingImage(false)}
+          />
+          {uploadingImage && (
+            <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+              ⏳ Image uploading... Please wait before submitting
+            </div>
+          )}
           {imageUrl && (
             <img
               src={imageUrl}
@@ -263,11 +287,17 @@ export default function AddActivityPanel() {
           )}
           <button
             type="submit"
-            disabled={loading}
-            className="flex items-center gap-2 bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition shadow"
+            disabled={loading || uploadingImage}
+            className={`flex items-center gap-2 px-8 py-3 rounded-lg transition shadow ${
+              loading || uploadingImage
+                ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
           >
             {loading ? (
               'Saving...'
+            ) : uploadingImage ? (
+              '⏳ Uploading...'
             ) : isEditing ? (
               <>
                 <Save size={18} /> Update Activity
