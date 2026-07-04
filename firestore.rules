@@ -1,0 +1,96 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function uid() {
+      return request.auth.uid;
+    }
+
+    function isAdmin() {
+      return signedIn() && (
+        request.auth.token.admin == true ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin")
+      );
+    }
+
+    match /users/{userId} {
+      allow read, create, update, delete: if signedIn() && (uid() == userId || isAdmin());
+    }
+
+    match /destinations/{docId} {
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /activities/{docId} {
+      allow get, list: if true;
+      allow create, update, delete: if signedIn();
+    }
+
+    match /tripPackages/{docId} {
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /itineraries/{docId} {
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /promos/{docId} {
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /bookings/{docId} {
+      allow create: if signedIn();
+      allow read, update, delete: if signedIn() && (isAdmin() || resource.data.userId == uid());
+    }
+
+    match /itineraryBookings/{docId} {
+      allow create: if signedIn();
+      allow read, update, delete: if signedIn() && (isAdmin() || resource.data.userId == uid());
+    }
+
+    match /promoBookings/{docId} {
+      allow create: if signedIn();
+      allow read, update, delete: if signedIn() && (isAdmin() || resource.data.userId == uid());
+    }
+
+    match /reviews/{reviewId} {
+      allow create: if signedIn();
+      allow get, list: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    match /conversations/{convoId} {
+      allow create: if true;
+      allow read: if true;
+      allow update: if true;
+      allow delete: if isAdmin();
+
+      match /messages/{messageId} {
+        allow create: if true;
+        allow read: if true;
+        allow update, delete: if isAdmin();
+      }
+    }
+
+    match /avatars/{userId}/{allPaths=**} {
+      allow read, write: if signedIn() && uid() == userId;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -7,15 +7,18 @@ import { UploadCloud } from 'lucide-react'
 
 interface Props {
   onUploadComplete: (url: string) => void
+  onUploadStart?: () => void
+  onUploadError?: () => void
 }
 
-export default function ImageUploader({ onUploadComplete }: Props) {
+export default function ImageUploader({ onUploadComplete, onUploadStart, onUploadError }: Props) {
   const [progress, setProgress] = useState(0)
   const [preview, setPreview] = useState<string | null>(null)
 
   const handleFile = async (file: File) => {
     if (!file) return
     setPreview(URL.createObjectURL(file))
+    onUploadStart?.()
 
     const storage = getStorage()
     const storageRef = ref(storage, `uploads/${Date.now()}-${file.name}`)
@@ -30,6 +33,7 @@ export default function ImageUploader({ onUploadComplete }: Props) {
       (error) => {
         console.error(error)
         toast.error('Upload failed')
+        onUploadError?.()
       },
       async () => {
         const url = await getDownloadURL(uploadTask.snapshot.ref)
