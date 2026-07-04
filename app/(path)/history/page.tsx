@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
-import { Player } from '@lottiefiles/react-lottie-player' // ✅ Import Lottie player
-import loginReminder from '@/app/components/lottie/login-reminder.json' // ✅ Import the JSON as data
+import { Player } from '@lottiefiles/react-lottie-player' // Import Lottie player
+import loginReminder from '@/app/components/lottie/login-reminder.json' //  Import the JSON as data
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import TravelTimeline from '@/components/(travel-history)/TravelTimeline'

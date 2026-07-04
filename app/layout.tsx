@@ -1,14 +1,13 @@
 // File: app/layout.tsx
-import { Montserrat } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import LayoutWithLoader from "./components/LayoutWithLoader";
 import ChatWidgetWrapper from "@/components/ChatWidgetWrapper";
 import PromoPopup from "@/components/PromoPopup";
 
-const montserrat = Montserrat({
-  weight: "400",
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-montserrat",
+  variable: "--font-inter",
 });
 
 export const metadata = {
@@ -95,7 +94,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className={`${montserrat.className} antialiased pattern`}>
+      <body className={`${inter.className} ${inter.variable} antialiased pattern`}>
         <LayoutWithLoader>{children}</LayoutWithLoader>
 
         {/* Global widgets */}

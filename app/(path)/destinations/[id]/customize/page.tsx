@@ -48,9 +48,13 @@ type Destination = {
 
 type ChosenActivity = Activity & { day: number };
 
-export default function CustomizeTripPage() {
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+
+function CustomizeTripContent() {
   const { id: destinationId } = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [destination, setDestination] = useState<Destination | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -58,10 +62,13 @@ export default function CustomizeTripPage() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("");
 
-  const [startDate, setStartDate] = useState<string>("");
+  const initialDate = searchParams.get("date") || "";
+  const initialTravelers = searchParams.get("travelers") ? parseInt(searchParams.get("travelers")!) : 1;
+
+  const [startDate, setStartDate] = useState<string>(initialDate);
   const [endDate, setEndDate] = useState<string>("");
   const [selected, setSelected] = useState<ChosenActivity[]>([]);
-  const [travelers, setTravelers] = useState<number>(1);
+  const [travelers, setTravelers] = useState<number>(initialTravelers);
 
   // ✅ Fetch destination + activities
   useEffect(() => {
@@ -480,5 +487,13 @@ export default function CustomizeTripPage() {
 
       <Footer />
     </>
+  );
+}
+
+export default function CustomizeTripPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CustomizeTripContent />
+    </Suspense>
   );
 }

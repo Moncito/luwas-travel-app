@@ -1,14 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { Plane, Map, CalendarDays } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Image from "next/image";
+import { Suspense } from "react";
 
-export default function BookDestinationPage() {
+function BookDestinationContent() {
   const { id: destinationId } = useParams();
+  const searchParams = useSearchParams();
+  const queryString = searchParams.toString() ? `?${searchParams.toString()}` : "";
 
   return (
     <>
@@ -45,7 +48,7 @@ export default function BookDestinationPage() {
           <div className="grid md:grid-cols-2 gap-8 mt-16">
             {/* Fixed Packages Card */}
             <Link
-              href={`/destinations/${destinationId}/packages`}
+              href={`/destinations/${destinationId}/packages${queryString}`}
               className="group bg-white/10 border border-white/20 rounded-2xl p-10 shadow-lg hover:bg-white/20 transition-transform hover:-translate-y-1 backdrop-blur-md"
             >
               <div className="flex flex-col items-center space-y-4">
@@ -65,7 +68,7 @@ export default function BookDestinationPage() {
 
             {/* Custom Trip Card */}
             <Link
-              href={`/destinations/${destinationId}/customize`}
+              href={`/destinations/${destinationId}/customize${queryString}`}
               className="group bg-white/10 border border-white/20 rounded-2xl p-10 shadow-lg hover:bg-white/20 transition-transform hover:-translate-y-1 backdrop-blur-md"
             >
               <div className="flex flex-col items-center space-y-4">
@@ -96,5 +99,13 @@ export default function BookDestinationPage() {
 
       <Footer />
     </>
+  );
+}
+
+export default function BookDestinationPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <BookDestinationContent />
+    </Suspense>
   );
 }
