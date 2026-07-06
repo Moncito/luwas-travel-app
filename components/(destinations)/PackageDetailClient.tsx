@@ -44,7 +44,8 @@ export default function PackageDetailClient({
         const snap = await getDoc(ref);
 
         if (snap.exists()) {
-          setPkg({ id: snap.id, ...(snap.data() as TripPackage) });
+          const rawData = snap.data() as TripPackage;
+          setPkg({ ...rawData, id: snap.id });
         } else {
           console.error("❌ No package found with ID:", packageId);
         }
@@ -182,3 +183,4 @@ export default function PackageDetailClient({
       <Footer />
     </>
   );
+}
