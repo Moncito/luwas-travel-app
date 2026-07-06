@@ -2,15 +2,12 @@
 
 import { useState, useEffect } from "react";
 import {
-  addDoc,
   collection,
   getDocs,
   getDoc,
-  updateDoc,
   doc,
   query,
   orderBy,
-  serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/firebase/client";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -25,14 +22,16 @@ import {
   Save,
 } from "lucide-react";
 import ImageUploader from "./ImageUploader";
+import { auth } from "@/firebase/client";
 
 export default function AddTripPackagePanel() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get("edit");
 
-  const [destinations, setDestinations] = useState<{ id: string; name: string }[]>([]);
+  const [destinations, setDestinations] = useState<{ id: string; name: string; location?: string }[]>([]);
   const [selectedDestination, setSelectedDestination] = useState("");
+  const [packageLocation, setPackageLocation] = useState("");
   const [title, setTitle] = useState("");
   const [duration, setDuration] = useState("");
   const [price, setPrice] = useState("");
@@ -51,6 +50,7 @@ export default function AddTripPackagePanel() {
         const list = snapshot.docs.map((doc) => ({
           id: doc.id,
           name: doc.data().name,
+          location: doc.data().location,
         }));
         setDestinations(list);
       } catch (err) {
@@ -70,6 +70,7 @@ export default function AddTripPackagePanel() {
         if (snap.exists()) {
           const data = snap.data();
           setSelectedDestination(data.destinationId || "");
+          setPackageLocation(data.packageLocation || "");
           setTitle(data.title || "");
           setDuration(data.duration || "");
           setPrice(data.price?.toString() || "");
@@ -91,6 +92,8 @@ export default function AddTripPackagePanel() {
     fetchPackage();
   }, [editId]);
 
+  const selectedDestinationData = destinations.find((d) => d.id === selectedDestination);
+
   const handleAddDay = () => {
     setDailySchedule([...dailySchedule, { day: dailySchedule.length + 1, activities: "" }]);
   };
@@ -104,7 +107,7 @@ export default function AddTripPackagePanel() {
     e.preventDefault();
     setLoading(true);
 
-    if (!selectedDestination || !title || !duration || !price || !inclusions || !imageUrl) {
+    if (!selectedDestination || !packageLocation || !title || !duration || !price || !inclusions || !imageUrl) {
       toast.error("⚠️ Please fill out all required fields.");
       setLoading(false);
       return;
@@ -112,35 +115,48 @@ export default function AddTripPackagePanel() {
 
     const formattedSchedule = dailySchedule.map((item) => ({
       day: item.day,
-      activities: item.activities.split(",").map((a) => a.trim()),
+      activities: item.activities
+        .split(",")
+        .map((a) => a.trim())
+        .filter(Boolean),
     }));
 
     try {
-      if (isEditing && editId) {
-        // 🧾 Update existing package
-        await updateDoc(doc(db, "tripPackages", editId), {
+      const idToken = await auth.currentUser?.getIdToken();
+
+      const response = await fetch("/api/admin/trip-packages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+        },
+        body: JSON.stringify({
+          editId: isEditing ? editId : null,
           destinationId: selectedDestination,
+          packageLocation: packageLocation.trim(),
+          destinationName: selectedDestinationData?.name || "",
+          destinationLocation: selectedDestinationData?.location || "",
           title,
           duration,
           price: Number(price),
-          inclusions: inclusions.split(",").map((i) => i.trim()),
+          inclusions: inclusions
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean),
           dailySchedule: formattedSchedule,
           imageUrl,
-          updatedAt: serverTimestamp(),
-        });
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload?.error || "Failed to save package");
+      }
+
+      if (isEditing && editId) {
         toast.success("✅ Trip package updated successfully!");
       } else {
-        // ➕ Add new package
-        await addDoc(collection(db, "tripPackages"), {
-          destinationId: selectedDestination,
-          title,
-          duration,
-          price: Number(price),
-          inclusions: inclusions.split(",").map((i) => i.trim()),
-          dailySchedule: formattedSchedule,
-          imageUrl,
-          createdAt: serverTimestamp(),
-        });
         toast.success("🎉 Trip package added successfully!");
       }
 
@@ -148,7 +164,8 @@ export default function AddTripPackagePanel() {
       router.push("/admin/trip-packages");
     } catch (err) {
       console.error("❌ Error saving trip package:", err);
-      toast.error("Error saving trip package.");
+      const message = err instanceof Error ? err.message : "Error saving trip package.";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -208,6 +225,22 @@ export default function AddTripPackagePanel() {
             onChange={(e) => setPrice(e.target.value)}
             required
           />
+        </div>
+
+        <div>
+          <label className="block font-semibold mb-2">Specific Place / Spot</label>
+          <input
+            className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500"
+            placeholder="e.g. Camp John Hay, Burnham Park, Cloud 9"
+            value={packageLocation}
+            onChange={(e) => setPackageLocation(e.target.value)}
+            required
+          />
+          {selectedDestinationData?.location && (
+            <p className="mt-1 text-xs text-gray-500">
+              Destination area: {selectedDestinationData.location}
+            </p>
+          )}
         </div>
 
         {/* Inclusions */}

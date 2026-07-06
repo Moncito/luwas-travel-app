@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { CalendarDays, CheckCircle2 } from "lucide-react";
+import { CalendarDays, CheckCircle2, MapPin } from "lucide-react";
 
 interface TripPackage {
   id: string;
@@ -17,18 +17,28 @@ interface TripPackage {
   dailySchedule: { day: number; activities: string[] }[];
   imageUrl?: string;
   destinationId: string;
+  packageLocation?: string;
+  destinationLocation?: string;
 }
 
 interface Props {
-  params: { id: string; packageId: string };
+  params: Promise<{ id: string; packageId: string }>;
 }
 
 export default async function PackageDetailPage({ params }: Props) {
-  const { id: destinationId, packageId } = params;
+  const { id: destinationId, packageId } = await params;
+  const destinationSnap = await db.collection("destinations").doc(destinationId).get();
+  const destinationLocation = destinationSnap.exists
+    ? destinationSnap.data()?.location || ""
+    : "";
+
   const docSnap = await db.collection("tripPackages").doc(packageId).get();
   if (!docSnap.exists) return notFound();
 
   const pkg = docSnap.data() as TripPackage;
+  if (pkg.destinationId !== destinationId) return notFound();
+  const packageLocationText =
+    pkg.packageLocation || pkg.destinationLocation || destinationLocation || "Inside this destination";
 
   return (
     <>
@@ -41,6 +51,7 @@ export default async function PackageDetailPage({ params }: Props) {
           alt={pkg.title}
           fill
           priority
+          sizes="100vw"
           className="object-cover"
         />
         <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" />
@@ -50,6 +61,10 @@ export default async function PackageDetailPage({ params }: Props) {
             {pkg.title}
           </h1>
           <p className="text-blue-100 font-medium text-lg">{pkg.duration}</p>
+          <p className="text-blue-100 font-medium text-sm flex items-center justify-center gap-1">
+            <MapPin className="h-4 w-4" />
+            {packageLocationText}
+          </p>
           <p className="text-2xl font-semibold text-white">
             ₱{pkg.price.toLocaleString()}
             <span className="text-sm text-gray-300 font-normal ml-1">
