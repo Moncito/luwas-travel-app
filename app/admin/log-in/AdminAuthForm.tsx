@@ -71,6 +71,8 @@ const AdminAuthForm = () => {
         const err = error as { code: string };
         if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
           toast.error("Invalid email or password");
+        } else if (err.code === "auth/invalid-credential") {
+          toast.error("Firebase client config mismatch. Check NEXT_PUBLIC_FIREBASE_* values.");
         } else {
           toast.error("Login failed. Please try again.");
         }

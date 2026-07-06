@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/firebase/client';
 import { toast } from 'sonner';
@@ -13,6 +13,9 @@ import { Trash2, Pencil, Plane, MapPin, PlusCircle, X } from 'lucide-react';
 interface TripPackage {
   id: string;
   destinationId: string;
+  packageLocation?: string;
+  destinationName?: string;
+  destinationLocation?: string;
   title: string;
   duration: string;
   price: number;
@@ -23,6 +26,7 @@ interface TripPackage {
 interface Destination {
   id: string;
   name: string;
+  location?: string;
 }
 
 // ---------------- DELETE MODAL ---------------- //
@@ -101,6 +105,8 @@ function DeleteModal({
 export default function TripPackagesAdminPage() {
   const [packages, setPackages] = useState<TripPackage[]>([]);
   const [destinations, setDestinations] = useState<Destination[]>([]);
+  const [selectedDestinationFilter, setSelectedDestinationFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [showDelete, setShowDelete] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<TripPackage | null>(null);
 
@@ -117,6 +123,7 @@ export default function TripPackagesAdminPage() {
     const data = snapshot.docs.map((doc) => ({
       id: doc.id,
       name: doc.data().name,
+      location: doc.data().location,
     })) as Destination[];
     setDestinations(data);
   };
@@ -131,6 +138,35 @@ export default function TripPackagesAdminPage() {
     const dest = destinations.find((d) => d.id === id);
     return dest ? dest.name : 'Unknown Destination';
   };
+
+  const getDestinationLocation = (id: string) => {
+    const dest = destinations.find((d) => d.id === id);
+    return dest?.location || '';
+  };
+
+  const filteredPackages = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return packages.filter((pkg) => {
+      if (selectedDestinationFilter !== 'all' && pkg.destinationId !== selectedDestinationFilter) {
+        return false;
+      }
+
+      if (!term) return true;
+
+      const haystack = [
+        pkg.title,
+        pkg.packageLocation,
+        pkg.destinationName,
+        getDestinationName(pkg.destinationId),
+        pkg.destinationLocation,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      return haystack.includes(term);
+    });
+  }, [packages, selectedDestinationFilter, searchTerm, destinations]);
 
   // 🗑️ Handle delete package
   const handleDelete = async (id: string) => {
@@ -155,10 +191,32 @@ export default function TripPackagesAdminPage() {
           </Link>
         </div>
 
+        <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-3">
+          <select
+            value={selectedDestinationFilter}
+            onChange={(e) => setSelectedDestinationFilter(e.target.value)}
+            className="border rounded-lg px-4 py-2 text-sm"
+          >
+            <option value="all">All destinations</option>
+            {destinations.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+
+          <input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search package title or place"
+            className="md:col-span-2 border rounded-lg px-4 py-2 text-sm"
+          />
+        </div>
+
         {/* Packages Grid */}
-        {packages.length === 0 ? (
+        {filteredPackages.length === 0 ? (
           <p className="text-center text-gray-500 py-24">
-            😕 No trip packages yet. Click “Add Package” to create one.
+            😕 No matching trip packages. Try another filter or click “Add Package”.
           </p>
         ) : (
           <motion.div
@@ -167,7 +225,7 @@ export default function TripPackagesAdminPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            {packages.map((pkg) => (
+            {filteredPackages.map((pkg) => (
               <motion.div
                 key={pkg.id}
                 className="bg-white border rounded-2xl shadow-sm overflow-hidden hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
@@ -192,7 +250,11 @@ export default function TripPackagesAdminPage() {
                   {/* Destination Tag */}
                   <div className="mt-2 flex items-center gap-1 text-xs text-blue-600">
                     <MapPin size={12} />
-                    <span>{getDestinationName(pkg.destinationId)}</span>
+                    <span>{pkg.packageLocation || pkg.destinationLocation || getDestinationLocation(pkg.destinationId) || getDestinationName(pkg.destinationId)}</span>
+                  </div>
+
+                  <div className="text-[11px] text-gray-500">
+                    Destination: {pkg.destinationName || getDestinationName(pkg.destinationId)}
                   </div>
 
                   {/* Inclusions */}
