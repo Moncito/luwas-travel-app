@@ -14,6 +14,7 @@ import PromoBookingsAnalyticsChart from "@/components/(admin)/PromoBookingsAnaly
 import DemographicsAnalyticsChart from "@/components/(admin)/DemographicsAnalyticsChart";
 import RevenueInsightsChart from "@/components/(admin)/RevenueInsightsChart";
 import ConversionInsightsChart from "@/components/(admin)/ConversionInsightsChart";
+import CancellationTrendsChart from "@/components/(admin)/CancellationTrendsChart";
 
 export default async function AdminDashboardPage() {
   const { totalUsers, totalTrips, totalItineraries } = await fetchAdminMetrics();
@@ -64,6 +65,7 @@ export default async function AdminDashboardPage() {
           <DemographicsAnalyticsChart/>
           <RevenueInsightsChart/>
           <ConversionInsightsChart/>
+          <CancellationTrendsChart/>
         </div>
       </section>
 

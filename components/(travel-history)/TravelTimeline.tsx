@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { CalendarDays, PlaneTakeoff, MapPin, User as UserIcon } from 'lucide-react'
+import { CalendarDays, PlaneTakeoff, MapPin, User as UserIcon, Users, FileText, CheckCircle, AlertCircle, CreditCard, Clock } from 'lucide-react'
 import Image from 'next/image'
 import BookingDetailModal from './BookingDetailModal'
 
@@ -37,12 +37,12 @@ type TravelRecord = {
 
 const statusConfig: Record<string, { color: string; icon: JSX.Element }> = {
   upcoming: { color: 'bg-blue-100 text-blue-800', icon: <PlaneTakeoff className="w-4 h-4" /> },
-  completed: { color: 'bg-green-100 text-green-800', icon: <span>✅</span> },
-  cancelled: { color: 'bg-red-100 text-red-700', icon: <span>❌</span> },
-  paid: { color: 'bg-emerald-100 text-emerald-800', icon: <span>💳</span> },
-  pending_payment: { color: 'bg-yellow-100 text-yellow-700', icon: <span>⏳</span> },
-  waiting_payment: { color: 'bg-yellow-100 text-yellow-700', icon: <span>⏳</span> },
-  awaiting_approval: { color: 'bg-purple-100 text-purple-700', icon: <span>🕓</span> },
+  completed: { color: 'bg-green-100 text-green-800', icon: <CheckCircle className="w-4 h-4" /> },
+  cancelled: { color: 'bg-red-100 text-red-700', icon: <AlertCircle className="w-4 h-4" /> },
+  paid: { color: 'bg-emerald-100 text-emerald-800', icon: <CreditCard className="w-4 h-4" /> },
+  pending_payment: { color: 'bg-yellow-100 text-yellow-700', icon: <Clock className="w-4 h-4" /> },
+  waiting_payment: { color: 'bg-yellow-100 text-yellow-700', icon: <Clock className="w-4 h-4" /> },
+  awaiting_approval: { color: 'bg-purple-100 text-purple-700', icon: <Clock className="w-4 h-4" /> },
 }
 
 interface Props {
@@ -119,30 +119,30 @@ export default function TravelTimeline({ userId }: Props) {
       <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/60 -z-10" />
 
       {/* Header Section */}
-      <div className="text-center mb-16 max-w-2xl">
-        <h2 className="text-6xl md:text-7xl font-bold mb-4 text-white text-center flex items-center justify-center gap-3">
+      <div className="text-center mb-20 max-w-3xl">
+        <h2 className="text-7xl md:text-8xl font-extrabold mb-6 text-white text-center flex items-center justify-center gap-4 tracking-tight">
           <span>Your Travel</span>
           <span className="text-blue-400">History</span>
-          <PlaneTakeoff className="w-10 h-10 md:w-12 md:h-12 text-blue-400 animate-bounce" />
+          <PlaneTakeoff className="w-14 h-14 md:w-16 md:h-16 text-blue-400 animate-bounce" />
         </h2>
-        <p className="text-lg text-white/70">Track all your bookings, trips, and travel memories in one place</p>
+        <p className="text-lg md:text-xl text-white/75 font-medium leading-relaxed">Track all your bookings, trips, and travel memories in one place</p>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap justify-center gap-3 mb-14 max-w-2xl">
+      <div className="flex flex-wrap justify-center gap-4 mb-16 max-w-3xl">
         {(['upcoming', 'completed', 'cancelled'] as const).map(status => (
           <button
             key={status}
             onClick={() => setFilter(status)}
-            className={`px-6 py-3 font-semibold rounded-full transition-all duration-300 ${
+            className={`px-8 py-3 font-semibold rounded-full transition-all duration-300 text-sm md:text-base ${
               filter === status 
                 ? 'bg-white text-blue-600 shadow-lg scale-105' 
                 : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
             }`}
           >
-            {status === 'upcoming' && '✈️ Upcoming'}
-            {status === 'completed' && '✅ Completed'}
-            {status === 'cancelled' && '❌ Cancelled'}
+            {status === 'upcoming' && 'Upcoming'}
+            {status === 'completed' && 'Completed'}
+            {status === 'cancelled' && 'Cancelled'}
           </button>
         ))}
       </div>
@@ -157,8 +157,9 @@ export default function TravelTimeline({ userId }: Props) {
 
       {/* Error State */}
       {error && (
-        <div className="w-full max-w-6xl mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200">
-          ⚠️ {error}
+        <div className="w-full max-w-6xl mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 flex items-center gap-2">
+          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          {error}
         </div>
       )}
 
@@ -166,7 +167,9 @@ export default function TravelTimeline({ userId }: Props) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-7xl">
         {!loading && filteredTrips.length === 0 ? (
           <div className="col-span-full text-center py-20">
-            <p className="text-5xl mb-4">🏝️</p>
+            <div className="flex justify-center mb-4">
+              <MapPin className="w-12 h-12 text-white/30" />
+            </div>
             <p className="text-xl text-white/70">No {filter} trips found</p>
             <p className="text-sm text-white/50 mt-2">
               {filter === 'upcoming' && 'Book your next adventure to get started!'}
@@ -220,8 +223,9 @@ export default function TravelTimeline({ userId }: Props) {
 
                 {/* Description */}
                 {trip.specialRequests && (
-                  <p className="text-sm text-white/70 mb-4 line-clamp-2">
-                    📝 {trip.specialRequests}
+                  <p className="text-sm text-white/70 mb-4 line-clamp-2 flex items-start gap-2">
+                    <FileText className="w-4 h-4 flex-shrink-0 mt-0.5 text-blue-300" />
+                    <span>{trip.specialRequests}</span>
                   </p>
                 )}
 
@@ -241,8 +245,9 @@ export default function TravelTimeline({ userId }: Props) {
                     </div>
                   )}
 
-                  <div className="text-sm text-white/75">
-                    👥 {trip.people ?? 1} traveler{trip.people !== 1 ? 's' : ''}
+                  <div className="text-sm text-white/75 flex items-center gap-2">
+                    <Users className="w-4 h-4 flex-shrink-0 text-blue-300" />
+                    <span>{trip.people ?? 1} traveler{trip.people !== 1 ? 's' : ''}</span>
                   </div>
                 </div>
 
