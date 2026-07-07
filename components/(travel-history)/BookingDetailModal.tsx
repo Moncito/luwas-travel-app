@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { Dialog } from '@headlessui/react'
 import type { TravelRecord } from '@/types/travel'
 import Image from 'next/image'
+import { getAuth } from 'firebase/auth'
+import CancellationModal from './CancellationModal'
 import {
   Mail,
   Phone,
@@ -15,12 +17,14 @@ import {
   User as UserIcon,
   Home,
   CreditCard,
+  Trash2,
 } from 'lucide-react'
 
 interface Props {
   booking: TravelRecord | null
   isOpen: boolean
   onClose: () => void
+  onBookingUpdated?: () => void
 }
 
 const statusColors: Record<string, string> = {
@@ -33,8 +37,55 @@ const statusColors: Record<string, string> = {
   awaiting_approval: 'bg-purple-100 text-purple-700',
 }
 
-export default function BookingDetailModal({ booking, isOpen, onClose }: Props) {
+export default function BookingDetailModal({ booking, isOpen, onClose, onBookingUpdated }: Props) {
   const [showFullReceipt, setShowFullReceipt] = useState(false)
+  const [showCancellationModal, setShowCancellationModal] = useState(false)
+  const [isCancelling, setIsCancelling] = useState(false)
+
+  const canCancel =
+    booking && 
+    booking.status && 
+    ['upcoming', 'pending_payment', 'waiting_payment', 'paid', 'awaiting_approval'].includes(booking.status.toLowerCase())
+
+  const handleCancellation = async (reason: string, details?: string) => {
+    if (!booking) return
+
+    setIsCancelling(true)
+    try {
+      const auth = getAuth()
+      const user = auth.currentUser
+      if (!user) throw new Error('Not authenticated')
+
+      const token = await user.getIdToken()
+
+      const res = await fetch(`/api/travel-history/${booking.id}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          reason,
+          details,
+          bookingType: booking.type,
+        }),
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error || 'Failed to cancel booking')
+      }
+
+      // Notify parent component to refresh data
+      onBookingUpdated?.()
+      setShowCancellationModal(false)
+      setTimeout(() => onClose(), 1500)
+    } catch (err: any) {
+      throw err
+    } finally {
+      setIsCancelling(false)
+    }
+  }
 
   if (!booking) return null
 
@@ -102,7 +153,7 @@ export default function BookingDetailModal({ booking, isOpen, onClose }: Props) 
                 )}
                 {booking.people != null && <p>People: {booking.people}</p>}
                 {booking.travelers != null && <p>Travelers: {booking.travelers}</p>}
-                {booking.specialRequests && <p>📝 {booking.specialRequests}</p>}
+                {booking.specialRequests && <p className="flex items-center gap-2"><FileText className="w-4 h-4 text-blue-500" /> {booking.specialRequests}</p>}
               </div>
 
               {/* Right Side */}
@@ -184,17 +235,45 @@ export default function BookingDetailModal({ booking, isOpen, onClose }: Props) 
             </div>
 
             {/* Footer */}
-            <div className="flex justify-center pt-4">
+            <div className="flex gap-3 pt-4 border-t">
               <button
                 onClick={onClose}
-                className="px-5 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition cursor-pointer"
+                className="flex-1 px-5 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-200 transition cursor-pointer"
               >
                 Close
               </button>
+              {canCancel && (
+                <button
+                  onClick={() => setShowCancellationModal(true)}
+                  disabled={isCancelling}
+                  className="flex-1 px-5 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-semibold hover:bg-red-200 transition cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Cancel Trip
+                </button>
+              )}
             </div>
           </Dialog.Panel>
         </div>
       </Dialog>
+
+      {/* Cancellation Modal */}
+      {booking && (
+        <CancellationModal
+          isOpen={showCancellationModal}
+          onClose={() => setShowCancellationModal(false)}
+          onConfirm={handleCancellation}
+          bookingTitle={
+            booking.type === 'trip'
+              ? booking.destination || 'Trip'
+              : booking.type === 'itinerary'
+                ? booking.title || 'Itinerary'
+                : booking.promoTitle || 'Promo'
+          }
+          booking={booking}
+          isLoading={isCancelling}
+        />
+      )}
 
       {/* Full Receipt Lightbox */}
       <Dialog
