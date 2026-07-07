@@ -251,8 +251,13 @@ function CustomizeTripContent() {
 
       localStorage.setItem("customTripData", JSON.stringify(tripData));
 
-      toast.success("Trip details saved! Redirecting to payment...");
-      router.push(`/destinations/${destinationId}/pay?type=custom`);
+      // Store destination image for checkout page
+      if (destination?.imageUrl) {
+        sessionStorage.setItem(`destImage-${destinationId}`, destination.imageUrl);
+      }
+
+      toast.success("Trip details saved! Redirecting to checkout...");
+      router.push(`/destinations/${destinationId}/customize/checkout`);
     } catch (err) {
       console.error("Error proceeding to payment:", err);
       toast.error("Failed to proceed. Please try again.");
